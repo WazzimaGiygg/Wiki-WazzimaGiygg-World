@@ -153,9 +153,6 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Demo override state for reviewers who want to test the full UI without logging in as the main email
-  const [demoBureaucratMode, setDemoBureaucratMode] = useState(false);
-
   // Real-time lists from Firestore
   const [allRights, setAllRights] = useState<UserRightsRecord[]>([]);
   const [logs, setLogs] = useState<BureaucratLogEntry[]>([]);
@@ -165,9 +162,6 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
   const [allPages, setAllPages] = useState<WikiPage[]>([]);
   const [selectedPageForProtection, setSelectedPageForProtection] = useState<WikiPage | null>(null);
   const [pageToProtectQuery, setPageToProtectQuery] = useState<string>('');
-
-  // Check effectively if user has bureaucrat rights
-  const hasBureaucratAccess = isBureaucrat || demoBureaucratMode;
 
   // Real-time subscriptions to Firestore
   useEffect(() => {
@@ -343,7 +337,7 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
           </h1>
 
           <div className="flex items-center gap-2 text-xs">
-            {hasBureaucratAccess ? (
+            {isBureaucrat ? (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-800 font-medium">
                 <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
                 <span>Burocrata Ativo</span>
@@ -368,7 +362,7 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
       </div>
 
       {/* Access Control Notice */}
-      {!hasBureaucratAccess && (
+      {!isBureaucrat && (
         <div className="mb-6 p-4 rounded bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs space-y-3">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
@@ -396,16 +390,6 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
                 Conectado como: <strong>{currentUser.username}</strong> ({currentUser.email || 'sem e-mail'})
               </div>
             )}
-
-            <button
-              type="button"
-              onClick={() => setDemoBureaucratMode(true)}
-              className="px-3 py-1.5 bg-purple-700 hover:bg-purple-800 text-white rounded font-medium shadow-2xs flex items-center gap-1.5 ml-auto"
-              title="Ativar privilégios de teste no navegador"
-            >
-              <Unlock className="w-3.5 h-3.5" />
-              <span>Habilitar Modo Burocrata para Testes</span>
-            </button>
           </div>
         </div>
       )}
