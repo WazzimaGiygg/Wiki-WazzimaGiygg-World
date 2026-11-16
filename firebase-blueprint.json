@@ -1,0 +1,289 @@
+{
+  "entities": {
+    "WikiPage": {
+      "title": "WikiPage",
+      "description": "Represents an encyclopedia page or documentation article in MediaWiki TS",
+      "type": "object",
+      "properties": {
+        "slug": { "type": "string", "maxLength": 200, "pattern": "^[a-zA-Z0-9_:.-]+$" },
+        "title": { "type": "string", "maxLength": 250 },
+        "titleLower": { "type": "string", "maxLength": 250 },
+        "namespace": { "type": "string", "maxLength": 50 },
+        "content": { "type": "string", "maxLength": 500000 },
+        "summary": { "type": "string", "maxLength": 500 },
+        "author": { "type": "string", "maxLength": 100 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "revisionCount": { "type": "number" },
+        "latestRevisionId": { "type": "string", "maxLength": 128 },
+        "categories": { "type": "array" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "protectionLevel": { "type": "string", "enum": ["unprotected", "semi_protected", "locked"] },
+        "protectionReason": { "type": "string", "maxLength": 500 },
+        "protectedBy": { "type": "string", "maxLength": 100 },
+        "protectedByUid": { "type": "string", "maxLength": 128 },
+        "protectedAt": { "type": "string" },
+        "protectionExpiry": { "type": "string", "maxLength": 100 },
+        "isLocked": { "type": "boolean" }
+      },
+      "required": ["slug", "title", "content", "author"]
+    },
+    "Revision": {
+      "title": "Revision",
+      "description": "An immutable historical revision of a wiki page, mirroring MediaWiki revision table",
+      "type": "object",
+      "properties": {
+        "revId": { "type": "string", "maxLength": 128 },
+        "pageId": { "type": "string", "maxLength": 200 },
+        "pageTitle": { "type": "string", "maxLength": 250 },
+        "content": { "type": "string", "maxLength": 500000 },
+        "summary": { "type": "string", "maxLength": 500 },
+        "timestamp": { "type": "string" },
+        "author": { "type": "string", "maxLength": 100 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "byteSize": { "type": "number" },
+        "minorEdit": { "type": "boolean" }
+      },
+      "required": ["revId", "pageId", "pageTitle", "content", "author", "timestamp"]
+    },
+    "RecentChange": {
+      "title": "RecentChange",
+      "description": "Activity log entry mirroring MediaWiki recentchanges table",
+      "type": "object",
+      "properties": {
+        "pageId": { "type": "string", "maxLength": 200 },
+        "pageTitle": { "type": "string", "maxLength": 250 },
+        "author": { "type": "string", "maxLength": 100 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "summary": { "type": "string", "maxLength": 500 },
+        "timestamp": { "type": "string" },
+        "oldLen": { "type": "number" },
+        "newLen": { "type": "number" },
+        "revId": { "type": "string", "maxLength": 128 },
+        "minorEdit": { "type": "boolean" }
+      },
+      "required": ["pageId", "pageTitle", "author", "timestamp"]
+    },
+    "TalkComment": {
+      "title": "TalkComment",
+      "description": "Discussion topic or comment for a wiki page",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "pageId": { "type": "string", "maxLength": 200 },
+        "topicTitle": { "type": "string", "maxLength": 250 },
+        "content": { "type": "string", "maxLength": 50000 },
+        "author": { "type": "string", "maxLength": 100 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["pageId", "topicTitle", "content", "author", "timestamp"]
+    },
+    "WikiSettings": {
+      "title": "WikiSettings",
+      "description": "Global wiki configuration mirroring LocalSettings.php",
+      "type": "object",
+      "properties": {
+        "sitename": { "type": "string", "maxLength": 100 },
+        "languageCode": { "type": "string", "maxLength": 10 },
+        "allowAnonymousEditing": { "type": "boolean" },
+        "enableLivePreview": { "type": "boolean" },
+        "defaultSkin": { "type": "string", "maxLength": 50 },
+        "maxRecentChanges": { "type": "number" },
+        "repositoryUrl": { "type": "string", "maxLength": 250 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["sitename", "languageCode"]
+    },
+    "WikiExtension": {
+      "title": "WikiExtension",
+      "description": "MediaWiki extension registration synchronized with codebase and Firestore, managed by bureaucrats",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "enum": ["parser", "media", "admin", "skin", "api"] },
+        "version": { "type": "string", "maxLength": 50 },
+        "authors": { "type": "array" },
+        "description": { "type": "string", "maxLength": 2000 },
+        "url": { "type": "string", "maxLength": 500 },
+        "gitTag": { "type": "string", "maxLength": 100 },
+        "license": { "type": "string", "maxLength": 100 },
+        "hooks": { "type": "array" },
+        "exampleWikitext": { "type": "string", "maxLength": 5000 },
+        "isActive": { "type": "boolean" },
+        "installedVia": { "type": "string", "enum": ["code", "bureaucrat"] },
+        "addedByUid": { "type": "string", "maxLength": 128 },
+        "addedByName": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "updatedBy": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["id", "name", "category", "description", "isActive", "installedVia"]
+    },
+    "PageProtectionLog": {
+      "title": "PageProtectionLog",
+      "description": "Audit record of page protection changes performed by bureaucrats or administrators",
+      "type": "object",
+      "properties": {
+        "pageSlug": { "type": "string", "maxLength": 200 },
+        "pageTitle": { "type": "string", "maxLength": 250 },
+        "action": { "type": "string", "enum": ["protect", "unprotect", "modify"] },
+        "previousLevel": { "type": "string", "enum": ["unprotected", "semi_protected", "locked"] },
+        "newLevel": { "type": "string", "enum": ["unprotected", "semi_protected", "locked"] },
+        "reason": { "type": "string", "maxLength": 500 },
+        "expiry": { "type": "string", "maxLength": 100 },
+        "performedBy": { "type": "string", "maxLength": 100 },
+        "performedByUid": { "type": "string", "maxLength": 128 },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["pageSlug", "newLevel", "performedBy", "performedByUid", "timestamp"]
+    },
+    "CheckUserCase": {
+      "title": "CheckUserCase",
+      "description": "Investigation into suspected sockpuppetry accounts (contas fantoches) by checkusers or bureaucrats",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 250 },
+        "primarySuspect": { "type": "string", "maxLength": 100 },
+        "suspectedPuppets": { "type": "array" },
+        "status": { "type": "string", "enum": ["aberto", "investigando", "confirmado_fantoche", "inocente", "encerrado"] },
+        "evidence": { "type": "string", "maxLength": 10000 },
+        "openedBy": { "type": "string", "maxLength": 100 },
+        "openedByUid": { "type": "string", "maxLength": 128 },
+        "verdict": { "type": "string", "maxLength": 5000 },
+        "investigatedBy": { "type": "string", "maxLength": 100 },
+        "timestamp": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["title", "primarySuspect", "status", "openedBy", "timestamp"]
+    },
+    "UnblockRequest": {
+      "title": "UnblockRequest",
+      "description": "Appeals and community/administrator discussions regarding user unblocks",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string", "maxLength": 100 },
+        "userUid": { "type": "string", "maxLength": 128 },
+        "blockedBy": { "type": "string", "maxLength": 100 },
+        "blockReason": { "type": "string", "maxLength": 1000 },
+        "appealReason": { "type": "string", "maxLength": 5000 },
+        "status": { "type": "string", "enum": ["pendente", "em_discussao", "aprovado", "recusado"] },
+        "verdictNote": { "type": "string", "maxLength": 2000 },
+        "reviewedBy": { "type": "string", "maxLength": 100 },
+        "votes": { "type": "array" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["username", "userUid", "appealReason", "status", "createdAt"]
+    },
+    "ArbComCase": {
+      "title": "ArbComCase",
+      "description": "Binding dispute resolution cases deliberated by the Arbitration Committee (Conselho de Arbitragem)",
+      "type": "object",
+      "properties": {
+        "caseNumber": { "type": "string", "maxLength": 50 },
+        "title": { "type": "string", "maxLength": 250 },
+        "plaintiff": { "type": "string", "maxLength": 100 },
+        "respondent": { "type": "string", "maxLength": 100 },
+        "status": { "type": "string", "enum": ["admissibilidade", "instrucao", "deliberacao", "encerrado"] },
+        "description": { "type": "string", "maxLength": 10000 },
+        "arbitrators": { "type": "array" },
+        "finalDecision": { "type": "string", "maxLength": 5000 },
+        "remedies": { "type": "array" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["title", "plaintiff", "respondent", "status", "createdAt"]
+    },
+    "UCoCReport": {
+      "title": "UCoCReport",
+      "description": "Universal Code of Conduct (Código Universal de Conduta) violation incident reports and remedies",
+      "type": "object",
+      "properties": {
+        "reportedUser": { "type": "string", "maxLength": 100 },
+        "reporterUser": { "type": "string", "maxLength": 100 },
+        "category": { "type": "string", "enum": ["assedio", "discriminacao", "abuso_de_poder", "incitacao_ao_odio", "vandalismo_psicologico"] },
+        "description": { "type": "string", "maxLength": 5000 },
+        "pageRelated": { "type": "string", "maxLength": 250 },
+        "status": { "type": "string", "enum": ["pendente", "sob_analise", "sancionado", "arquivado"] },
+        "resolution": { "type": "string", "maxLength": 2000 },
+        "handledBy": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["reportedUser", "reporterUser", "category", "description", "status", "createdAt"]
+    },
+    "WikiFile": {
+      "title": "WikiFile",
+      "description": "Uploaded image or media file in the wiki, conditioned on Blaze Plan enablement in extensions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 200 },
+        "title": { "type": "string", "maxLength": 250 },
+        "fileName": { "type": "string", "maxLength": 200 },
+        "url": { "type": "string" },
+        "mimeType": { "type": "string", "maxLength": 100 },
+        "size": { "type": "number" },
+        "uploadedBy": { "type": "string", "maxLength": 100 },
+        "uploadedByUid": { "type": "string", "maxLength": 128 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "license": { "type": "string", "maxLength": 100 },
+        "timestamp": { "type": "string" },
+        "width": { "type": "number" },
+        "height": { "type": "number" }
+      },
+      "required": ["id", "title", "fileName", "url", "mimeType", "size", "uploadedBy", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/wiki_pages/{pageId}": {
+      "schema": { "$ref": "#/entities/WikiPage" },
+      "description": "Stores individual wiki pages accessible by slug identifier"
+    },
+    "/wiki_pages/{pageId}/revisions/{revId}": {
+      "schema": { "$ref": "#/entities/Revision" },
+      "description": "Subcollection holding revision history for a page"
+    },
+    "/wiki_pages/{pageId}/talks/{talkId}": {
+      "schema": { "$ref": "#/entities/TalkComment" },
+      "description": "Subcollection holding discussion threads for a page"
+    },
+    "/recent_changes/{changeId}": {
+      "schema": { "$ref": "#/entities/RecentChange" },
+      "description": "Chronological stream of all edits mirroring MediaWiki Special:RecentChanges"
+    },
+    "/wiki_settings/{settingId}": {
+      "schema": { "$ref": "#/entities/WikiSettings" },
+      "description": "Global wiki configuration settings synchronized in real time"
+    },
+    "/wiki_extensions/{extensionId}": {
+      "schema": { "$ref": "#/entities/WikiExtension" },
+      "description": "MediaWiki extensions synchronized between codebase directory and Firebase, controlled by bureaucrats"
+    },
+    "/page_protection_logs/{logId}": {
+      "schema": { "$ref": "#/entities/PageProtectionLog" },
+      "description": "Audit trail of protection and unprotection actions on wiki pages"
+    },
+    "/checkuser_cases/{caseId}": {
+      "schema": { "$ref": "#/entities/CheckUserCase" },
+      "description": "CheckUser sockpuppetry investigations"
+    },
+    "/unblock_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/UnblockRequest" },
+      "description": "Community and admin unblock deliberation threads"
+    },
+    "/arbcom_cases/{caseId}": {
+      "schema": { "$ref": "#/entities/ArbComCase" },
+      "description": "Arbitration Committee binding cases and rulings"
+    },
+    "/ucoc_reports/{reportId}": {
+      "schema": { "$ref": "#/entities/UCoCReport" },
+      "description": "Universal Code of Conduct violations and resolutions"
+    },
+    "/wiki_files/{fileId}": {
+      "schema": { "$ref": "#/entities/WikiFile" },
+      "description": "Stores uploaded wiki files and media images with metadata and storage URLs"
+    }
+  }
+}
