@@ -327,48 +327,6 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
         </div>
       </div>
 
-      {/* Protection Alert Banner */}
-      {effectiveLevel !== 'unprotected' && (
-        <div
-          className={`mb-4 p-3 rounded border text-xs flex items-start gap-2.5 ${
-            effectiveLevel === 'locked'
-              ? 'bg-red-50 dark:bg-red-950/40 border-red-300 dark:border-red-800 text-red-900 dark:text-red-200'
-              : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200'
-          }`}
-        >
-          {effectiveLevel === 'locked' ? (
-            <Lock className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
-          ) : (
-            <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-          )}
-          <div className="flex-1">
-            <div className="font-semibold text-[13px]">
-              {effectiveLevel === 'locked'
-                ? 'Esta página está totalmente protegida contra edições (Bloqueada).'
-                : 'Esta página está semiprotegida contra edições de contas recentes ou não confirmadas.'}
-            </div>
-            <p className="text-[11px] mt-0.5 opacity-90">
-              {page.protectionReason
-                ? `Motivo: ${page.protectionReason}`
-                : 'Proteção definida preventivamente pela administração comunitária.'}
-              {page.protectedBy && ` • Definida por ${page.protectedBy}`}
-              {page.protectionExpiry && page.protectionExpiry !== 'infinity'
-                ? ` • Expira em ${new Date(page.protectionExpiry).toLocaleDateString('pt-BR')}`
-                : ' • Duração permanente'}
-            </p>
-          </div>
-          {(currentUser.isBureaucrat || currentUser.isAdmin) && (
-            <button
-              type="button"
-              onClick={() => setShowProtectionModal(true)}
-              className="text-[11px] underline font-semibold hover:opacity-80 shrink-0 cursor-pointer ml-2"
-            >
-              Alterar proteção
-            </button>
-          )}
-        </div>
-      )}
-
       {/* Table of Contents (TOC) */}
       {parseResult.toc.length >= 2 && (
         <div className="toc my-4 p-3 max-w-sm rounded border border-[#a2a9b1] dark:border-gray-700 bg-[#f8f9fa] dark:bg-gray-900 text-xs shadow-2xs">
