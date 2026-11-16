@@ -8,18 +8,11 @@ import {
   GitBranch,
   Layers,
   Settings,
-  Database,
-  ExternalLink,
-  Code2,
-  Share2,
   List,
   Info,
   ShieldCheck,
   Blocks,
-  Scale,
-  Flag,
-  Unlock,
-  UserSearch,
+  Share2,
   Upload,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
@@ -197,84 +190,49 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
             <li>
               <button
                 type="button"
-                onClick={() => navigateToPage('Especial:Permissões_de_usuário')}
+                onClick={() => navigateToPage('Especial:Administração')}
                 className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded transition-colors text-left cursor-pointer ${
-                  currentSlug === 'Especial:Permissões_de_usuário' || currentSlug === 'Special:UserRights'
+                  [
+                    'Especial:Administração',
+                    'Especial:Administracao',
+                    'Especial:Permissões_de_usuário',
+                    'Especial:Permissoes_de_usuario',
+                    'Special:UserRights',
+                    'Special:Bureaucrat',
+                    'Especial:CheckUser',
+                    'Especial:Verificação_de_contas',
+                    'Especial:Verificacao_de_contas',
+                    'Especial:Fantoches',
+                    'Special:CheckUser',
+                    'Especial:Desbloqueio',
+                    'Especial:Discussão_de_desbloqueio',
+                    'Especial:Discussao_de_desbloqueio',
+                    'Especial:Discussão_de_bloqueio',
+                    'Especial:Discussao_de_bloqueio',
+                    'Special:Unblock',
+                    'Especial:ArbCom',
+                    'Especial:Conselho_de_Arbitragem',
+                    'Special:ArbCom',
+                    'Especial:UCOC',
+                    'Especial:UCoC',
+                    'Especial:Código_de_Conduta',
+                    'Especial:Codigo_de_Conduta',
+                    'Special:UCoC',
+                    'Especial:Páginas_protegidas',
+                    'Especial:Paginas_protegidas',
+                    'Special:ProtectedPages',
+                  ].includes(currentSlug)
                     ? 'bg-[#3366cc]/10 text-[#0645ad] dark:text-[#6ba4ff] font-semibold border-l-3 border-[#3366cc]'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-800'
                 }`}
               >
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
-                  <span>Permissões de usuário</span>
+                  <span>Painel de Administração</span>
                 </div>
                 {isBureaucrat && (
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" />
                 )}
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
-                onClick={() => navigateToPage('Especial:CheckUser')}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded transition-colors text-left cursor-pointer ${
-                  currentSlug === 'Especial:CheckUser' || currentSlug === 'Special:CheckUser'
-                    ? 'bg-[#3366cc]/10 text-[#0645ad] dark:text-[#6ba4ff] font-semibold border-l-3 border-[#3366cc]'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-800'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <UserSearch className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
-                  <span>Verificação de contas</span>
-                </div>
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
-                onClick={() => navigateToPage('Especial:Discussão_de_desbloqueio')}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded transition-colors text-left cursor-pointer ${
-                  currentSlug === 'Especial:Discussão_de_desbloqueio' || currentSlug === 'Special:Unblock'
-                    ? 'bg-[#3366cc]/10 text-[#0645ad] dark:text-[#6ba4ff] font-semibold border-l-3 border-[#3366cc]'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-800'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Unlock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                  <span>Discussão de desbloqueio</span>
-                </div>
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
-                onClick={() => navigateToPage('Especial:Conselho_de_Arbitragem')}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded transition-colors text-left cursor-pointer ${
-                  currentSlug === 'Especial:Conselho_de_Arbitragem' || currentSlug === 'Special:ArbCom'
-                    ? 'bg-[#3366cc]/10 text-[#0645ad] dark:text-[#6ba4ff] font-semibold border-l-3 border-[#3366cc]'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-800'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Scale className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
-                  <span>Conselho de Arbitragem</span>
-                </div>
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
-                onClick={() => navigateToPage('Especial:Código_de_Conduta')}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded transition-colors text-left cursor-pointer ${
-                  currentSlug === 'Especial:Código_de_Conduta' || currentSlug === 'Special:UCoC'
-                    ? 'bg-[#3366cc]/10 text-[#0645ad] dark:text-[#6ba4ff] font-semibold border-l-3 border-[#3366cc]'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-800'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Flag className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
-                  <span>Código de Conduta (UCoC)</span>
-                </div>
               </button>
             </li>
           </ul>

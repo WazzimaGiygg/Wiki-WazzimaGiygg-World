@@ -333,7 +333,7 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-2xl font-serif text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <ShieldCheck className="w-6 h-6 text-purple-600" />
-            <span>Administração de privilégios de usuário</span>
+            <span>Painel de Administração</span>
           </h1>
 
           <div className="flex items-center gap-2 text-xs">
@@ -353,10 +353,10 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
 
         <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 flex flex-wrap items-center justify-between gap-2">
           <span>
-            Ferramenta canônica da Wikipédia para Burocratas (<code>Special:UserRights</code>) gerenciarem grupos de permissão no Firestore.
+            Central unificada da administração para Burocratas: permissões (<code>Special:UserRights</code>), CheckUser, desbloqueios, ArbCom, UCoC e páginas protegidas.
           </span>
           <span className="font-mono text-purple-700 dark:text-purple-300">
-            Especial:Permissões_de_usuário
+            Especial:Administração
           </span>
         </div>
       </div>
@@ -395,7 +395,7 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
       )}
 
       {/* Tabs Bar */}
-      <div className="flex border-b border-[#a2a9b1] dark:border-gray-700 mb-4 text-xs overflow-x-auto no-scrollbar gap-0.5">
+      <div className="flex flex-wrap border-b border-[#a2a9b1] dark:border-gray-700 mb-4 text-xs gap-1">
         <button
           type="button"
           onClick={() => setActiveTab('manage')}
