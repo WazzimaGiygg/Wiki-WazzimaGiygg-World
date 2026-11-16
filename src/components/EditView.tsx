@@ -26,11 +26,14 @@ import {
   UploadCloud,
   ExternalLink,
   Loader2,
+  Globe,
+  Search,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { WikiPage } from '../types/wiki';
 import { savePage, canUserEditPage, getEffectiveProtectionLevel } from '../services/wikiService';
 import { saveUploadedFile, subscribeToUploadedFiles } from '../services/extensionService';
+import { queryGoogleSearchGrounding, SearchGroundingResult } from '../services/groundingService';
 import { WikiFileDoc } from '../extensions/types';
 import { parseWikitext } from '../core/parser';
 import { computeRevisionDiff } from '../core/diff';
@@ -193,6 +196,32 @@ export const EditView: React.FC<EditViewProps> = ({
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [activePreview, setActivePreview] = useState<'none' | 'preview' | 'diff'>('none');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Google Search Grounding research state
+  const [showResearchPanel, setShowResearchPanel] = useState(false);
+  const [researchQuery, setResearchQuery] = useState(() => page?.title || slug.replace(/_/g, ' '));
+  const [researchLoading, setResearchLoading] = useState(false);
+  const [researchError, setResearchError] = useState<string | null>(null);
+  const [researchResult, setResearchResult] = useState<SearchGroundingResult | null>(null);
+
+  const handleRunResearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!researchQuery.trim()) return;
+    setResearchLoading(true);
+    setResearchError(null);
+    try {
+      const data = await queryGoogleSearchGrounding({
+        query: researchQuery.trim(),
+        mode: 'research',
+        articleTitle: page?.title || slug.replace(/_/g, ' '),
+      });
+      setResearchResult(data);
+    } catch (err: unknown) {
+      setResearchError(err instanceof Error ? err.message : 'Erro ao pesquisar fontes.');
+    } finally {
+      setResearchLoading(false);
+    }
+  };
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -504,7 +533,106 @@ export const EditView: React.FC<EditViewProps> = ({
             </span>
           )}
         </button>
+
+        {editPermission.allowed && (
+          <button
+            type="button"
+            onClick={() => setShowResearchPanel(prev => !prev)}
+            className={`px-2 py-1 rounded flex items-center gap-1.5 cursor-pointer transition-colors text-xs font-medium border ${
+              showResearchPanel
+                ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 border-emerald-400 dark:border-emerald-700'
+                : 'bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600'
+            }`}
+            title="Buscar fatos atualizados e referências no Google Search"
+          >
+            <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Fontes Google</span>
+          </button>
+        )}
       </div>
+
+      {/* Google Search Grounding Research Drawer */}
+      {showResearchPanel && editPermission.allowed && (
+        <div className="p-3 bg-emerald-50/60 dark:bg-emerald-950/20 border-x border-b border-[#a2a9b1] dark:border-gray-700 text-xs space-y-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Pesquisa de fontes atualizadas (Google Search)</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowResearchPanel(false)}
+              className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <form onSubmit={handleRunResearch} className="flex flex-wrap gap-2">
+            <input
+              type="text"
+              value={researchQuery}
+              onChange={e => setResearchQuery(e.target.value)}
+              placeholder="Pesquisar assunto no Google Search..."
+              className="flex-1 min-w-[200px] px-2.5 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-xs"
+            />
+            <button
+              type="submit"
+              disabled={researchLoading}
+              className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white rounded font-medium flex items-center gap-1.5 cursor-pointer"
+            >
+              {researchLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+              <span>{researchLoading ? 'Pesquisando...' : 'Buscar na Web'}</span>
+            </button>
+          </form>
+
+          {researchError && (
+            <div className="p-2 bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 rounded">
+              {researchError}
+            </div>
+          )}
+
+          {researchResult && (
+            <div className="space-y-2">
+              <div className="p-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+                {researchResult.answer}
+              </div>
+              {researchResult.sources.length > 0 && (
+                <div className="space-y-1">
+                  <div className="text-[11px] font-semibold text-gray-600 dark:text-gray-400">
+                    Fontes encontradas (clique para inserir como &lt;ref&gt; no texto):
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {researchResult.sources.map((src, idx) => (
+                      <div
+                        key={`${src.uri}-${idx}`}
+                        className="inline-flex items-center gap-1.5 px-2 py-1 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-[11px]"
+                      >
+                        <a
+                          href={src.uri}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#0645ad] dark:text-[#6ba4ff] hover:underline truncate max-w-[200px]"
+                          title={src.uri}
+                        >
+                          {src.title}
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => insertRawText(`<ref>[${src.uri} ${src.title}]</ref>`)}
+                          className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-950 text-[#0645ad] dark:text-[#6ba4ff] rounded border border-blue-200 dark:border-blue-800 hover:bg-blue-100 cursor-pointer font-mono text-[10px]"
+                        >
+                          +&lt;ref&gt;
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Main Wikitext Textarea */}
       <textarea

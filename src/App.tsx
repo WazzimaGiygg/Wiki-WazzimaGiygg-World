@@ -22,6 +22,7 @@ import { LocalSettingsModal } from './components/LocalSettingsModal';
 import { subscribeToPage } from './services/wikiService';
 import { WikiPage } from './types/wiki';
 import { Loader2 } from 'lucide-react';
+import { updateDocumentSEO } from './utils/seo';
 
 function WikiMain() {
   const { currentSlug, activeTab, setActiveTab, skin, sidebarOpen, setSidebarOpen } = useWiki();
@@ -50,6 +51,12 @@ function WikiMain() {
       unsubscribe();
     };
   }, [currentSlug]);
+
+  // Dynamically update canonical URL, meta tags, and Schema.org JSON-LD for core.wazzimagiygg.com
+  useEffect(() => {
+    const isSpecial = currentSlug.startsWith('Especial:') || currentSlug.startsWith('Special:');
+    updateDocumentSEO(currentSlug, isSpecial ? null : currentPage);
+  }, [currentSlug, currentPage]);
 
   const isSpecialPage = currentSlug.startsWith('Especial:') || currentSlug.startsWith('Special:');
 
@@ -134,6 +141,9 @@ function WikiMain() {
       currentSlug === 'Special:ProtectedPages'
     ) {
       return <SpecialBureaucratAdmin initialTab="protected_pages" />;
+    }
+    if (currentSlug === 'Especial:SEO' || currentSlug === 'Special:SEO') {
+      return <SpecialBureaucratAdmin initialTab="seo" />;
     }
     if (
       currentSlug === 'Especial:Extensões' ||

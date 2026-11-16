@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Host: core.wazzimagiygg.com
+Sitemap: https://core.wazzimagiygg.com/sitemap.xml

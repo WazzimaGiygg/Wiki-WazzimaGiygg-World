@@ -18,9 +18,11 @@ import {
   Sparkles,
   FileText,
   ArrowRight,
+  Globe,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { subscribeToSearchPageTitles, subscribeToRecentPages, searchWikiPages } from '../services/wikiService';
+import { queryGoogleSearchGrounding, SearchGroundingResult } from '../services/groundingService';
 import { WikiPage } from '../types/wiki';
 
 interface HeaderProps {
@@ -47,6 +49,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [webLoading, setWebLoading] = useState(false);
+  const [webError, setWebError] = useState<string | null>(null);
+  const [webResult, setWebResult] = useState<SearchGroundingResult | null>(null);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -79,6 +84,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
 
     setIsSearching(true);
     setSearchError(null);
+    setWebError(null);
+    setWebResult(null);
     setShowSearchDropdown(true);
     setSelectedIndex(-1);
 
@@ -154,6 +161,26 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
     setShowSearchDropdown(false);
     setSearchQuery('');
     setSelectedIndex(-1);
+    setWebResult(null);
+    setWebError(null);
+  };
+
+  const handleWebSearchGrounding = async () => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) return;
+    setWebLoading(true);
+    setWebError(null);
+    try {
+      const data = await queryGoogleSearchGrounding({
+        query: trimmed,
+        mode: 'research',
+      });
+      setWebResult(data);
+    } catch (err: unknown) {
+      setWebError(err instanceof Error ? err.message : 'Erro ao consultar Google Search.');
+    } finally {
+      setWebLoading(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -438,6 +465,56 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
               ) : (
                 <div className="p-4 text-center text-xs text-gray-500 dark:text-gray-400">
                   Carregando páginas recentes do Firestore...
+                </div>
+              )}
+
+              {/* Google Search Grounding Bar inside dropdown */}
+              {searchQuery.trim() && (
+                <div className="p-2.5 bg-emerald-50/70 dark:bg-emerald-950/20 border-t border-gray-200 dark:border-gray-700 text-xs space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>Pesquisa atualizada na Web</span>
+                    </span>
+                    <button
+                      type="button"
+                      disabled={webLoading}
+                      onClick={handleWebSearchGrounding}
+                      className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white rounded text-[11px] font-medium inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      {webLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
+                      <span>{webLoading ? 'Consultando...' : 'Consultar no Google Search'}</span>
+                    </button>
+                  </div>
+
+                  {webError && (
+                    <div className="text-[11px] text-red-700 dark:text-red-300">{webError}</div>
+                  )}
+
+                  {webResult && (
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto bg-white dark:bg-gray-900 p-2 rounded border border-gray-200 dark:border-gray-700">
+                      <div className="text-[11px] text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">
+                        {webResult.answer}
+                      </div>
+                      {webResult.sources.length > 0 && (
+                        <div className="pt-1 border-t border-gray-100 dark:border-gray-800 space-y-0.5">
+                          <div className="text-[10px] font-semibold text-gray-500">Fontes Google Search:</div>
+                          {webResult.sources.slice(0, 4).map((src, idx) => (
+                            <a
+                              key={`${src.uri}-${idx}`}
+                              href={src.uri}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-[10px] text-[#0645ad] dark:text-[#6ba4ff] hover:underline truncate"
+                            >
+                              <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                              <span className="truncate">{src.title}</span>
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

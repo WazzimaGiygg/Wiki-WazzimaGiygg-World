@@ -1,21 +1,122 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WikiWazzimaGiygg - O Motor de Conhecimento Livre</title>
-    <meta name="description" content="WikiWazzimaGiygg - Plataforma wiki em TypeScript e React com Firestore em tempo real." />
-    <meta property="og:title" content="WikiWazzimaGiygg - O Motor de Conhecimento Livre" />
-    <meta property="og:description" content="WikiWazzimaGiygg - Plataforma wiki em TypeScript e React com Firestore em tempo real." />
+    <title>WikiWazzimaGiygg – Enciclopédia Livre Oficial | core.wazzimagiygg.com</title>
+    <meta
+      name="description"
+      content="WikiWazzimaGiygg (core.wazzimagiygg.com) é a enciclopédia livre oficial e motor de conhecimento em TypeScript, React e Firestore com artigos, manuais técnicos e sintaxe wikitexto."
+    />
+    <meta
+      name="keywords"
+      content="WikiWazzimaGiygg, WazzimaGiygg, core.wazzimagiygg.com, enciclopédia livre oficial, wiki WazzimaGiygg, MediaWiki TypeScript, wikitexto, documentação oficial WazzimaGiygg"
+    />
+    <meta name="author" content="WikiWazzimaGiygg" />
+    <meta name="application-name" content="WikiWazzimaGiygg" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="google-site-verification" content="i5qQwLoe2XPTLGPmDKsTiWL8OIVGH0iuuH1qrNj7hKU" />
+
+    <link rel="canonical" href="https://core.wazzimagiygg.com/" />
+    <link rel="alternate" hreflang="pt-BR" href="https://core.wazzimagiygg.com/" />
+    <link rel="alternate" hreflang="x-default" href="https://core.wazzimagiygg.com/" />
+
+    <!-- OpenGraph -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="WikiWazzimaGiygg" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content="https://core.wazzimagiygg.com/" />
+    <meta property="og:title" content="WikiWazzimaGiygg – Enciclopédia Livre Oficial | core.wazzimagiygg.com" />
+    <meta
+      property="og:description"
+      content="Portal oficial WikiWazzimaGiygg em core.wazzimagiygg.com. Explore artigos, manuais técnicos, extensões e documentação colaborativa em tempo real."
+    />
+    <meta property="og:image" content="https://core.wazzimagiygg.com/assets/aistudio/image_19fe7a14.png" />
+    <meta property="og:image:alt" content="Logotipo oficial do WikiWazzimaGiygg" />
+
+    <!-- Twitter / X Cards -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:domain" content="core.wazzimagiygg.com" />
+    <meta name="twitter:url" content="https://core.wazzimagiygg.com/" />
+    <meta name="twitter:title" content="WikiWazzimaGiygg – Enciclopédia Livre Oficial | core.wazzimagiygg.com" />
+    <meta
+      name="twitter:description"
+      content="Portal oficial WikiWazzimaGiygg em core.wazzimagiygg.com. Explore artigos, manuais técnicos, extensões e documentação colaborativa em tempo real."
+    />
+    <meta name="twitter:image" content="https://core.wazzimagiygg.com/assets/aistudio/image_19fe7a14.png" />
+
     <link rel="icon" type="image/png" href="/assets/aistudio/image_19fe7a14.png" />
     <link rel="apple-touch-icon" href="/assets/aistudio/image_19fe7a14.png" />
+
+    <!-- Schema.org Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://core.wazzimagiygg.com/#organization",
+            "name": "WikiWazzimaGiygg",
+            "alternateName": [
+              "WazzimaGiygg Wiki",
+              "WazzimaGiygg",
+              "core.wazzimagiygg.com"
+            ],
+            "url": "https://core.wazzimagiygg.com/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://core.wazzimagiygg.com/assets/aistudio/image_19fe7a14.png"
+            },
+            "sameAs": [
+              "https://github.com/WazzimaGiygg/WikiWazzimaGiygg",
+              "https://core.wazzimagiygg.com/"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://core.wazzimagiygg.com/#website",
+            "url": "https://core.wazzimagiygg.com/",
+            "name": "WikiWazzimaGiygg",
+            "alternateName": "core.wazzimagiygg.com",
+            "description": "Enciclopédia livre oficial e plataforma WikiWazzimaGiygg em TypeScript, React e Firestore.",
+            "inLanguage": "pt-BR",
+            "publisher": {
+              "@id": "https://core.wazzimagiygg.com/#organization"
+            },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://core.wazzimagiygg.com/#/wiki/{search_term_string}"
+              },
+              "query-input": "required name=search_term_string"
+            }
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://core.wazzimagiygg.com/#webapp",
+            "name": "WikiWazzimaGiygg",
+            "url": "https://core.wazzimagiygg.com/",
+            "applicationCategory": "ReferenceApplication",
+            "operatingSystem": "All",
+            "inLanguage": "pt-BR",
+            "description": "Motor de conhecimento livre oficial WikiWazzimaGiygg hospedado em core.wazzimagiygg.com com suporte completo à sintaxe wikitexto, histórico de revisões e pesquisa em tempo real.",
+            "publisher": {
+              "@id": "https://core.wazzimagiygg.com/#organization"
+            },
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "BRL"
+            }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <meta name="google-site-verification" content="i5qQwLoe2XPTLGPmDKsTiWL8OIVGH0iuuH1qrNj7hKU" />
   </body>
 </html>
-

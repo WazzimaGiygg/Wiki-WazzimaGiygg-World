@@ -228,6 +228,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
                     'Especial:Páginas_protegidas',
                     'Especial:Paginas_protegidas',
                     'Special:ProtectedPages',
+                    'Especial:SEO',
+                    'Special:SEO',
                   ].includes(currentSlug)
                     ? 'bg-[#3366cc]/10 text-[#0645ad] dark:text-[#6ba4ff] font-semibold border-l-3 border-[#3366cc]'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-800'

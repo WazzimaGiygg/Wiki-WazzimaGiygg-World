@@ -18,6 +18,7 @@ import {
   Scale,
   Flag,
   UserSearch,
+  Globe,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import {
@@ -42,6 +43,7 @@ import { CheckUserPanel } from './admin/CheckUserPanel';
 import { UnblockRequestsPanel } from './admin/UnblockRequestsPanel';
 import { ArbComPanel } from './admin/ArbComPanel';
 import { UCoCPanel } from './admin/UCoCPanel';
+import { SeoSearchPanel } from './admin/SeoSearchPanel';
 
 export type BureaucratAdminTab =
   | 'manage'
@@ -51,7 +53,8 @@ export type BureaucratAdminTab =
   | 'checkuser'
   | 'unblock'
   | 'arbcom'
-  | 'ucoc';
+  | 'ucoc'
+  | 'seo';
 
 export interface SpecialBureaucratAdminProps {
   initialTab?: BureaucratAdminTab;
@@ -498,6 +501,19 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
         >
           <Users className="w-4 h-4" />
           <span>Grupos ({allRights.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('seo')}
+          className={`px-3.5 py-2 font-medium border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 ${
+            activeTab === 'seo'
+              ? 'border-purple-600 text-purple-700 dark:text-purple-400 font-semibold bg-purple-50/50 dark:bg-purple-950/20'
+              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+          }`}
+        >
+          <Globe className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <span>SEO &amp; Buscadores</span>
         </button>
       </div>
 
@@ -1139,6 +1155,9 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
 
       {/* TAB 8: UCOC / CÓDIGO UNIVERSAL DE CONDUTA */}
       {activeTab === 'ucoc' && <UCoCPanel />}
+
+      {/* TAB 9: SEO & BUSCADORES */}
+      {activeTab === 'seo' && <SeoSearchPanel />}
 
       {/* Page Protection Modal */}
       {selectedPageForProtection && (
