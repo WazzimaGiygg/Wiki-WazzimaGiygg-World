@@ -24,6 +24,7 @@ import { useWiki } from '../context/WikiContext';
 import { subscribeToSearchPageTitles, subscribeToRecentPages, searchWikiPages } from '../services/wikiService';
 import { queryGoogleSearchGrounding, SearchGroundingResult } from '../services/groundingService';
 import { WikiPage } from '../types/wiki';
+import { WIKI_SITE_VERSION } from '../core/version';
 
 interface HeaderProps {
   onOpenSettings: () => void;
@@ -270,9 +271,21 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
               className="w-8 h-8 rounded border border-gray-300 dark:border-gray-700 bg-white shadow-2xs group-hover:scale-105 transition-transform object-contain p-0.5"
             />
             <div className="hidden sm:block">
-              <span className="font-serif font-bold text-lg text-gray-900 dark:text-gray-100 leading-none block">
-                {settings.sitename}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-serif font-bold text-lg text-gray-900 dark:text-gray-100 leading-none block">
+                  {settings.sitename}
+                </span>
+                <span
+                  onClick={e => {
+                    e.stopPropagation();
+                    navigateToPage('Especial:Versão');
+                  }}
+                  title={`Versão do Wiki-Site: ${WIKI_SITE_VERSION}`}
+                  className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:text-[#0645ad] dark:hover:text-[#6ba4ff] transition-colors"
+                >
+                  {WIKI_SITE_VERSION}
+                </span>
+              </div>
               <span className="text-[10px] text-gray-500 dark:text-gray-400 font-sans tracking-wide block mt-0.5">
                 Motor de Conhecimento Livre
               </span>
@@ -737,6 +750,17 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
                       <span>Painel de Administração</span>
                     </span>
                     <span className="text-[10px] text-purple-500 font-mono">Burocrata</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigateToPage('Especial:Versão');
+                      setShowUserMenu(false);
+                    }}
+                    className="text-left pt-1.5 mt-0.5 border-t border-gray-100 dark:border-gray-800 text-[10px] text-gray-500 dark:text-gray-400 hover:text-[#0645ad] dark:hover:text-[#6ba4ff] flex items-center justify-between cursor-pointer"
+                  >
+                    <span>Versão do Wiki-Site</span>
+                    <span className="font-mono font-semibold">{WIKI_SITE_VERSION}</span>
                   </button>
                 </div>
               </div>

@@ -1,5 +1,6 @@
 import { TOCItem } from '../types/wiki';
 import { getCachedFileUrl } from '../services/extensionService';
+import { WIKI_SITE_VERSION, WIKI_SITE_NAME } from './version';
 
 export interface ParseResult {
   html: string;
@@ -50,6 +51,17 @@ export function parseWikitext(
     );
     return placeholder;
   });
+
+  // 3.5. Process Wiki-Site Magic Words (preserving inline backtick examples)
+  text = text.replace(
+    /(`[^`]+`)|\{\{(CURRENTVERSION|VERSÃO|VERSAO|WIKIVERSION|SITENAME)\}\}/gi,
+    (fullMatch, codeLiteral, magicWord) => {
+      if (codeLiteral) return fullMatch;
+      const upper = (magicWord || '').toUpperCase();
+      if (upper === 'SITENAME') return WIKI_SITE_NAME;
+      return WIKI_SITE_VERSION;
+    }
+  );
 
   // 4. Process Wikitables: {| ... |}
   text = text.replace(/\{\|([\s\S]*?)\|\}/g, (_, tableContent) => {

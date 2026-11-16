@@ -28,6 +28,7 @@ import { canUserEditPage, getEffectiveProtectionLevel } from '../services/wikiSe
 import { getFileDoc } from '../services/extensionService';
 import { WikiFileDoc } from '../extensions/types';
 import { PageProtectionModal } from './PageProtectionModal';
+import { WIKI_SITE_VERSION } from '../core/version';
 
 interface ArticleViewProps {
   page: WikiPage | null;
@@ -446,17 +447,28 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
             Revisão #{page.revisionCount} ({page.latestRevisionId.slice(0, 10)})
           </div>
         </div>
-        <div>
-          Conteúdo disponibilizado nos termos da licença{' '}
-          <a
-            href="https://creativecommons.org/licenses/by-sa/4.0/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            Creative Commons Atribuição-CompartilhaIgual 4.0 Internacional (CC BY-SA 4.0)
-          </a>{' '}
-          e da GNU General Public License v2+.
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            Conteúdo disponibilizado nos termos da licença{' '}
+            <a
+              href="https://creativecommons.org/licenses/by-sa/4.0/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Creative Commons Atribuição-CompartilhaIgual 4.0 Internacional (CC BY-SA 4.0)
+            </a>{' '}
+            e da GNU General Public License v2+.
+          </div>
+          <div className="font-mono text-[10px] shrink-0">
+            <button
+              type="button"
+              onClick={() => navigateToPage('Especial:Versão')}
+              className="text-gray-600 dark:text-gray-300 hover:text-[#0645ad] dark:hover:text-[#6ba4ff] hover:underline cursor-pointer"
+            >
+              Wiki-Site {WIKI_SITE_VERSION}
+            </button>
+          </div>
         </div>
       </footer>
 

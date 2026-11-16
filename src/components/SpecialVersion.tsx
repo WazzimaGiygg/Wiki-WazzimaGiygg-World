@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Info, GitBranch, Database, Shield, Code2, ExternalLink, Layers, CheckCircle2, Blocks, GitCommit, RefreshCw } from 'lucide-react';
+import { Info, GitBranch, ExternalLink, Blocks, GitCommit, RefreshCw, Copy, Check, Tag } from 'lucide-react';
 import { fetchWikiRepoInfo, fetchRecentCommits, GitHubRepoInfo, GitHubCommit, OFFICIAL_REPO_URL } from '../services/githubService';
 import { useWiki } from '../context/WikiContext';
 import { subscribeToExtensions } from '../services/extensionService';
 import { WikiExtensionDoc } from '../extensions/types';
+import { WIKI_SITE_VERSION, WIKI_VERSION_INFO } from '../core/version';
 
 export const SpecialVersion: React.FC = () => {
   const { navigateToPage } = useWiki();
@@ -11,6 +12,16 @@ export const SpecialVersion: React.FC = () => {
   const [commits, setCommits] = useState<GitHubCommit[]>([]);
   const [extensions, setExtensions] = useState<WikiExtensionDoc[]>([]);
   const [loadingCommits, setLoadingCommits] = useState(true);
+  const [copiedVersion, setCopiedVersion] = useState(false);
+
+  const handleCopyVersion = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(WIKI_SITE_VERSION).then(() => {
+        setCopiedVersion(true);
+        setTimeout(() => setCopiedVersion(false), 1800);
+      });
+    }
+  };
 
   useEffect(() => {
     fetchWikiRepoInfo().then(info => setRepoInfo(info));
@@ -24,13 +35,64 @@ export const SpecialVersion: React.FC = () => {
   return (
     <div className="py-2">
       {/* Title */}
-      <div className="border-b border-[#a2a9b1] dark:border-gray-700 pb-2 mb-3">
-        <h1 className="text-2xl font-serif text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <Info className="w-6 h-6 text-blue-600" />
-          <span>Versão do sistema</span>
-        </h1>
-        <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-          Informações técnicas sobre o WikiWazzimaGiygg, repositório GitHub e ambiente de execução Firestore.
+      <div className="border-b border-[#a2a9b1] dark:border-gray-700 pb-2 mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-serif text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <Info className="w-6 h-6 text-blue-600" />
+            <span>Versão do sistema</span>
+          </h1>
+          <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+            Informações técnicas sobre o WikiWazzimaGiygg, identificação oficial do Wiki-Site, repositório GitHub e Firestore.
+          </div>
+        </div>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/60 text-xs">
+          <Tag className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          <span className="text-gray-600 dark:text-gray-300 font-medium">Versão Wiki-Site:</span>
+          <span className="font-mono font-bold text-[#0645ad] dark:text-[#6ba4ff]">{WIKI_SITE_VERSION}</span>
+          <button
+            type="button"
+            onClick={handleCopyVersion}
+            title="Copiar identificador de versão"
+            className="ml-1 p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-700 dark:text-blue-300 cursor-pointer"
+          >
+            {copiedVersion ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Official Wiki-Site Version Identification Card */}
+      <div className="mb-5 p-3.5 rounded border border-[#a2a9b1] dark:border-gray-700 bg-[#f8f9fa] dark:bg-gray-900/90 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-1">
+            <div className="text-[11px] uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400">
+              Identificação Oficial do Wiki-Site
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-serif font-bold text-base text-gray-900 dark:text-gray-100">
+                {WIKI_VERSION_INFO.siteName}
+              </span>
+              <span className="font-mono font-bold text-sm px-2 py-0.5 rounded bg-[#3366cc] text-white">
+                {WIKI_SITE_VERSION}
+              </span>
+              <span className="text-gray-600 dark:text-gray-400 font-mono text-[11px]">
+                ({WIKI_VERSION_INFO.domain})
+              </span>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="px-2.5 py-1.5 rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+              <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Série</div>
+              <div className="font-mono font-bold text-gray-900 dark:text-gray-100">{WIKI_VERSION_INFO.series}</div>
+            </div>
+            <div className="px-2.5 py-1.5 rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+              <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Compilação</div>
+              <div className="font-mono font-bold text-gray-900 dark:text-gray-100">{WIKI_VERSION_INFO.buildCode}</div>
+            </div>
+            <div className="px-2.5 py-1.5 rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+              <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Palavra Mágica</div>
+              <div className="font-mono font-bold text-[#0645ad] dark:text-[#6ba4ff]">{'{{VERSÃO}}'}</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -54,8 +116,8 @@ export const SpecialVersion: React.FC = () => {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                 <tr>
                   <td className="p-2 font-bold text-blue-600">WikiWazzimaGiygg</td>
-                  <td className="p-2 font-mono">1.0.0-ts</td>
-                  <td className="p-2">GPL-2.0-or-later</td>
+                  <td className="p-2 font-mono font-bold text-gray-900 dark:text-gray-100">{WIKI_SITE_VERSION}</td>
+                  <td className="p-2">{WIKI_VERSION_INFO.license}</td>
                   <td className="p-2 text-gray-600 dark:text-gray-400">
                     Engine Wiki em TypeScript e Google Cloud Firestore em tempo real
                   </td>

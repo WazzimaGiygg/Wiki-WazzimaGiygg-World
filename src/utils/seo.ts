@@ -1,9 +1,11 @@
 import { WikiPage } from '../types/wiki';
+import { WIKI_SITE_VERSION } from '../core/version';
 
 export const CANONICAL_BASE_URL = 'https://core.wazzimagiygg.com';
 
 export const SITE_SEO_METADATA = {
   siteName: 'WikiWazzimaGiygg',
+  softwareVersion: WIKI_SITE_VERSION,
   domain: 'core.wazzimagiygg.com',
   canonicalBase: CANONICAL_BASE_URL,
   verificationToken: 'i5qQwLoe2XPTLGPmDKsTiWL8OIVGH0iuuH1qrNj7hKU',
@@ -70,6 +72,8 @@ export function updateDocumentSEO(slug: string, page: WikiPage | null): void {
   document.title = pageTitle;
   upsertLinkTag('canonical', canonicalUrl);
   upsertMetaTag('name', 'description', description);
+  upsertMetaTag('name', 'version', WIKI_SITE_VERSION);
+  upsertMetaTag('name', 'application-version', WIKI_SITE_VERSION);
 
   upsertMetaTag('property', 'og:title', pageTitle);
   upsertMetaTag('property', 'og:description', description);
@@ -91,6 +95,7 @@ export function updateDocumentSEO(slug: string, page: WikiPage | null): void {
         headline: displayTitle,
         description,
         inLanguage: 'pt-BR',
+        version: WIKI_SITE_VERSION,
         isPartOf: {
           '@id': `${CANONICAL_BASE_URL}/#website`,
         },

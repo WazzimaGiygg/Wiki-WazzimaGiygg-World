@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Sliders, X, Check, Code, Save, RotateCcw } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { WikiSkin } from '../types/wiki';
+import { WIKI_SITE_VERSION } from '../core/version';
 
 interface LocalSettingsModalProps {
   isOpen: boolean;
@@ -37,10 +38,11 @@ export const LocalSettingsModal: React.FC<LocalSettingsModalProps> = ({ isOpen, 
     }, 600);
   };
 
-  const codeRepresentation = `// LocalSettings.ts - WikiWazzimaGiygg Configuration
+  const codeRepresentation = `// LocalSettings.ts - WikiWazzimaGiygg (${WIKI_SITE_VERSION}) Configuration
 import { WikiSettings } from './types/wiki';
 
 export const config: WikiSettings = {
+  siteVersion: "${WIKI_SITE_VERSION}",
   sitename: "${sitename}",
   languageCode: "${languageCode}",
   allowAnonymousEditing: ${allowAnon},
@@ -60,6 +62,9 @@ export const config: WikiSettings = {
             <h2 className="font-serif font-bold text-sm text-gray-900 dark:text-gray-100">
               Configurações da Wiki (LocalSettings.ts)
             </h2>
+            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950 text-[#0645ad] dark:text-[#6ba4ff] border border-blue-200 dark:border-blue-800">
+              {WIKI_SITE_VERSION}
+            </span>
           </div>
           <button
             type="button"

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { getRandomPageSlug } from '../utils/randomPage';
+import { WIKI_SITE_VERSION } from '../core/version';
 
 interface SidebarProps {
   onOpenSettings: () => void;
@@ -286,7 +287,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
             <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
             <span>Firestore Conectado</span>
           </div>
-          <div>WikiWazzimaGiygg TS</div>
+          <div className="flex items-center justify-between gap-1">
+            <span>WikiWazzimaGiygg TS</span>
+            <button
+              type="button"
+              onClick={() => navigateToPage('Especial:Versão')}
+              title="Ver informações da versão do sistema"
+              className="font-mono font-semibold text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer"
+            >
+              {WIKI_SITE_VERSION}
+            </button>
+          </div>
           <div>GNU GPL v2.0+</div>
         </div>
       </div>

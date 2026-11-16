@@ -26,7 +26,7 @@ export const INITIAL_PAGES: Record<string, WikiPage> = {
 | logotipo = /assets/aistudio/image_19fe7a14.png
 | tipo = Enciclopédia Livre / Motor Wiki
 | desenvolvedor = Comunidade de Código Aberto
-| versão_estável = 1.0.0-ts
+| versão_estável = W1.16.6J.1
 | lançamento = 2026
 | linguagem = TypeScript (anteriormente PHP)
 | plataforma = Web (React 19 + Node.js / Express)
@@ -218,7 +218,7 @@ A predefinição \`{{Infobox software}}\` cria um painel lateral direito padroni
 |-
 | \`e-mail\` || Não || E-mail de contato ou suporte. Endereços válidos viram links \`mailto:\` automaticamente.
 |-
-| \`versão\` / \`versão_estável\` || Não || Versão atual ou estável lançada. Ex: \`1.0.0-ts\`
+| \`versão\` / \`versão_estável\` || Não || Versão atual ou estável lançada. Ex: \`W1.16.6J.1\` (ou \`{{VERSÃO}}\`)
 |-
 | \`lançamento\` || Não || Data ou ano de lançamento inicial. Ex: \`2026\`
 |-
@@ -239,7 +239,7 @@ A predefinição \`{{Infobox software}}\` cria um painel lateral direito padroni
 | \`descrição\` || Não || Resumo curto sobre a finalidade do software.
 |}
 
-'''Dica:''' Você também pode adicionar qualquer campo personalizado utilizando sublinhados (\`_\`) no lugar de espaços — por exemplo, \`| banco_de_dados = Firestore\` ou \`| último_lançamento = 15/11/2026\`. No editor de páginas, utilize o botão '''Infobox''' na barra de ferramentas para preencher e inserir o bloco automaticamente. Para ver exemplos de \`{{Infobox usuário}}\` e o passo a passo completo, consulte '''[[Ajuda:Infobox]]'''.
+'''Dica:''' Você também pode adicionar qualquer campo personalizado utilizando sublinhados (\`_\`) no lugar de espaços — por exemplo, \`| banco_de_dados = Firestore\` ou \`| último_lançamento = 15/11/2026\`. Para exibir automaticamente a versão atual do Wiki-Site (\`W1.16.6J.1\`) em qualquer página, utilize a palavra mágica \`{{VERSÃO}}\` ou \`{{CURRENTVERSION}}\`. No editor de páginas, utilize o botão '''Infobox''' na barra de ferramentas para preencher e inserir o bloco automaticamente. Para ver exemplos de \`{{Infobox usuário}}\` e o passo a passo completo, consulte '''[[Ajuda:Infobox]]'''.
 
 === Exemplo Completo de Uso ===
 <syntaxhighlight lang="text">
