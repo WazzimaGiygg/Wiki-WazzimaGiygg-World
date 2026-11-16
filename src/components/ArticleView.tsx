@@ -175,7 +175,7 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
   return (
     <article className="py-2">
       {/* MediaWiki Vector Action Tabs */}
-      <div className="flex flex-wrap items-center justify-between border-b border-[#a2a9b1] dark:border-gray-700 text-xs mb-3">
+      <div className="print:hidden flex flex-wrap items-center justify-between border-b border-[#a2a9b1] dark:border-gray-700 text-xs mb-3">
         {/* Left Tabs (Namespace / Talk) */}
         <div className="flex items-center -mb-px">
           <button
@@ -300,7 +300,7 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowProtectionModal(true)}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-sans font-semibold bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 border border-red-300 dark:border-red-800 hover:opacity-90 cursor-pointer shadow-2xs"
+                className="print:hidden inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-sans font-semibold bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 border border-red-300 dark:border-red-800 hover:opacity-90 cursor-pointer shadow-2xs"
                 title={`Página Bloqueada: ${page.protectionReason || 'Apenas administradores e burocratas podem editar'}`}
               >
                 <Lock className="w-3 h-3 text-red-600 dark:text-red-400" />
@@ -312,7 +312,7 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowProtectionModal(true)}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-sans font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800 hover:opacity-90 cursor-pointer shadow-2xs"
+                className="print:hidden inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-sans font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800 hover:opacity-90 cursor-pointer shadow-2xs"
                 title={`Página Semiprotegida: ${page.protectionReason || 'Apenas usuários confirmados ou administradores podem editar'}`}
               >
                 <ShieldCheck className="w-3 h-3 text-amber-600 dark:text-amber-400" />
@@ -335,7 +335,7 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
             <button
               type="button"
               onClick={() => setShowTOC(prev => !prev)}
-              className="text-[#0645ad] dark:text-[#6ba4ff] hover:underline flex items-center gap-0.5 text-[11px]"
+              className="print:hidden text-[#0645ad] dark:text-[#6ba4ff] hover:underline flex items-center gap-0.5 text-[11px]"
             >
               <span>[{showTOC ? 'ocultar' : 'mostrar'}]</span>
               {showTOC ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -388,7 +388,7 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
             <a
               href={fileDoc.url}
               download={fileDoc.fileName}
-              className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#3366cc] hover:bg-[#254b99] text-white rounded font-medium shadow-2xs"
+              className="print:hidden inline-flex items-center gap-1.5 px-3 py-1 bg-[#3366cc] hover:bg-[#254b99] text-white rounded font-medium shadow-2xs"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Baixar ficheiro em resolução original</span>

@@ -51,7 +51,7 @@ export const config: WikiSettings = {
 };`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-2xs p-3">
+    <div className="print:hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-2xs p-3">
       <div className="bg-white dark:bg-gray-900 border border-[#a2a9b1] dark:border-gray-700 rounded-lg shadow-xl max-w-xl w-full text-xs overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-3.5 bg-[#eaecf0] dark:bg-gray-800 border-b border-[#a2a9b1] dark:border-gray-700">

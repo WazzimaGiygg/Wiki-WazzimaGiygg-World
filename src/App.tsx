@@ -214,14 +214,14 @@ function WikiMain() {
       : 'px-4 sm:px-8 py-4 max-w-5xl min-h-[calc(100vh-8rem)]';
 
   return (
-    <div className={`min-h-screen text-gray-900 dark:text-gray-100 flex flex-col ${skinContainerClass}`}>
+    <div className={`wiki-app-shell min-h-screen text-gray-900 dark:text-gray-100 flex flex-col ${skinContainerClass}`}>
       <Header onOpenSettings={() => setSettingsOpen(true)} />
 
-      <div className="flex-1 flex max-w-7xl w-full mx-auto relative">
+      <div className="wiki-layout-body flex-1 flex max-w-7xl w-full mx-auto relative">
         {/* Responsive backdrop for mobile sidebar */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-black/30 z-20 md:hidden"
+            className="print:hidden fixed inset-0 bg-black/30 z-20 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
@@ -229,7 +229,7 @@ function WikiMain() {
         <Sidebar onOpenSettings={() => setSettingsOpen(true)} />
 
         <main className="flex-1 min-w-0 pb-16">
-          <div className={contentBoxClass}>{renderContent()}</div>
+          <div className={`wiki-content-box ${contentBoxClass}`}>{renderContent()}</div>
         </main>
       </div>
 

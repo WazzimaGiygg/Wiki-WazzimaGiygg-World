@@ -53,7 +53,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
     { label: 'Versão do Software', slug: 'Especial:Versão', icon: Info },
     { label: 'Extensões do Wiki', slug: 'Especial:Extensões', icon: Blocks },
     { label: 'Configurações ($wg)', action: onOpenSettings, icon: Settings },
-    { label: 'Versão para impressão', action: () => window.print(), icon: Share2 },
+    {
+      label: 'Versão para impressão',
+      action: () => {
+        setSidebarOpen(false);
+        window.print();
+      },
+      icon: Share2,
+    },
   ];
 
   return (
