@@ -398,6 +398,23 @@ const INFOBOX_LABEL_MAP: Record<string, string> = {
   email: 'E-mail',
   'e-mail': 'E-mail',
   'e mail': 'E-mail',
+  usuario: 'Usuário',
+  'usuário': 'Usuário',
+  uid: 'Google UID',
+  'google uid': 'Google UID',
+  funcao: 'Função',
+  'função': 'Função',
+  especialidade: 'Especialidade',
+  idiomas: 'Idiomas',
+  localizacao: 'Localização',
+  'localização': 'Localização',
+  biografia: 'Biografia',
+  contribuicoes: 'Contribuições',
+  'contribuições': 'Contribuições',
+  projeto: 'Projeto',
+  'pagina de discussao': 'Discussão',
+  'página de discussão': 'Discussão',
+  'registrado em': 'Registrado em',
   versao: 'Versão',
   'versão': 'Versão',
   'versao estavel': 'Versão estável',
@@ -447,7 +464,11 @@ function resolveInfoboxImage(rawValue: string): string {
 
 function parseInfobox(content: string): string {
   const lines = content.split('\n');
-  let title = 'Informações';
+  const firstLine = (lines[0] || '').trim().toLowerCase();
+  const isUserInfobox =
+    firstLine.includes('usuário') || firstLine.includes('usuario') || firstLine.includes('user');
+
+  let title = isUserInfobox ? 'Perfil de Usuário' : 'Informações';
   let subtitle = '';
   let imageSrc = '';
   let imageCaption = '';
@@ -468,7 +489,13 @@ function parseInfobox(content: string): string {
           title = value;
         } else if (lowerKey === 'subtítulo' || lowerKey === 'subtitulo') {
           subtitle = value;
-        } else if (lowerKey === 'logo' || lowerKey === 'logotipo' || lowerKey === 'imagem') {
+        } else if (
+          lowerKey === 'logo' ||
+          lowerKey === 'logotipo' ||
+          lowerKey === 'imagem' ||
+          lowerKey === 'foto' ||
+          lowerKey === 'avatar'
+        ) {
           imageSrc = resolveInfoboxImage(value);
         } else if (lowerKey === 'legenda' || lowerKey === 'legenda imagem') {
           imageCaption = value;
@@ -484,13 +511,13 @@ function parseInfobox(content: string): string {
 
   let html = `
     <div class="infobox float-none md:float-right md:ml-6 mb-4 w-full md:w-80 rounded border border-[#a2a9b1] dark:border-gray-700 bg-[#f8f9fa] dark:bg-gray-800 p-3 shadow-xs text-xs">
-      <div class="bg-[#eaecf0] dark:bg-gray-700 p-2 font-serif font-bold text-center text-sm text-gray-900 dark:text-gray-100 rounded-t mb-2">
+      <div class="${isUserInfobox ? 'bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800' : 'bg-[#eaecf0] dark:bg-gray-700'} p-2 font-serif font-bold text-center text-sm text-gray-900 dark:text-gray-100 rounded-t mb-2">
         <div>${escapeHtml(title)}</div>
         ${subtitle ? `<div class="text-[11px] font-sans font-normal text-gray-600 dark:text-gray-300 mt-0.5">${escapeHtml(subtitle)}</div>` : ''}
       </div>
       ${imageSrc ? `
         <div class="my-2 p-2 bg-white dark:bg-black rounded border border-gray-200 dark:border-gray-700 flex flex-col items-center">
-          <img src="${escapeHtml(imageSrc)}" alt="${escapeHtml(title)}" class="max-h-28 object-contain" />
+          <img src="${escapeHtml(imageSrc)}" alt="${escapeHtml(title)}" referrerpolicy="no-referrer" class="${isUserInfobox ? 'w-24 h-24 rounded-full object-cover border border-gray-200 dark:border-gray-700' : 'max-h-28 object-contain'}" />
           ${imageCaption ? `<div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">${escapeHtml(imageCaption)}</div>` : ''}
         </div>
       ` : ''}

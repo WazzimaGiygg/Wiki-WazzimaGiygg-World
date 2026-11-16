@@ -65,6 +65,10 @@ O WikiWazzimaGiygg substitui o paradigma tradicional por tecnologias modernas:
 | Aprenda a formatar artigos em wikitexto
 | [[Ajuda:Wikitexto]]
 |-
+| '''Tutorial: Infobox'''
+| Como usar Infobox de usuário e de software
+| [[Ajuda:Infobox]]
+|-
 | '''Índice Geral'''
 | Explore todas as páginas armazenadas no Firestore
 | [[Especial:Todas_as_páginas]]
@@ -235,7 +239,7 @@ A predefinição \`{{Infobox software}}\` cria um painel lateral direito padroni
 | \`descrição\` || Não || Resumo curto sobre a finalidade do software.
 |}
 
-'''Dica:''' Você também pode adicionar qualquer campo personalizado utilizando sublinhados (\`_\`) no lugar de espaços — por exemplo, \`| banco_de_dados = Firestore\` ou \`| último_lançamento = 15/11/2026\`. No editor de páginas, utilize o botão '''Infobox''' na barra de ferramentas para preencher e inserir o bloco automaticamente.
+'''Dica:''' Você também pode adicionar qualquer campo personalizado utilizando sublinhados (\`_\`) no lugar de espaços — por exemplo, \`| banco_de_dados = Firestore\` ou \`| último_lançamento = 15/11/2026\`. No editor de páginas, utilize o botão '''Infobox''' na barra de ferramentas para preencher e inserir o bloco automaticamente. Para ver exemplos de \`{{Infobox usuário}}\` e o passo a passo completo, consulte '''[[Ajuda:Infobox]]'''.
 
 === Exemplo Completo de Uso ===
 <syntaxhighlight lang="text">
@@ -264,6 +268,138 @@ A predefinição \`{{Infobox software}}\` cria um painel lateral direito padroni
 [[Categoria:Ajuda]]
 [[Categoria:Documentação]]
 [[Categoria:Wikitexto]]`
+  },
+
+  'Ajuda:Infobox': {
+    slug: 'Ajuda:Infobox',
+    title: 'Ajuda:Infobox',
+    namespace: 'Help',
+    author: 'Equipe de Documentação',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_help_infobox',
+    categories: ['Ajuda', 'Documentação', 'Infobox', 'Wikitexto'],
+    createdAt: '2026-11-16T00:00:00.000Z',
+    updatedAt: '2026-11-16T00:00:00.000Z',
+    summary: 'Tutorial completo passo a passo de como usar {{Infobox usuário}} e {{Infobox software}}',
+    content: `{{Infobox software
+| nome = Tutorial de Infobox
+| subtítulo = Guia prático para {{Infobox usuário}} e {{Infobox software}}
+| logotipo = /assets/aistudio/image_19fe7a14.png
+| tipo = Documentação Oficial
+| desenvolvedor = Equipe WikiWazzimaGiygg
+| versão_estável = 2.0-ts
+| linguagem = Wikitexto / TypeScript
+| plataforma = WikiWazzimaGiygg Web
+| site = https://core.wazzimagiygg.com
+| documentação = [[Ajuda:Wikitexto|Guia de Wikitexto]]
+| status = Ativo
+}}
+
+{{Aviso|Este tutorial ensina passo a passo como usar e personalizar caixas de informação ('''Infobox''') tanto para identificar contas de usuários quanto para catalogar softwares e projetos.}}
+
+O '''Infobox''' é um quadro lateral exibido no canto superior direito da página, ideal para destacar informações-chave de forma organizada e padronizada.
+
+== 1. Tutorial Rápido: Como Inserir um Infobox ==
+Você pode adicionar um Infobox de duas maneiras:
+
+=== Método A: Usando o Assistente Visual no Editor (Recomendado) ===
+# Abra qualquer página (ou sua página pessoal \`Usuário:SeuNome\`) e clique na aba '''Editar'''.
+# Na barra de ferramentas acima do campo de texto, clique no botão '''Infobox'''.
+# Escolha o modelo desejado: '''Infobox Usuário''' (para páginas de perfil) ou '''Infobox Software''' (para projetos e programas).
+# Preencha os campos disponíveis ou clique em '''Preencher exemplo''' / '''Preencher com meus dados'''.
+# Clique em '''Inserir Infobox no Artigo''' e depois em '''Publicar alterações'''.
+
+=== Método B: Escrevendo Diretamente em Wikitexto ===
+Digite \`{{Infobox usuário\` (ou \`{{Infobox software\`) no topo do artigo, adicione cada campo em uma linha começando com \`|\` no formato \`| nome_do_campo = valor\`, e feche com \`}}\`.
+
+== 2. Infobox de Usuário ({{Infobox usuário}}) ==
+Toda nova conta criada no '''WikiWazzimaGiygg''' recebe automaticamente uma página pessoal com o \`{{Infobox usuário}}\` para identificar cada colaborador(a) de forma única (nome, foto, e-mail, Google UID e página de discussão).
+
+=== Parâmetros do Infobox de Usuário ===
+{| class="wikitable" style="width:100%; text-align:left;"
+! Parâmetro !! Descrição e Exemplo
+|-
+| \`nome\` || Nome de exibição no cabeçalho da caixa. Ex: \`Maria Silva\`
+|-
+| \`subtítulo\` || Cargo ou descrição curta abaixo do nome. Ex: \`Editor(a) do WikiWazzimaGiygg\`
+|-
+| \`foto\` / \`avatar\` / \`imagem\` || URL da foto de perfil ou \`Ficheiro:Avatar.png\`.
+|-
+| \`usuário\` || Nome de usuário na wiki.
+|-
+| \`e-mail\` || E-mail de contato (convertido automaticamente em link \`mailto:\`).
+|-
+| \`uid\` || Identificador único da conta (Google UID), formatado com crases: \`\\\`UID_AQUI\\\`\`.
+|-
+| \`função\` || Papel na comunidade. Ex: \`Colaborador Registrado\`, \`Administrador\`, \`Burocrata\`
+|-
+| \`especialidade\` || Áreas de interesse ou conhecimento. Ex: \`TypeScript, História, Biologia\`
+|-
+| \`idiomas\` || Idiomas falados. Ex: \`Português, Inglês\`
+|-
+| \`localização\` || Cidade, estado ou país. Ex: \`São Paulo, Brasil\`
+|-
+| \`página_de_discussão\` || Link interno para contato na wiki: \`[[Discussão_Usuário:Nome|Discussão]]\`
+|-
+| \`registrado_em\` || Data de entrada na comunidade.
+|-
+| \`status\` || Disponibilidade atual. Ex: \`Ativo\`, \`Em férias\`
+|-
+| \`biografia\` || Breve apresentação pessoal.
+|}
+
+=== Exemplo Pronto: Infobox de Usuário ===
+<syntaxhighlight lang="text">
+{{Infobox usuário
+| nome = Maria Silva
+| subtítulo = Colaboradora do WikiWazzimaGiygg
+| foto = /assets/aistudio/image_19fe7a14.png
+| usuário = Maria Silva
+| e-mail = maria@exemplo.com
+| uid = \`user_uid_exemplo_123\`
+| função = Colaboradora Registrada
+| especialidade = Documentação Técnica e Revisão
+| idiomas = Português, Inglês
+| localização = Brasil
+| página_de_discussão = [[Discussão_Usuário:Maria_Silva|Enviar mensagem]]
+| status = Ativo
+}}
+</syntaxhighlight>
+
+== 3. Infobox de Software ({{Infobox software}}) ==
+Utilizado em artigos de aplicativos, bibliotecas, sistemas operacionais e projetos técnicos.
+
+=== Exemplo Pronto: Infobox de Software ===
+<syntaxhighlight lang="text">
+{{Infobox software
+| nome = Meu Software Livre
+| subtítulo = Ferramenta colaborativa multiplataforma
+| logotipo = /assets/aistudio/image_19fe7a14.png
+| tipo = Aplicação Web
+| desenvolvedor = Comunidade Aberta
+| e-mail = suporte@exemplo.com
+| versão_estável = 1.2.0
+| lançamento = 2026
+| linguagem = TypeScript, React
+| plataforma = Web, Linux, Windows, macOS
+| licença = MIT
+| site = https://core.wazzimagiygg.com
+| repositório = https://github.com/WazzimaGiygg/WikiWazzimaGiygg
+| status = Ativo
+}}
+</syntaxhighlight>
+
+== 4. Dicas Importantes de Formatação ==
+* '''E-mails clicáveis:''' Qualquer endereço válido no campo \`e-mail\` vira automaticamente um link \`mailto:\`.
+* '''Sites e repositórios:''' Qualquer URL iniciada por \`https://\` ou \`http://\` vira um link externo clicável.
+* '''Links internos:''' Use \`[[Nome_da_Página|Texto]]\` dentro de qualquer campo para conectar outras páginas da wiki.
+* '''Campos personalizados:''' Você pode criar novos campos livremente usando sublinhados (\`_\`) no lugar de espaços — ex: \`| rede_social = ...\` ou \`| hobby_favorito = ...\`.
+* '''Linhas vazias:''' Campos deixados em branco são ocultados automaticamente na leitura final.
+
+[[Categoria:Ajuda]]
+[[Categoria:Documentação]]
+[[Categoria:Infobox]]`
   },
 
   'Wiki:Código_Universal_de_Conduta': {

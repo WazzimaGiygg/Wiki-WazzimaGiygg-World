@@ -142,6 +142,8 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
             uid: user.uid,
             displayName: user.displayName,
             email: user.email,
+            photoURL: user.photoURL,
+            creationTime: user.metadata?.creationTime,
           });
           setUserPagesInfo(res);
         } catch (err) {

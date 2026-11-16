@@ -30,6 +30,8 @@ import {
   Search,
   PanelRight,
   Info,
+  User as UserIcon,
+  BookOpen,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { WikiPage } from '../types/wiki';
@@ -83,8 +85,12 @@ export const EditView: React.FC<EditViewProps> = ({
   const [enablingBlaze, setEnablingBlaze] = useState(false);
   const modalFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Infobox software insertion modal state
+  // Infobox builder modal state (Software, Usuário, and Tutorial)
+  const isUserNamespacePage = /^(?:Usuário|User):/i.test(page?.title || slug);
   const [showInfoboxModal, setShowInfoboxModal] = useState(false);
+  const [infoboxModalTab, setInfoboxModalTab] = useState<'software' | 'user' | 'tutorial'>(() =>
+    isUserNamespacePage ? 'user' : 'software'
+  );
   const [infoboxIncludeEmpty, setInfoboxIncludeEmpty] = useState(false);
   const [infoboxFields, setInfoboxFields] = useState({
     nome: page?.title || slug.replace(/_/g, ' '),
@@ -105,6 +111,27 @@ export const EditView: React.FC<EditViewProps> = ({
     documentacao: '',
     status: '',
     descricao: '',
+  });
+  const [userInfoboxFields, setUserInfoboxFields] = useState({
+    nome: currentUser.isAnonymous ? '' : currentUser.username,
+    subtitulo: 'Colaborador(a) do WikiWazzimaGiygg',
+    foto: currentUser.avatarUrl || '',
+    legenda: '',
+    usuario: currentUser.isAnonymous ? '' : currentUser.username,
+    email: currentUser.email || '',
+    uid: currentUser.isAnonymous ? '' : `\`${currentUser.uid}\``,
+    funcao: currentUser.isBureaucrat
+      ? 'Burocrata'
+      : currentUser.isAdmin
+      ? 'Administrador'
+      : 'Colaborador Registrado',
+    especialidade: '',
+    idiomas: 'Português',
+    localizacao: '',
+    discussao: currentUser.userTalkSlug ? `[[${currentUser.userTalkSlug}|Discussão]]` : '',
+    site: '',
+    status: 'Ativo',
+    biografia: '',
   });
 
   // Subscribe to recent files when modal opens
@@ -206,6 +233,36 @@ export const EditView: React.FC<EditViewProps> = ({
   };
 
   const buildInfoboxSyntax = () => {
+    if (infoboxModalTab === 'user') {
+      const userMap: Array<{ key: keyof typeof userInfoboxFields; param: string }> = [
+        { key: 'nome', param: 'nome' },
+        { key: 'subtitulo', param: 'subtítulo' },
+        { key: 'foto', param: 'foto' },
+        { key: 'legenda', param: 'legenda' },
+        { key: 'usuario', param: 'usuário' },
+        { key: 'email', param: 'e-mail' },
+        { key: 'uid', param: 'uid' },
+        { key: 'funcao', param: 'função' },
+        { key: 'especialidade', param: 'especialidade' },
+        { key: 'idiomas', param: 'idiomas' },
+        { key: 'localizacao', param: 'localização' },
+        { key: 'discussao', param: 'página_de_discussão' },
+        { key: 'site', param: 'site' },
+        { key: 'status', param: 'status' },
+        { key: 'biografia', param: 'biografia' },
+      ];
+
+      const lines = userMap
+        .filter(({ key }) => infoboxIncludeEmpty || userInfoboxFields[key].trim() !== '')
+        .map(({ key, param }) => `| ${param} = ${userInfoboxFields[key].trim()}`);
+
+      if (lines.length === 0) {
+        lines.push(`| nome = ${currentUser.username || 'Usuário'}`);
+      }
+
+      return `{{Infobox usuário\n${lines.join('\n')}\n}}\n`;
+    }
+
     const fieldMap: Array<{ key: keyof typeof infoboxFields; param: string }> = [
       { key: 'nome', param: 'nome' },
       { key: 'subtitulo', param: 'subtítulo' },
@@ -239,6 +296,33 @@ export const EditView: React.FC<EditViewProps> = ({
   };
 
   const handleFillInfoboxExample = () => {
+    if (infoboxModalTab === 'user') {
+      setUserInfoboxFields({
+        nome: currentUser.isAnonymous ? 'Maria Silva' : currentUser.username,
+        subtitulo: 'Colaborador(a) do WikiWazzimaGiygg',
+        foto: currentUser.avatarUrl || '/assets/aistudio/image_19fe7a14.png',
+        legenda: 'Foto de perfil',
+        usuario: currentUser.isAnonymous ? 'Maria Silva' : currentUser.username,
+        email: currentUser.email || 'contato@exemplo.com',
+        uid: currentUser.isAnonymous ? '`uid_exemplo_123`' : `\`${currentUser.uid}\``,
+        funcao: currentUser.isBureaucrat
+          ? 'Burocrata'
+          : currentUser.isAdmin
+          ? 'Administrador'
+          : 'Colaborador Registrado',
+        especialidade: 'Documentação Técnica, TypeScript e História',
+        idiomas: 'Português, Inglês',
+        localizacao: 'Brasil',
+        discussao: currentUser.userTalkSlug
+          ? `[[${currentUser.userTalkSlug}|Discussão]]`
+          : '[[Discussão_Usuário:Maria_Silva|Enviar mensagem]]',
+        site: 'https://core.wazzimagiygg.com',
+        status: 'Ativo',
+        biografia: 'Contribuidor(a) voluntário(a) da enciclopédia livre.',
+      });
+      return;
+    }
+
     setInfoboxFields({
       nome: page?.title || slug.replace(/_/g, ' '),
       subtitulo: 'Software colaborativo de código aberto',
@@ -1463,7 +1547,7 @@ export const EditView: React.FC<EditViewProps> = ({
         </div>
       )}
 
-      {/* Infobox Software Builder Modal */}
+      {/* Infobox Builder & Tutorial Modal */}
       {showInfoboxModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
           <div className="bg-white dark:bg-[#1a1f2c] border border-gray-300 dark:border-gray-700 rounded-lg shadow-2xl max-w-3xl w-full my-8 overflow-hidden text-gray-900 dark:text-gray-100">
@@ -1474,9 +1558,9 @@ export const EditView: React.FC<EditViewProps> = ({
                   <PanelRight className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-serif font-bold text-base">Inserir Predefinição: Infobox software</h3>
+                  <h3 className="font-serif font-bold text-base">Assistente de Infobox (Usuário e Software)</h3>
                   <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    Preencha os campos pertinentes (nome, e-mail, autoria, versão, links e plataforma). Campos vazios podem ser omitidos ou mantidos como modelo.
+                    Crie caixas de identificação de usuário, fichas técnicas de software ou consulte o tutorial rápido de uso.
                   </p>
                 </div>
               </div>
@@ -1489,263 +1573,573 @@ export const EditView: React.FC<EditViewProps> = ({
               </button>
             </div>
 
+            {/* Mode Tabs */}
+            <div className="flex flex-wrap border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-850 px-4 pt-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setInfoboxModalTab('user')}
+                className={`px-3 py-2 font-medium border-b-2 cursor-pointer transition-colors flex items-center gap-1.5 ${
+                  infoboxModalTab === 'user'
+                    ? 'border-purple-600 text-purple-700 dark:text-purple-300'
+                    : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                }`}
+              >
+                <UserIcon className="w-3.5 h-3.5" />
+                <span>Infobox Usuário</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setInfoboxModalTab('software')}
+                className={`px-3 py-2 font-medium border-b-2 cursor-pointer transition-colors flex items-center gap-1.5 ${
+                  infoboxModalTab === 'software'
+                    ? 'border-purple-600 text-purple-700 dark:text-purple-300'
+                    : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                }`}
+              >
+                <PanelRight className="w-3.5 h-3.5" />
+                <span>Infobox Software</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setInfoboxModalTab('tutorial')}
+                className={`px-3 py-2 font-medium border-b-2 cursor-pointer transition-colors flex items-center gap-1.5 ${
+                  infoboxModalTab === 'tutorial'
+                    ? 'border-purple-600 text-purple-700 dark:text-purple-300'
+                    : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Tutorial de Como Usar</span>
+              </button>
+            </div>
+
             {/* Modal Body */}
-            <div className="p-4 space-y-4 max-h-[65vh] overflow-y-auto text-xs">
-              {/* Quick Actions & Tips */}
-              <div className="p-3 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-start gap-2 text-[11px] text-blue-900 dark:text-blue-200 max-w-xl">
-                  <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                  <span>
-                    Endereços em <strong>E-mail</strong> viram links <code>mailto:</code> automaticamente; URLs em <strong>Site</strong> e <strong>Repositório</strong> ficam clicáveis; campos extras podem ser adicionados diretamente no wikitexto com <code>| meu_campo = valor</code>.
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleFillInfoboxExample}
-                  className="px-2.5 py-1 bg-white dark:bg-gray-900 border border-blue-300 dark:border-blue-700 text-[#0645ad] dark:text-[#6ba4ff] rounded font-medium text-[11px] flex items-center gap-1 hover:bg-blue-50 dark:hover:bg-blue-950 cursor-pointer shrink-0"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  <span>Preencher exemplo</span>
-                </button>
-              </div>
+            <div className="p-4 space-y-4 max-h-[62vh] overflow-y-auto text-xs">
+              {infoboxModalTab === 'tutorial' ? (
+                <div className="space-y-4">
+                  <div className="p-3 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded space-y-1.5">
+                    <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100">
+                      Como usar o Infobox em 4 passos simples
+                    </h4>
+                    <ol className="list-decimal pl-5 space-y-1 text-gray-700 dark:text-gray-300 leading-relaxed">
+                      <li>
+                        Escolha o tipo acima: <strong>Infobox Usuário</strong> (para páginas <code>Usuário:...</code>) ou <strong>Infobox Software</strong> (para artigos de projetos e programas).
+                      </li>
+                      <li>
+                        Preencha os campos desejados — como <code>nome</code>, <code>e-mail</code>, <code>foto</code>/<code>logotipo</code>, <code>uid</code> ou <code>site</code>. Campos em branco são ocultados automaticamente na leitura.
+                      </li>
+                      <li>
+                        Clique em <strong>Inserir Infobox no Artigo</strong> para adicionar o código wikitexto na posição do cursor.
+                      </li>
+                      <li>
+                        Você também pode editar o bloco manualmente adicionando novos campos com sublinhados: <code>| meu_campo = valor</code>.
+                      </li>
+                    </ol>
+                  </div>
 
-              {/* Section 1: Identificação */}
-              <div className="space-y-2">
-                <h4 className="font-semibold text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-200 dark:border-gray-800 pb-1">
-                  1. Identificação e Logotipo
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Nome do software (<code>nome</code>)</label>
-                    <input
-                      type="text"
-                      value={infoboxFields.nome}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, nome: e.target.value }))}
-                      placeholder="Ex: WikiWazzimaGiygg"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="p-3 border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-900 space-y-1.5">
+                      <div className="font-semibold text-gray-900 dark:text-gray-100">
+                        Exemplo: Infobox de Usuário
+                      </div>
+                      <pre className="text-[11px] font-mono text-[#0645ad] dark:text-[#6ba4ff] whitespace-pre-wrap">{`{{Infobox usuário
+| nome = João Pedro
+| subtítulo = Editor da Comunidade
+| foto = https://...
+| usuário = João Pedro
+| e-mail = joao@exemplo.com
+| uid = \`google_uid_123\`
+| função = Colaborador Registrado
+| especialidade = Física e História
+| status = Ativo
+}}`}</pre>
+                    </div>
+
+                    <div className="p-3 border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-900 space-y-1.5">
+                      <div className="font-semibold text-gray-900 dark:text-gray-100">
+                        Exemplo: Infobox de Software
+                      </div>
+                      <pre className="text-[11px] font-mono text-[#0645ad] dark:text-[#6ba4ff] whitespace-pre-wrap">{`{{Infobox software
+| nome = WikiWazzimaGiygg
+| tipo = Enciclopédia Livre
+| desenvolvedor = Comunidade Aberta
+| e-mail = contato@exemplo.com
+| versão_estável = 1.0.0-ts
+| linguagem = TypeScript, React
+| licença = MIT
+| site = https://core.wazzimagiygg.com
+| status = Ativo
+}}`}</pre>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Subtítulo (<code>subtítulo</code>)</label>
-                    <input
-                      type="text"
-                      value={infoboxFields.subtitulo}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, subtitulo: e.target.value }))}
-                      placeholder="Ex: Plataforma Wiki em TypeScript"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
-                    />
+
+                  <div className="p-3 border border-amber-200 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/30 rounded text-[11px] text-amber-900 dark:text-amber-200 space-y-1">
+                    <div className="font-semibold">Dicas automáticas de formatação:</div>
+                    <ul className="list-disc pl-5 space-y-0.5">
+                      <li>Endereços de e-mail válidos em <code>e-mail</code> são convertidos em links <code>mailto:</code> clicáveis.</li>
+                      <li>Links iniciados com <code>https://</code> viram links externos clicáveis automaticamente.</li>
+                      <li>Use <code>[[Nome_da_Página|Rótulo]]</code> para criar ligações internas dentro de qualquer campo.</li>
+                    </ul>
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Tipo / Categoria (<code>tipo</code>)</label>
-                    <input
-                      type="text"
-                      value={infoboxFields.tipo}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, tipo: e.target.value }))}
-                      placeholder="Ex: Enciclopédia Livre, Utilitário, IDE"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Logotipo / Imagem (<code>logotipo</code>)</label>
-                    <input
-                      type="text"
-                      value={infoboxFields.logo}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, logo: e.target.value }))}
-                      placeholder="URL ou Ficheiro:Logo.png"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Legenda do logotipo (<code>legenda</code>)</label>
-                    <input
-                      type="text"
-                      value={infoboxFields.legenda}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, legenda: e.target.value }))}
-                      placeholder="Ex: Logotipo oficial da versão 2.0"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Descrição resumida (<code>descrição</code>)</label>
-                    <input
-                      type="text"
-                      value={infoboxFields.descricao}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, descricao: e.target.value }))}
-                      placeholder="Breve resumo sobre a finalidade do software"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
-                    />
+
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowInfoboxModal(false);
+                        navigateToPage('Ajuda:Infobox');
+                      }}
+                      className="text-xs text-[#0645ad] dark:text-[#6ba4ff] hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                    >
+                      <span>Abrir página completa: Ajuda:Infobox</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  {/* Quick Actions & Tips */}
+                  <div className="p-3 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-start gap-2 text-[11px] text-blue-900 dark:text-blue-200 max-w-xl">
+                      <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                      <span>
+                        Endereços em <strong>E-mail</strong> viram links <code>mailto:</code> automaticamente; URLs em <strong>Site</strong> e <strong>Repositório</strong> ficam clicáveis; campos extras podem ser adicionados com <code>| meu_campo = valor</code>.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleFillInfoboxExample}
+                      className="px-2.5 py-1 bg-white dark:bg-gray-900 border border-blue-300 dark:border-blue-700 text-[#0645ad] dark:text-[#6ba4ff] rounded font-medium text-[11px] flex items-center gap-1 hover:bg-blue-50 dark:hover:bg-blue-950 cursor-pointer shrink-0"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>{infoboxModalTab === 'user' ? 'Preencher com meus dados' : 'Preencher exemplo'}</span>
+                    </button>
+                  </div>
 
-              {/* Section 2: Autoria e Contato */}
-              <div className="space-y-2">
-                <h4 className="font-semibold text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-200 dark:border-gray-800 pb-1">
-                  2. Autoria e Contato
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Desenvolvedor / Autor (<code>desenvolvedor</code>)</label>
-                    <input
-                      type="text"
-                      value={infoboxFields.desenvolvedor}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, desenvolvedor: e.target.value }))}
-                      placeholder="Ex: Comunidade Aberta"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Mantenedor (<code>mantenedor</code>)</label>
-                    <input
-                      type="text"
-                      value={infoboxFields.mantenedor}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, mantenedor: e.target.value }))}
-                      placeholder="Ex: Equipe Core"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">E-mail de contato/suporte (<code>e-mail</code>)</label>
-                    <input
-                      type="email"
-                      value={infoboxFields.email}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, email: e.target.value }))}
-                      placeholder="Ex: contato@exemplo.com"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
-                    />
-                  </div>
-                </div>
-              </div>
+                  {infoboxModalTab === 'user' ? (
+                    <>
+                      {/* User Section 1 */}
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-200 dark:border-gray-800 pb-1">
+                          1. Identificação do Usuário
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Nome de exibição (<code>nome</code>)</label>
+                            <input
+                              type="text"
+                              value={userInfoboxFields.nome}
+                              onChange={e => setUserInfoboxFields(prev => ({ ...prev, nome: e.target.value }))}
+                              placeholder="Ex: Maria Silva"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Subtítulo (<code>subtítulo</code>)</label>
+                            <input
+                              type="text"
+                              value={userInfoboxFields.subtitulo}
+                              onChange={e => setUserInfoboxFields(prev => ({ ...prev, subtítulo: e.target.value, subtitulo: e.target.value }))}
+                              placeholder="Ex: Colaborador(a) do WikiWazzimaGiygg"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Foto / Avatar (<code>foto</code>)</label>
+                            <input
+                              type="text"
+                              value={userInfoboxFields.foto}
+                              onChange={e => setUserInfoboxFields(prev => ({ ...prev, foto: e.target.value }))}
+                              placeholder="URL da foto ou Ficheiro:Avatar.png"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Legenda da foto (<code>legenda</code>)</label>
+                            <input
+                              type="text"
+                              value={userInfoboxFields.legenda}
+                              onChange={e => setUserInfoboxFields(prev => ({ ...prev, legenda: e.target.value }))}
+                              placeholder="Ex: Avatar do usuário"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
 
-              {/* Section 3: Especificações Técnicas */}
-              <div className="space-y-2">
-                <h4 className="font-semibold text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-200 dark:border-gray-800 pb-1">
-                  3. Ficha Técnica e Licenciamento
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Versão estável (<code>versão_estável</code>)</label>
-                    <input
-                      type="text"
-                      value={infoboxFields.versao}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, versao: e.target.value }))}
-                      placeholder="Ex: 1.0.0"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Lançamento (<code>lançamento</code>)</label>
-                    <input
-                      type="text"
-                      value={infoboxFields.lancamento}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, lancamento: e.target.value }))}
-                      placeholder="Ex: 15/03/2026 ou 2026"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Status (<code>status</code>)</label>
-                    <input
-                      type="text"
-                      value={infoboxFields.status}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, status: e.target.value }))}
-                      placeholder="Ex: Ativo, Estável, Beta"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Linguagem (<code>linguagem</code>)</label>
-                    <input
-                      type="text"
-                      value={infoboxFields.linguagem}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, linguagem: e.target.value }))}
-                      placeholder="Ex: TypeScript, Python"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Plataforma / SO (<code>plataforma</code>)</label>
-                    <input
-                      type="text"
-                      value={infoboxFields.plataforma}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, plataforma: e.target.value }))}
-                      placeholder="Ex: Web, Linux, Windows"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Licença (<code>licença</code>)</label>
-                    <input
-                      type="text"
-                      value={infoboxFields.licenca}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, licenca: e.target.value }))}
-                      placeholder="Ex: MIT, GPL v2.0+"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
-                    />
-                  </div>
-                </div>
-              </div>
+                      {/* User Section 2 */}
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-200 dark:border-gray-800 pb-1">
+                          2. Conta e Contato
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Usuário (<code>usuário</code>)</label>
+                            <input
+                              type="text"
+                              value={userInfoboxFields.usuario}
+                              onChange={e => setUserInfoboxFields(prev => ({ ...prev, usuario: e.target.value }))}
+                              placeholder="Nome na wiki"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">E-mail (<code>e-mail</code>)</label>
+                            <input
+                              type="email"
+                              value={userInfoboxFields.email}
+                              onChange={e => setUserInfoboxFields(prev => ({ ...prev, email: e.target.value }))}
+                              placeholder="contato@exemplo.com"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Google UID (<code>uid</code>)</label>
+                            <input
+                              type="text"
+                              value={userInfoboxFields.uid}
+                              onChange={e => setUserInfoboxFields(prev => ({ ...prev, uid: e.target.value }))}
+                              placeholder="`uid_usuario`"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Função / Cargo (<code>função</code>)</label>
+                            <input
+                              type="text"
+                              value={userInfoboxFields.funcao}
+                              onChange={e => setUserInfoboxFields(prev => ({ ...prev, funcao: e.target.value }))}
+                              placeholder="Colaborador Registrado"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Página de discussão (<code>página_de_discussão</code>)</label>
+                            <input
+                              type="text"
+                              value={userInfoboxFields.discussao}
+                              onChange={e => setUserInfoboxFields(prev => ({ ...prev, discussao: e.target.value }))}
+                              placeholder="[[Discussão_Usuário:Nome|Discussão]]"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Status (<code>status</code>)</label>
+                            <input
+                              type="text"
+                              value={userInfoboxFields.status}
+                              onChange={e => setUserInfoboxFields(prev => ({ ...prev, status: e.target.value }))}
+                              placeholder="Ativo"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
 
-              {/* Section 4: Links */}
-              <div className="space-y-2">
-                <h4 className="font-semibold text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-200 dark:border-gray-800 pb-1">
-                  4. Site, Repositório e Documentação
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Site oficial (<code>site</code>)</label>
-                    <input
-                      type="url"
-                      value={infoboxFields.site}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, site: e.target.value }))}
-                      placeholder="https://core.wazzimagiygg.com"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Repositório (<code>repositório</code>)</label>
-                    <input
-                      type="url"
-                      value={infoboxFields.repositorio}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, repositorio: e.target.value }))}
-                      placeholder="https://github.com/..."
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold mb-1">Documentação (<code>documentação</code>)</label>
-                    <input
-                      type="text"
-                      value={infoboxFields.documentacao}
-                      onChange={e => setInfoboxFields(prev => ({ ...prev, documentacao: e.target.value }))}
-                      placeholder="URL ou [[Página_Docs]]"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
-                    />
-                  </div>
-                </div>
-              </div>
+                      {/* User Section 3 */}
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-200 dark:border-gray-800 pb-1">
+                          3. Perfil Comunitário (Opcional)
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Especialidade (<code>especialidade</code>)</label>
+                            <input
+                              type="text"
+                              value={userInfoboxFields.especialidade}
+                              onChange={e => setUserInfoboxFields(prev => ({ ...prev, especialidade: e.target.value }))}
+                              placeholder="Ex: TypeScript, História, Biologia"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Idiomas (<code>idiomas</code>)</label>
+                            <input
+                              type="text"
+                              value={userInfoboxFields.idiomas}
+                              onChange={e => setUserInfoboxFields(prev => ({ ...prev, idiomas: e.target.value }))}
+                              placeholder="Português, Inglês"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Localização (<code>localização</code>)</label>
+                            <input
+                              type="text"
+                              value={userInfoboxFields.localizacao}
+                              onChange={e => setUserInfoboxFields(prev => ({ ...prev, localizacao: e.target.value }))}
+                              placeholder="Ex: Brasil"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Site / Portfólio (<code>site</code>)</label>
+                            <input
+                              type="url"
+                              value={userInfoboxFields.site}
+                              onChange={e => setUserInfoboxFields(prev => ({ ...prev, site: e.target.value }))}
+                              placeholder="https://..."
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
+                            />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="block text-[11px] font-semibold mb-1">Biografia curta (<code>biografia</code>)</label>
+                            <input
+                              type="text"
+                              value={userInfoboxFields.biografia}
+                              onChange={e => setUserInfoboxFields(prev => ({ ...prev, biografia: e.target.value }))}
+                              placeholder="Breve descrição sobre você e suas contribuições"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Section 1: Identificação */}
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-200 dark:border-gray-800 pb-1">
+                          1. Identificação e Logotipo
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Nome do software (<code>nome</code>)</label>
+                            <input
+                              type="text"
+                              value={infoboxFields.nome}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, nome: e.target.value }))}
+                              placeholder="Ex: WikiWazzimaGiygg"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Subtítulo (<code>subtítulo</code>)</label>
+                            <input
+                              type="text"
+                              value={infoboxFields.subtitulo}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, subtitulo: e.target.value }))}
+                              placeholder="Ex: Plataforma Wiki em TypeScript"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Tipo / Categoria (<code>tipo</code>)</label>
+                            <input
+                              type="text"
+                              value={infoboxFields.tipo}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, tipo: e.target.value }))}
+                              placeholder="Ex: Enciclopédia Livre, Utilitário, IDE"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Logotipo / Imagem (<code>logotipo</code>)</label>
+                            <input
+                              type="text"
+                              value={infoboxFields.logo}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, logo: e.target.value }))}
+                              placeholder="URL ou Ficheiro:Logo.png"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Legenda do logotipo (<code>legenda</code>)</label>
+                            <input
+                              type="text"
+                              value={infoboxFields.legenda}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, legenda: e.target.value }))}
+                              placeholder="Ex: Logotipo oficial da versão 2.0"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Descrição resumida (<code>descrição</code>)</label>
+                            <input
+                              type="text"
+                              value={infoboxFields.descricao}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, descricao: e.target.value }))}
+                              placeholder="Breve resumo sobre a finalidade do software"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
 
-              {/* Options & Generated Code Preview */}
-              <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                <label className="inline-flex items-center gap-2 cursor-pointer text-[11px] text-gray-700 dark:text-gray-300">
-                  <input
-                    type="checkbox"
-                    checked={infoboxIncludeEmpty}
-                    onChange={e => setInfoboxIncludeEmpty(e.target.checked)}
-                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                  />
-                  <span>Incluir campos em branco como modelo no wikitexto</span>
-                </label>
+                      {/* Section 2: Autoria e Contato */}
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-200 dark:border-gray-800 pb-1">
+                          2. Autoria e Contato
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Desenvolvedor / Autor (<code>desenvolvedor</code>)</label>
+                            <input
+                              type="text"
+                              value={infoboxFields.desenvolvedor}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, desenvolvedor: e.target.value }))}
+                              placeholder="Ex: Comunidade Aberta"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Mantenedor (<code>mantenedor</code>)</label>
+                            <input
+                              type="text"
+                              value={infoboxFields.mantenedor}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, mantenedor: e.target.value }))}
+                              placeholder="Ex: Equipe Core"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">E-mail de contato/suporte (<code>e-mail</code>)</label>
+                            <input
+                              type="email"
+                              value={infoboxFields.email}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, email: e.target.value }))}
+                              placeholder="Ex: contato@exemplo.com"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
 
-                <div className="p-2.5 bg-gray-100 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800">
-                  <div className="text-[10px] font-semibold uppercase text-gray-500 mb-1">
-                    Pré-visualização do código wikitexto:
+                      {/* Section 3: Especificações Técnicas */}
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-200 dark:border-gray-800 pb-1">
+                          3. Ficha Técnica e Licenciamento
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Versão estável (<code>versão_estável</code>)</label>
+                            <input
+                              type="text"
+                              value={infoboxFields.versao}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, versao: e.target.value }))}
+                              placeholder="Ex: 1.0.0"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Lançamento (<code>lançamento</code>)</label>
+                            <input
+                              type="text"
+                              value={infoboxFields.lancamento}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, lancamento: e.target.value }))}
+                              placeholder="Ex: 15/03/2026 ou 2026"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Status (<code>status</code>)</label>
+                            <input
+                              type="text"
+                              value={infoboxFields.status}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, status: e.target.value }))}
+                              placeholder="Ex: Ativo, Estável, Beta"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Linguagem (<code>linguagem</code>)</label>
+                            <input
+                              type="text"
+                              value={infoboxFields.linguagem}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, linguagem: e.target.value }))}
+                              placeholder="Ex: TypeScript, Python"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Plataforma / SO (<code>plataforma</code>)</label>
+                            <input
+                              type="text"
+                              value={infoboxFields.plataforma}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, plataforma: e.target.value }))}
+                              placeholder="Ex: Web, Linux, Windows"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Licença (<code>licença</code>)</label>
+                            <input
+                              type="text"
+                              value={infoboxFields.licenca}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, licenca: e.target.value }))}
+                              placeholder="Ex: MIT, GPL v2.0+"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 4: Links */}
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-200 dark:border-gray-800 pb-1">
+                          4. Site, Repositório e Documentação
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Site oficial (<code>site</code>)</label>
+                            <input
+                              type="url"
+                              value={infoboxFields.site}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, site: e.target.value }))}
+                              placeholder="https://core.wazzimagiygg.com"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Repositório (<code>repositório</code>)</label>
+                            <input
+                              type="url"
+                              value={infoboxFields.repositorio}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, repositorio: e.target.value }))}
+                              placeholder="https://github.com/..."
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1">Documentação (<code>documentação</code>)</label>
+                            <input
+                              type="text"
+                              value={infoboxFields.documentacao}
+                              onChange={e => setInfoboxFields(prev => ({ ...prev, documentacao: e.target.value }))}
+                              placeholder="URL ou [[Página_Docs]]"
+                              className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Options & Generated Code Preview */}
+                  <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <label className="inline-flex items-center gap-2 cursor-pointer text-[11px] text-gray-700 dark:text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={infoboxIncludeEmpty}
+                        onChange={e => setInfoboxIncludeEmpty(e.target.checked)}
+                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span>Incluir campos em branco como modelo no wikitexto</span>
+                    </label>
+
+                    <div className="p-2.5 bg-gray-100 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800">
+                      <div className="text-[10px] font-semibold uppercase text-gray-500 mb-1">
+                        Pré-visualização do código wikitexto:
+                      </div>
+                      <pre className="text-[11px] text-[#0645ad] dark:text-[#6ba4ff] font-mono whitespace-pre-wrap break-all">
+                        {buildInfoboxSyntax()}
+                      </pre>
+                    </div>
                   </div>
-                  <pre className="text-[11px] text-[#0645ad] dark:text-[#6ba4ff] font-mono whitespace-pre-wrap break-all">
-                    {buildInfoboxSyntax()}
-                  </pre>
-                </div>
-              </div>
+                </>
+              )}
             </div>
 
             {/* Modal Footer */}
@@ -1755,16 +2149,18 @@ export const EditView: React.FC<EditViewProps> = ({
                 onClick={() => setShowInfoboxModal(false)}
                 className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer text-xs"
               >
-                Cancelar
+                {infoboxModalTab === 'tutorial' ? 'Fechar' : 'Cancelar'}
               </button>
-              <button
-                type="button"
-                onClick={handleInsertInfobox}
-                className="px-4 py-1.5 bg-purple-700 hover:bg-purple-800 text-white rounded font-medium shadow-xs flex items-center gap-1.5 cursor-pointer text-xs"
-              >
-                <Check className="w-3.5 h-3.5" />
-                <span>Inserir Infobox no Artigo</span>
-              </button>
+              {infoboxModalTab !== 'tutorial' && (
+                <button
+                  type="button"
+                  onClick={handleInsertInfobox}
+                  className="px-4 py-1.5 bg-purple-700 hover:bg-purple-800 text-white rounded font-medium shadow-xs flex items-center gap-1.5 cursor-pointer text-xs"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Inserir Infobox no Artigo</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -968,6 +968,8 @@ export async function ensureUserPagesExist(user: {
   uid: string;
   displayName?: string | null;
   email?: string | null;
+  photoURL?: string | null;
+  creationTime?: string | null;
 }): Promise<UserPagesResult> {
   const baseName = (user.displayName || user.email?.split('@')[0] || 'Usuário').trim();
   const createdPages: string[] = [];
@@ -976,6 +978,12 @@ export async function ensureUserPagesExist(user: {
   const disambiguatedTalkTitle = `Discussão_Usuário:${baseName} (${user.uid})`;
   const standardTitle = `Usuário:${baseName}`;
   const standardTalkTitle = `Discussão_Usuário:${baseName}`;
+
+  const userProfileExtra = {
+    email: user.email || undefined,
+    photoURL: user.photoURL || undefined,
+    creationTime: user.creationTime || undefined,
+  };
 
   // 1. Check if user already has an existing disambiguated page they own
   const userDisambiguatedPage = await getPage(disambiguatedTitle);
@@ -1021,7 +1029,7 @@ export async function ensureUserPagesExist(user: {
 
       const existingTarget = await getPage(targetTitle);
       if (!existingTarget) {
-        await createInitialUserPage(targetTitle, baseName, user.uid, true);
+        await createInitialUserPage(targetTitle, baseName, user.uid, true, targetTalkTitle, userProfileExtra);
         createdPages.push(targetTitle);
       }
       const existingTargetTalk = await getPage(targetTalkTitle);
@@ -1063,7 +1071,7 @@ export async function ensureUserPagesExist(user: {
   // Create user page if needed
   const existingUserPage = await getPage(finalTitle);
   if (!existingUserPage) {
-    await createInitialUserPage(finalTitle, baseName, user.uid, isDisambiguated);
+    await createInitialUserPage(finalTitle, baseName, user.uid, isDisambiguated, finalTalkTitle, userProfileExtra);
     createdPages.push(finalTitle);
   }
 
@@ -1088,35 +1096,67 @@ async function createInitialUserPage(
   title: string,
   userName: string,
   uid: string,
-  hasDisambiguation: boolean
+  hasDisambiguation: boolean,
+  talkTitle: string,
+  extra?: {
+    email?: string;
+    photoURL?: string;
+    creationTime?: string;
+  }
 ): Promise<WikiPage> {
-  const content = `== Página de Usuário: ${userName} ==
+  const registeredDate = extra?.creationTime
+    ? new Date(extra.creationTime).toLocaleDateString('pt-BR')
+    : new Date().toLocaleDateString('pt-BR');
 
-{| class="wikitable" style="width: 100%; max-width: 520px;"
-! Campo !! Detalhe
-|-
-| '''Usuário''' || ${userName}
-|-
-| '''Google UID''' || <code>${uid}</code>
-|-
-| '''Status''' || Colaborador Registrado
-|-
-| '''Registro''' || Página criada automaticamente no primeiro acesso
-|}
+  const infoboxLines = [
+    '{{Infobox usuário',
+    `| nome = ${userName}`,
+    `| subtítulo = Colaborador(a) do WikiWazzimaGiygg`,
+    ...(extra?.photoURL ? [`| foto = ${extra.photoURL}`, `| legenda = Perfil de ${userName}`] : []),
+    `| usuário = ${userName}`,
+    ...(extra?.email ? [`| e-mail = ${extra.email}`] : []),
+    `| uid = \`${uid}\``,
+    `| função = Colaborador Registrado`,
+    `| página_de_discussão = [[${slugify(talkTitle)}|Discussão de ${userName}]]`,
+    `| registrado_em = ${registeredDate}`,
+    `| status = Ativo`,
+    '}}',
+  ].join('\n');
 
-=== Perfil do Usuário ===
-Esta é a página pessoal de '''${userName}''' no '''WikiWazzimaGiygg'''. Aqui ficam registrados o perfil de contribuição, tópicos de interesse e atalhos úteis.
+  const content = `${infoboxLines}
+
+== Página de Usuário: ${userName} ==
+
+Esta é a página pessoal de identificação de '''${userName}''' no '''WikiWazzimaGiygg'''. A caixa lateral ('''Infobox de Usuário''') apresenta seus dados principais de identificação na comunidade.
 
 ${
   hasDisambiguation
-    ? `{{Aviso|'''Nota de Desambiguação de Nome:''' Como já existe outro usuário registrado com o nome "${userName}" na wiki, seu Google UID (<code>${uid}</code>) foi adicionado ao título da página para garantir que sua página seja individual e nunca compartilhada por duas pessoas.}}`
+    ? `{{Aviso|'''Nota de Desambiguação de Nome:''' Como já existe outro usuário registrado com o nome "${userName}" na wiki, seu Google UID (\`${uid}\`) foi adicionado ao título da página para garantir que sua página seja individual e nunca compartilhada por duas pessoas.}}`
     : ''
 }
 
+=== Como Personalizar seu Infobox ===
+Você pode editar esta página a qualquer momento clicando na aba '''Editar''' e adicionar novos campos ao seu \`{{Infobox usuário}}\`, como sua especialidade, idiomas, localização ou biografia:
+
+<syntaxhighlight lang="text">
+{{Infobox usuário
+| nome = ${userName}
+| subtítulo = Editor(a) da Comunidade
+| especialidade = Tecnologia, Ciência e Documentação
+| idiomas = Português, Inglês
+| localização = Brasil
+| biografia = Contribuidor(a) do WikiWazzimaGiygg.
+}}
+</syntaxhighlight>
+
+* Consulte o guia completo passo a passo em '''[[Ajuda:Infobox|Tutorial: Como usar o Infobox]]'''.
+* Na barra de ferramentas do editor, clique no botão '''Infobox''' para gerar e inserir caixas de usuário ou software automaticamente.
+
 === Navegação e Recursos ===
-* [[Especial:Mudanças_recentes|Acompanhar mudanças recentes da wiki]]
+* [[Ajuda:Infobox|Tutorial completo de como usar o Infobox]]
 * [[Ajuda:Wikitexto|Consultar o guia de sintaxe wikitexto]]
-* [[Especial:Todas_as_páginas|Explorar todas as páginas da WikiWazzimaGiygg]]
+* [[Especial:Mudanças_recentes|Acompanhar mudanças recentes da wiki]]
+* [[Especial:Todas_as_páginas|Explorar todas as páginas do WikiWazzimaGiygg]]
 
 [[Categoria:Usuários]]`;
 
@@ -1125,8 +1165,8 @@ ${
     title,
     content,
     summary: hasDisambiguation
-      ? 'Criação automática de página de usuário no primeiro acesso (desambiguação de UID)'
-      : 'Criação automática de página de usuário no primeiro acesso',
+      ? 'Criação automática de página de usuário com Infobox de identificação (desambiguação de UID)'
+      : 'Criação automática de página de usuário com Infobox de identificação',
     author: userName,
     authorId: uid,
     namespace: 'User',
