@@ -28,6 +28,8 @@ import {
   Loader2,
   Globe,
   Search,
+  PanelRight,
+  Info,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { WikiPage } from '../types/wiki';
@@ -80,6 +82,30 @@ export const EditView: React.FC<EditViewProps> = ({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [enablingBlaze, setEnablingBlaze] = useState(false);
   const modalFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Infobox software insertion modal state
+  const [showInfoboxModal, setShowInfoboxModal] = useState(false);
+  const [infoboxIncludeEmpty, setInfoboxIncludeEmpty] = useState(false);
+  const [infoboxFields, setInfoboxFields] = useState({
+    nome: page?.title || slug.replace(/_/g, ' '),
+    subtitulo: '',
+    logo: '',
+    legenda: '',
+    tipo: '',
+    desenvolvedor: '',
+    mantenedor: '',
+    email: '',
+    versao: '',
+    lancamento: '',
+    linguagem: '',
+    plataforma: '',
+    licenca: '',
+    site: '',
+    repositorio: '',
+    documentacao: '',
+    status: '',
+    descricao: '',
+  });
 
   // Subscribe to recent files when modal opens
   React.useEffect(() => {
@@ -177,6 +203,67 @@ export const EditView: React.FC<EditViewProps> = ({
     const tag = buildImageSyntax(selectedFileName.trim(), imageCaption, imageAlign, imageWidth);
     insertRawText(tag);
     setShowImageModal(false);
+  };
+
+  const buildInfoboxSyntax = () => {
+    const fieldMap: Array<{ key: keyof typeof infoboxFields; param: string }> = [
+      { key: 'nome', param: 'nome' },
+      { key: 'subtitulo', param: 'subtítulo' },
+      { key: 'logo', param: 'logotipo' },
+      { key: 'legenda', param: 'legenda' },
+      { key: 'tipo', param: 'tipo' },
+      { key: 'desenvolvedor', param: 'desenvolvedor' },
+      { key: 'mantenedor', param: 'mantenedor' },
+      { key: 'email', param: 'e-mail' },
+      { key: 'versao', param: 'versão_estável' },
+      { key: 'lancamento', param: 'lançamento' },
+      { key: 'linguagem', param: 'linguagem' },
+      { key: 'plataforma', param: 'plataforma' },
+      { key: 'licenca', param: 'licença' },
+      { key: 'site', param: 'site' },
+      { key: 'repositorio', param: 'repositório' },
+      { key: 'documentacao', param: 'documentação' },
+      { key: 'status', param: 'status' },
+      { key: 'descricao', param: 'descrição' },
+    ];
+
+    const lines = fieldMap
+      .filter(({ key }) => infoboxIncludeEmpty || infoboxFields[key].trim() !== '')
+      .map(({ key, param }) => `| ${param} = ${infoboxFields[key].trim()}`);
+
+    if (lines.length === 0) {
+      lines.push(`| nome = ${page?.title || slug.replace(/_/g, ' ')}`);
+    }
+
+    return `{{Infobox software\n${lines.join('\n')}\n}}\n`;
+  };
+
+  const handleFillInfoboxExample = () => {
+    setInfoboxFields({
+      nome: page?.title || slug.replace(/_/g, ' '),
+      subtitulo: 'Software colaborativo de código aberto',
+      logo: '/assets/aistudio/image_19fe7a14.png',
+      legenda: 'Logotipo oficial do projeto',
+      tipo: 'Aplicação Web / Ferramenta Técnica',
+      desenvolvedor: 'Equipe de Desenvolvimento',
+      mantenedor: 'Comunidade Colaborativa',
+      email: 'contato@exemplo.com',
+      versao: '1.0.0',
+      lancamento: '2026',
+      linguagem: 'TypeScript, React',
+      plataforma: 'Web, Linux, Windows, macOS',
+      licenca: 'GPL-2.0-or-later / MIT',
+      site: 'https://core.wazzimagiygg.com',
+      repositorio: 'https://github.com/WazzimaGiygg/WikiWazzimaGiygg',
+      documentacao: '[[Ajuda:Wikitexto|Documentação Oficial]]',
+      status: 'Ativo',
+      descricao: 'Plataforma modular com armazenamento estruturado em tempo real.',
+    });
+  };
+
+  const handleInsertInfobox = () => {
+    insertRawText(buildInfoboxSyntax());
+    setShowInfoboxModal(false);
   };
 
   const editPermission = useMemo(() => {
@@ -497,6 +584,18 @@ export const EditView: React.FC<EditViewProps> = ({
         >
           {'{aviso}'}
         </button>
+
+        {editPermission.allowed && (
+          <button
+            type="button"
+            onClick={() => setShowInfoboxModal(true)}
+            className="px-2 py-1 rounded bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1 font-medium text-xs cursor-pointer transition-colors"
+            title="Inserir caixa {{Infobox software}} com nome, e-mail e ficha técnica"
+          >
+            <PanelRight className="w-3.5 h-3.5" />
+            <span>Infobox</span>
+          </button>
+        )}
 
         <button
           type="button"
@@ -1359,6 +1458,313 @@ export const EditView: React.FC<EditViewProps> = ({
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Infobox Software Builder Modal */}
+      {showInfoboxModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-[#1a1f2c] border border-gray-300 dark:border-gray-700 rounded-lg shadow-2xl max-w-3xl w-full my-8 overflow-hidden text-gray-900 dark:text-gray-100">
+            {/* Modal Header */}
+            <div className="p-4 bg-[#f8f9fa] dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded text-purple-700 dark:text-purple-300">
+                  <PanelRight className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-base">Inserir Predefinição: Infobox software</h3>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    Preencha os campos pertinentes (nome, e-mail, autoria, versão, links e plataforma). Campos vazios podem ser omitidos ou mantidos como modelo.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowInfoboxModal(false)}
+                className="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 space-y-4 max-h-[65vh] overflow-y-auto text-xs">
+              {/* Quick Actions & Tips */}
+              <div className="p-3 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-start gap-2 text-[11px] text-blue-900 dark:text-blue-200 max-w-xl">
+                  <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                  <span>
+                    Endereços em <strong>E-mail</strong> viram links <code>mailto:</code> automaticamente; URLs em <strong>Site</strong> e <strong>Repositório</strong> ficam clicáveis; campos extras podem ser adicionados diretamente no wikitexto com <code>| meu_campo = valor</code>.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleFillInfoboxExample}
+                  className="px-2.5 py-1 bg-white dark:bg-gray-900 border border-blue-300 dark:border-blue-700 text-[#0645ad] dark:text-[#6ba4ff] rounded font-medium text-[11px] flex items-center gap-1 hover:bg-blue-50 dark:hover:bg-blue-950 cursor-pointer shrink-0"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>Preencher exemplo</span>
+                </button>
+              </div>
+
+              {/* Section 1: Identificação */}
+              <div className="space-y-2">
+                <h4 className="font-semibold text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-200 dark:border-gray-800 pb-1">
+                  1. Identificação e Logotipo
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Nome do software (<code>nome</code>)</label>
+                    <input
+                      type="text"
+                      value={infoboxFields.nome}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, nome: e.target.value }))}
+                      placeholder="Ex: WikiWazzimaGiygg"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Subtítulo (<code>subtítulo</code>)</label>
+                    <input
+                      type="text"
+                      value={infoboxFields.subtitulo}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, subtitulo: e.target.value }))}
+                      placeholder="Ex: Plataforma Wiki em TypeScript"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Tipo / Categoria (<code>tipo</code>)</label>
+                    <input
+                      type="text"
+                      value={infoboxFields.tipo}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, tipo: e.target.value }))}
+                      placeholder="Ex: Enciclopédia Livre, Utilitário, IDE"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Logotipo / Imagem (<code>logotipo</code>)</label>
+                    <input
+                      type="text"
+                      value={infoboxFields.logo}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, logo: e.target.value }))}
+                      placeholder="URL ou Ficheiro:Logo.png"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Legenda do logotipo (<code>legenda</code>)</label>
+                    <input
+                      type="text"
+                      value={infoboxFields.legenda}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, legenda: e.target.value }))}
+                      placeholder="Ex: Logotipo oficial da versão 2.0"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Descrição resumida (<code>descrição</code>)</label>
+                    <input
+                      type="text"
+                      value={infoboxFields.descricao}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, descricao: e.target.value }))}
+                      placeholder="Breve resumo sobre a finalidade do software"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Autoria e Contato */}
+              <div className="space-y-2">
+                <h4 className="font-semibold text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-200 dark:border-gray-800 pb-1">
+                  2. Autoria e Contato
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Desenvolvedor / Autor (<code>desenvolvedor</code>)</label>
+                    <input
+                      type="text"
+                      value={infoboxFields.desenvolvedor}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, desenvolvedor: e.target.value }))}
+                      placeholder="Ex: Comunidade Aberta"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Mantenedor (<code>mantenedor</code>)</label>
+                    <input
+                      type="text"
+                      value={infoboxFields.mantenedor}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, mantenedor: e.target.value }))}
+                      placeholder="Ex: Equipe Core"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">E-mail de contato/suporte (<code>e-mail</code>)</label>
+                    <input
+                      type="email"
+                      value={infoboxFields.email}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="Ex: contato@exemplo.com"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Especificações Técnicas */}
+              <div className="space-y-2">
+                <h4 className="font-semibold text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-200 dark:border-gray-800 pb-1">
+                  3. Ficha Técnica e Licenciamento
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Versão estável (<code>versão_estável</code>)</label>
+                    <input
+                      type="text"
+                      value={infoboxFields.versao}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, versao: e.target.value }))}
+                      placeholder="Ex: 1.0.0"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Lançamento (<code>lançamento</code>)</label>
+                    <input
+                      type="text"
+                      value={infoboxFields.lancamento}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, lancamento: e.target.value }))}
+                      placeholder="Ex: 15/03/2026 ou 2026"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Status (<code>status</code>)</label>
+                    <input
+                      type="text"
+                      value={infoboxFields.status}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, status: e.target.value }))}
+                      placeholder="Ex: Ativo, Estável, Beta"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Linguagem (<code>linguagem</code>)</label>
+                    <input
+                      type="text"
+                      value={infoboxFields.linguagem}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, linguagem: e.target.value }))}
+                      placeholder="Ex: TypeScript, Python"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Plataforma / SO (<code>plataforma</code>)</label>
+                    <input
+                      type="text"
+                      value={infoboxFields.plataforma}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, plataforma: e.target.value }))}
+                      placeholder="Ex: Web, Linux, Windows"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Licença (<code>licença</code>)</label>
+                    <input
+                      type="text"
+                      value={infoboxFields.licenca}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, licenca: e.target.value }))}
+                      placeholder="Ex: MIT, GPL v2.0+"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 4: Links */}
+              <div className="space-y-2">
+                <h4 className="font-semibold text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-200 dark:border-gray-800 pb-1">
+                  4. Site, Repositório e Documentação
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Site oficial (<code>site</code>)</label>
+                    <input
+                      type="url"
+                      value={infoboxFields.site}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, site: e.target.value }))}
+                      placeholder="https://core.wazzimagiygg.com"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Repositório (<code>repositório</code>)</label>
+                    <input
+                      type="url"
+                      value={infoboxFields.repositorio}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, repositorio: e.target.value }))}
+                      placeholder="https://github.com/..."
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">Documentação (<code>documentação</code>)</label>
+                    <input
+                      type="text"
+                      value={infoboxFields.documentacao}
+                      onChange={e => setInfoboxFields(prev => ({ ...prev, documentacao: e.target.value }))}
+                      placeholder="URL ou [[Página_Docs]]"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Options & Generated Code Preview */}
+              <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <label className="inline-flex items-center gap-2 cursor-pointer text-[11px] text-gray-700 dark:text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={infoboxIncludeEmpty}
+                    onChange={e => setInfoboxIncludeEmpty(e.target.checked)}
+                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  <span>Incluir campos em branco como modelo no wikitexto</span>
+                </label>
+
+                <div className="p-2.5 bg-gray-100 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800">
+                  <div className="text-[10px] font-semibold uppercase text-gray-500 mb-1">
+                    Pré-visualização do código wikitexto:
+                  </div>
+                  <pre className="text-[11px] text-[#0645ad] dark:text-[#6ba4ff] font-mono whitespace-pre-wrap break-all">
+                    {buildInfoboxSyntax()}
+                  </pre>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-gray-50 dark:bg-gray-850 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setShowInfoboxModal(false)}
+                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer text-xs"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleInsertInfobox}
+                className="px-4 py-1.5 bg-purple-700 hover:bg-purple-800 text-white rounded font-medium shadow-xs flex items-center gap-1.5 cursor-pointer text-xs"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Inserir Infobox no Artigo</span>
+              </button>
             </div>
           </div>
         </div>

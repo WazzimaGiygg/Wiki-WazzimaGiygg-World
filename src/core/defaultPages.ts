@@ -22,13 +22,19 @@ export const INITIAL_PAGES: Record<string, WikiPage> = {
     protectionExpiry: 'infinity',
     content: `{{Infobox software
 | nome = WikiWazzimaGiygg
+| subtítulo = Plataforma Wiki em TypeScript e Firestore
 | logotipo = /assets/aistudio/image_19fe7a14.png
+| tipo = Enciclopédia Livre / Motor Wiki
 | desenvolvedor = Comunidade de Código Aberto
 | versão_estável = 1.0.0-ts
+| lançamento = 2026
 | linguagem = TypeScript (anteriormente PHP)
+| plataforma = Web (React 19 + Node.js / Express)
 | banco_de_dados = Google Cloud Firestore (em tempo real)
 | licença = GPL v2.0+ / MIT
+| site = https://core.wazzimagiygg.com
 | repositório = https://github.com/WazzimaGiygg/WikiWazzimaGiygg
+| status = Ativo
 }}
 
 '''Bem-vindo(a) ao WikiWazzimaGiygg''', a plataforma wiki livre desenvolvida com a interface e experiência clássica do MediaWiki, adaptada para '''TypeScript''' e '''Google Cloud Firestore'''.
@@ -181,7 +187,79 @@ O '''Wikitexto''' é a linguagem de formatação utilizada para estruturar artig
 == Ligações (Links) ==
 * '''Link Interno:''' \`[[Página_principal]]\`
 * '''Link com Rótulo:''' \`[[Página_principal|Início]]\`
+* '''Link Externo:''' \`[https://core.wazzimagiygg.com Site Oficial]\`
+* '''Link de E-mail:''' \`[mailto:contato@exemplo.com Enviar e-mail]\`
 * Se o artigo não existir no Firebase, o link aparecerá em '''vermelho'''!
+
+== Caixa de Informação (Infobox software) ==
+A predefinição \`{{Infobox software}}\` cria um painel lateral direito padronizado para resumir informações técnicas, institucionais e de contato de um software, projeto ou serviço.
+
+=== Parâmetros Recomendados ===
+{| class="wikitable" style="width:100%; text-align:left;"
+! Parâmetro !! Obrigatório !! Descrição e Exemplo
+|-
+| \`nome\` (ou \`título\`) || Sim || Nome principal exibido no cabeçalho da caixa. Ex: \`WikiWazzimaGiygg\`
+|-
+| \`subtítulo\` || Não || Texto complementar exibido logo abaixo do nome no cabeçalho.
+|-
+| \`logo\` / \`logotipo\` / \`imagem\` || Não || URL da imagem ou nome de ficheiro carregado (\`Ficheiro:Logo.png\`).
+|-
+| \`legenda\` || Não || Legenda descritiva exibida abaixo do logotipo.
+|-
+| \`tipo\` / \`gênero\` || Não || Categoria do software. Ex: \`Enciclopédia Livre\`, \`Editor de Texto\`
+|-
+| \`desenvolvedor\` / \`autor\` || Não || Pessoa, equipe ou organização criadora do projeto.
+|-
+| \`mantenedor\` || Não || Responsável atual pela manutenção ou suporte.
+|-
+| \`e-mail\` || Não || E-mail de contato ou suporte. Endereços válidos viram links \`mailto:\` automaticamente.
+|-
+| \`versão\` / \`versão_estável\` || Não || Versão atual ou estável lançada. Ex: \`1.0.0-ts\`
+|-
+| \`lançamento\` || Não || Data ou ano de lançamento inicial. Ex: \`2026\`
+|-
+| \`linguagem\` || Não || Linguagens e tecnologias principais. Ex: \`TypeScript, React\`
+|-
+| \`plataforma\` || Não || Sistemas operacionais ou ambientes suportados. Ex: \`Web, Linux, Windows\`
+|-
+| \`licença\` || Não || Licença de uso ou código aberto. Ex: \`GPL v2.0+ / MIT\`
+|-
+| \`site\` || Não || Endereço oficial do projeto (URLs \`https://\` ficam clicáveis automaticamente).
+|-
+| \`repositório\` || Não || Link do código-fonte no GitHub, GitLab ou similar.
+|-
+| \`documentação\` || Não || Link externo ou ligação interna (\`[[Manual:LocalSettings.ts]]\`).
+|-
+| \`status\` || Não || Estado atual do projeto. Ex: \`Ativo\`, \`Estável\`, \`Em desenvolvimento\`
+|-
+| \`descrição\` || Não || Resumo curto sobre a finalidade do software.
+|}
+
+'''Dica:''' Você também pode adicionar qualquer campo personalizado utilizando sublinhados (\`_\`) no lugar de espaços — por exemplo, \`| banco_de_dados = Firestore\` ou \`| último_lançamento = 15/11/2026\`. No editor de páginas, utilize o botão '''Infobox''' na barra de ferramentas para preencher e inserir o bloco automaticamente.
+
+=== Exemplo Completo de Uso ===
+<syntaxhighlight lang="text">
+{{Infobox software
+| nome = Meu Projeto Open Source
+| subtítulo = Utilitário multiplataforma de produtividade
+| logotipo = /assets/aistudio/image_19fe7a14.png
+| legenda = Logotipo oficial do projeto
+| tipo = Aplicativo Web / Ferramenta CLI
+| desenvolvedor = Equipe de Desenvolvimento
+| mantenedor = Comunidade Colaborativa
+| e-mail = contato@exemplo.com
+| versão_estável = 2.4.1
+| lançamento = 10/03/2026
+| linguagem = TypeScript, Node.js
+| plataforma = Web, Linux, macOS, Windows
+| licença = MIT
+| site = https://core.wazzimagiygg.com
+| repositório = https://github.com/WazzimaGiygg/WikiWazzimaGiygg
+| documentação = [[Arquitetura_WikiWazzimaGiygg|Arquitetura e Docs]]
+| status = Ativo
+| descrição = Plataforma modular com sincronização em tempo real.
+}}
+</syntaxhighlight>
 
 [[Categoria:Ajuda]]
 [[Categoria:Documentação]]

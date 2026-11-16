@@ -66,16 +66,30 @@ export const syntaxHighlightExtension: ExtensionDefinition = {
 
 export const scribuntoExtension: ExtensionDefinition = {
   id: 'scribunto',
-  name: 'Scribunto (Módulos Lua)',
+  name: 'Scribunto (Módulos Lua & Infobox)',
   category: 'parser',
   version: '0.1.0-ts',
   authors: ['Victor Vasiliev', 'Tim Starling', 'Brad Jorsch'],
-  description: 'Ambiente de execução de módulos e predefinições estruturadas através da invocação {{#invoke:Módulo|função}}.',
+  description: 'Ambiente de execução de módulos e predefinições estruturadas através da invocação {{#invoke:Módulo|função}} e caixas {{Infobox software}} com suporte a nome, e-mail, links, versões e campos personalizados.',
   url: 'https://www.mediawiki.org/wiki/Extension:Scribunto',
   gitTag: 'REL1_42-ts',
   license: 'GPL-2.0-or-later',
   hooks: ['ParserFirstCallInit', 'SoftwareInfo'],
-  exampleWikitext: '{{Infobox software\n| nome = WikiWazzimaGiygg\n| versão = 1.0.0-ts\n| licença = GPL v2.0+\n}}',
+  exampleWikitext: `{{Infobox software
+| nome = WikiWazzimaGiygg
+| subtítulo = Motor Wiki Colaborativo
+| tipo = Enciclopédia Livre / Software Web
+| desenvolvedor = Comunidade WikiWazzimaGiygg
+| e-mail = contato@exemplo.com
+| versão = 1.0.0-ts
+| lançamento = 2026
+| linguagem = TypeScript, React
+| plataforma = Web, Node.js
+| licença = GPL-2.0-or-later
+| site = https://core.wazzimagiygg.com
+| repositório = https://github.com/WazzimaGiygg/WikiWazzimaGiygg
+| status = Ativo
+}}`,
   defaultActive: true,
   installedVia: 'code',
 };

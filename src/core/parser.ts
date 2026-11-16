@@ -289,10 +289,11 @@ function parseInlineWikitext(input: string, existingPages: Set<string>): string 
     }
   });
 
-  // External Links: [https://example.com Label] or plain URLs
-  text = text.replace(/\[((?:https?:\/\/)[^\s\]]+)(?:\s+([^\]]+))?\]/gi, (_, url, label) => {
-    const textLabel = label ? label.trim() : url;
-    return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="mw-external-link text-[#3366cc] dark:text-[#729fcf] hover:underline inline-flex items-center gap-0.5"><span>${escapeHtml(textLabel)}</span><span class="text-[10px] opacity-70">↗</span></a>`;
+  // External & Mailto Links: [https://example.com Label] or [mailto:a@b.com Label]
+  text = text.replace(/\[((?:https?:\/\/|mailto:)[^\s\]]+)(?:\s+([^\]]+))?\]/gi, (_, url, label) => {
+    const textLabel = label ? label.trim() : url.replace(/^mailto:/i, '');
+    const isMailto = /^mailto:/i.test(url);
+    return `<a href="${escapeHtml(url)}" ${isMailto ? '' : 'target="_blank" rel="noopener noreferrer" '}class="mw-external-link text-[#3366cc] dark:text-[#729fcf] hover:underline inline-flex items-center gap-0.5"><span>${escapeHtml(textLabel)}</span>${isMailto ? '' : '<span class="text-[10px] opacity-70">↗</span>'}</a>`;
   });
 
   // Inline code `code`
@@ -393,10 +394,63 @@ function parseWikitable(content: string): string {
   return html;
 }
 
+const INFOBOX_LABEL_MAP: Record<string, string> = {
+  email: 'E-mail',
+  'e-mail': 'E-mail',
+  'e mail': 'E-mail',
+  versao: 'Versão',
+  'versão': 'Versão',
+  'versao estavel': 'Versão estável',
+  'ultima versao': 'Última versão',
+  lancamento: 'Lançamento',
+  licenca: 'Licença',
+  repositorio: 'Repositório',
+  documentacao: 'Documentação',
+  descricao: 'Descrição',
+  genero: 'Gênero',
+  'codigo fonte': 'Código-fonte',
+  'sistema operacional': 'Sistema operacional',
+  desenvolvedor: 'Desenvolvedor',
+  mantenedor: 'Mantenedor',
+  autor: 'Autor',
+  linguagem: 'Linguagem',
+  plataforma: 'Plataforma',
+  site: 'Site oficial',
+  status: 'Status',
+  tipo: 'Tipo',
+};
+
+function formatInfoboxValue(value: string): string {
+  const trimmed = value.trim();
+  if (/^https?:\/\/[^\s<>]+$/i.test(trimmed)) {
+    const safeUrl = escapeHtml(trimmed);
+    return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="mw-external-link text-[#3366cc] dark:text-[#729fcf] hover:underline break-all inline-flex items-center justify-end gap-0.5"><span>${safeUrl}</span><span class="text-[10px] opacity-70">↗</span></a>`;
+  }
+  if (/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/i.test(trimmed)) {
+    const safeEmail = escapeHtml(trimmed);
+    return `<a href="mailto:${safeEmail}" class="text-[#3366cc] dark:text-[#729fcf] hover:underline break-all">${safeEmail}</a>`;
+  }
+  return escapeHtml(trimmed);
+}
+
+function resolveInfoboxImage(rawValue: string): string {
+  const cleaned = rawValue.replace(/^\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
+  const mediaMatch = cleaned.match(/^(?:Ficheiro|File|Imagem|Image):(.*)$/i);
+  if (mediaMatch) {
+    const fileName = mediaMatch[1].trim().replace(/\s+/g, '_');
+    const cached = getCachedFileUrl(fileName) || getCachedFileUrl(`Ficheiro:${fileName}`);
+    if (cached) return cached;
+    if (fileName.includes('image_19fe7a14')) return '/assets/aistudio/image_19fe7a14.png';
+  }
+  return cleaned;
+}
+
 function parseInfobox(content: string): string {
   const lines = content.split('\n');
   let title = 'Informações';
+  let subtitle = '';
   let imageSrc = '';
+  let imageCaption = '';
   const fields: { key: string; value: string }[] = [];
 
   for (const line of lines) {
@@ -408,12 +462,21 @@ function parseInfobox(content: string): string {
         const value = parts.slice(1).join('=').trim();
         const lowerKey = key.toLowerCase();
 
+        if (!value) continue;
+
         if (lowerKey === 'nome' || lowerKey === 'título' || lowerKey === 'titulo') {
           title = value;
+        } else if (lowerKey === 'subtítulo' || lowerKey === 'subtitulo') {
+          subtitle = value;
         } else if (lowerKey === 'logo' || lowerKey === 'logotipo' || lowerKey === 'imagem') {
-          imageSrc = value;
-        } else if (value) {
-          fields.push({ key: key.charAt(0).toUpperCase() + key.slice(1), value });
+          imageSrc = resolveInfoboxImage(value);
+        } else if (lowerKey === 'legenda' || lowerKey === 'legenda imagem') {
+          imageCaption = value;
+        } else {
+          const displayKey =
+            INFOBOX_LABEL_MAP[lowerKey] ||
+            key.charAt(0).toUpperCase() + key.slice(1);
+          fields.push({ key: displayKey, value });
         }
       }
     }
@@ -422,11 +485,13 @@ function parseInfobox(content: string): string {
   let html = `
     <div class="infobox float-none md:float-right md:ml-6 mb-4 w-full md:w-80 rounded border border-[#a2a9b1] dark:border-gray-700 bg-[#f8f9fa] dark:bg-gray-800 p-3 shadow-xs text-xs">
       <div class="bg-[#eaecf0] dark:bg-gray-700 p-2 font-serif font-bold text-center text-sm text-gray-900 dark:text-gray-100 rounded-t mb-2">
-        ${escapeHtml(title)}
+        <div>${escapeHtml(title)}</div>
+        ${subtitle ? `<div class="text-[11px] font-sans font-normal text-gray-600 dark:text-gray-300 mt-0.5">${escapeHtml(subtitle)}</div>` : ''}
       </div>
       ${imageSrc ? `
-        <div class="my-2 p-2 bg-white dark:bg-black rounded border border-gray-200 dark:border-gray-700 flex justify-center">
+        <div class="my-2 p-2 bg-white dark:bg-black rounded border border-gray-200 dark:border-gray-700 flex flex-col items-center">
           <img src="${escapeHtml(imageSrc)}" alt="${escapeHtml(title)}" class="max-h-28 object-contain" />
+          ${imageCaption ? `<div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">${escapeHtml(imageCaption)}</div>` : ''}
         </div>
       ` : ''}
       <div class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -435,8 +500,8 @@ function parseInfobox(content: string): string {
   for (const field of fields) {
     html += `
       <div class="py-1.5 flex justify-between gap-2">
-        <span class="font-semibold text-gray-600 dark:text-gray-400 w-1/3">${escapeHtml(field.key)}</span>
-        <span class="text-gray-900 dark:text-gray-100 w-2/3 text-right break-words">${field.value}</span>
+        <span class="font-semibold text-gray-600 dark:text-gray-400 w-2/5 break-words">${escapeHtml(field.key)}</span>
+        <span class="text-gray-900 dark:text-gray-100 w-3/5 text-right break-words">${formatInfoboxValue(field.value)}</span>
       </div>
     `;
   }
