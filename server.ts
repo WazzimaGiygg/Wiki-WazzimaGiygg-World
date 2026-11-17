@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 
 const PORT = Number(process.env.PORT) || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
-const WIKI_SITE_VERSION = 'W1.16.6J.1';
+const WIKI_SITE_VERSION = 'WC1.16.C7.1';
 
 function getGeminiClient(): GoogleGenAI | null {
   const apiKey = process.env.GEMINI_API_KEY;

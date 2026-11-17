@@ -332,7 +332,7 @@ export const EditView: React.FC<EditViewProps> = ({
       desenvolvedor: 'Equipe de Desenvolvimento',
       mantenedor: 'Comunidade Colaborativa',
       email: 'contato@exemplo.com',
-      versao: 'W1.16.6J.1',
+      versao: 'WC1.16.C7.1',
       lancamento: '2026',
       linguagem: 'TypeScript, React',
       plataforma: 'Web, Linux, Windows, macOS',
@@ -1666,7 +1666,7 @@ export const EditView: React.FC<EditViewProps> = ({
 | tipo = Enciclopédia Livre
 | desenvolvedor = Comunidade Aberta
 | e-mail = contato@exemplo.com
-| versão_estável = W1.16.6J.1
+| versão_estável = WC1.16.C7.1
 | linguagem = TypeScript, React
 | licença = MIT
 | site = https://core.wazzimagiygg.com
