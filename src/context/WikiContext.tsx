@@ -81,6 +81,9 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
       if (parsed.sitename === 'MediaWiki TS') {
         parsed.sitename = 'WikiWazzimaGiygg';
       }
+      if (!parsed.lgpdDpoContact || parsed.lgpdDpoContact === 'privacidade@wazzimagiygg.com') {
+        parsed.lgpdDpoContact = LEGAL_COMPLIANCE_INFO.defaultDpoContact;
+      }
       parsed.allowAnonymousEditing = false;
       return { ...DEFAULT_SETTINGS, ...parsed };
     }
@@ -183,7 +186,15 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
 
     const unsubSettings = subscribeToWikiSettings(remoteSettings => {
       if (remoteSettings && remoteSettings.sitename) {
-        setSettings(prev => ({ ...prev, ...remoteSettings }));
+        const normalizedRemote = {
+          ...remoteSettings,
+          lgpdDpoContact:
+            !remoteSettings.lgpdDpoContact ||
+            remoteSettings.lgpdDpoContact === 'privacidade@wazzimagiygg.com'
+              ? LEGAL_COMPLIANCE_INFO.defaultDpoContact
+              : remoteSettings.lgpdDpoContact,
+        };
+        setSettings(prev => ({ ...prev, ...normalizedRemote }));
         if (remoteSettings.defaultSkin) {
           setSkin(remoteSettings.defaultSkin);
         }

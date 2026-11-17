@@ -568,7 +568,7 @@ Acesse a lista de pedidos e delibere em [[Especial:Discussão_de_desbloqueio]].
 
 == 1. Controlador e Encarregado (DPO — Art. 41 da LGPD) ==
 * '''Plataforma / Controlador:''' WikiWazzimaGiygg (core.wazzimagiygg.com) — Versão {{VERSÃO}}.
-* '''Canal do Encarregado (DPO):''' [mailto:privacidade@wazzimagiygg.com privacidade@wazzimagiygg.com]
+* '''Canal do Encarregado (DPO):''' [mailto:pedrohenriquecardonaperes@gmail.com pedrohenriquecardonaperes@gmail.com]
 * '''Portal de Autoatendimento:''' [[Especial:Privacidade|Central de Privacidade e LGPD]]
 
 == 2. Princípios e Minimização de Dados (Art. 6º e Art. 46) ==

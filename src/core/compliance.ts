@@ -13,7 +13,7 @@ export const LEGAL_COMPLIANCE_INFO = {
   lgpdLaw: 'Lei nº 13.709/2018 (LGPD)',
   marcoCivilLaw: 'Lei nº 12.965/2014 (Marco Civil da Internet)',
   marcoCivilDecree: 'Decreto nº 8.771/2016',
-  defaultDpoContact: 'privacidade@wazzimagiygg.com',
+  defaultDpoContact: 'pedrohenriquecardonaperes@gmail.com',
   defaultRetentionMonths: 6, // Art. 15 da Lei nº 12.965/2014
   policyVersion: PRIVACY_POLICY_VERSION,
 } as const;
