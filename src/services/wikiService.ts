@@ -311,6 +311,9 @@ export async function addTalkComment(params: {
   author: string;
   authorId: string;
 }): Promise<void> {
+  if (!auth.currentUser || auth.currentUser.isAnonymous) {
+    throw new Error('Acesso negado: é obrigatório estar autenticado para publicar discussões na Wiki.');
+  }
   const slug = slugify(params.pageId);
   const path = `${WIKI_PAGES_COLLECTION}/${slug}/talks`;
   const commentData = {
@@ -318,7 +321,7 @@ export async function addTalkComment(params: {
     topicTitle: params.topicTitle,
     content: params.content,
     author: params.author,
-    authorId: params.authorId,
+    authorId: auth.currentUser.uid,
     timestamp: new Date().toISOString(),
   };
 
@@ -349,11 +352,18 @@ export function subscribeToWikiSettings(
   );
 }
 
-export async function saveWikiSettingsToFirestore(settings: WikiSettings): Promise<void> {
+export async function saveWikiSettingsToFirestore(
+  settings: WikiSettings,
+  isBureaucrat = false
+): Promise<void> {
+  if (!auth.currentUser || auth.currentUser.isAnonymous || !isBureaucrat) {
+    throw new Error('Acesso negado: apenas Burocratas autenticados podem alterar as configurações globais da Wiki.');
+  }
   const path = `${WIKI_SETTINGS_COLLECTION}/global`;
   try {
     await setDoc(doc(db, WIKI_SETTINGS_COLLECTION, 'global'), {
       ...settings,
+      allowAnonymousEditing: false,
       updatedAt: new Date().toISOString(),
     });
   } catch (error) {
@@ -423,7 +433,10 @@ export async function savePage(params: {
     // If not found in Firestore, existingPage is null
   }
 
-  // ENFORCE PROTECTION RULES DURING EDIT OPERATIONS
+  // ENFORCE AUTHENTICATION & PROTECTION RULES DURING EDIT OPERATIONS
+  if (!auth.currentUser || auth.currentUser.isAnonymous || params.user?.isAnonymous) {
+    throw new Error('Edição bloqueada: é obrigatório fazer login com sua conta para realizar mudanças na Wiki.');
+  }
   if (existingPage && params.user) {
     const check = canUserEditPage(existingPage, params.user);
     if (!check.allowed) {

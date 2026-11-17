@@ -249,16 +249,19 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
   }, [skin]);
 
   const updateSettings = async (newSettings: Partial<WikiSettings>) => {
-    const updated = { ...settings, ...newSettings };
+    if (!isBureaucrat) {
+      throw new Error('Acesso negado: apenas Burocratas podem alterar as configurações globais da Wiki.');
+    }
+    const updated: WikiSettings = {
+      ...settings,
+      ...newSettings,
+      allowAnonymousEditing: false,
+    };
     setSettings(updated);
     localStorage.setItem('mw_settings', JSON.stringify(updated));
 
-    // Save to Firestore in real time for all clients
-    try {
-      await saveWikiSettingsToFirestore(updated);
-    } catch (err) {
-      console.warn('Failed to save settings to Firestore:', err);
-    }
+    // Save to Firestore in real time for all clients (enforced by Firestore rules as Bureaucrat-only)
+    await saveWikiSettingsToFirestore(updated, isBureaucrat);
   };
 
   const loginWithGoogle = async () => {

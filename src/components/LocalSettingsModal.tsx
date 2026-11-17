@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Sliders, X, Check, Code, Save, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sliders, X, Check, Code, Save, ShieldAlert, Lock, LogIn } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { WikiSkin } from '../types/wiki';
 import { WIKI_SITE_VERSION } from '../core/version';
@@ -11,11 +11,10 @@ interface LocalSettingsModalProps {
 }
 
 export const LocalSettingsModal: React.FC<LocalSettingsModalProps> = ({ isOpen, onClose }) => {
-  const { settings, updateSettings, skin, setSkin } = useWiki();
+  const { settings, updateSettings, skin, setSkin, isBureaucrat, currentUser, loginWithGoogle } = useWiki();
 
   const [sitename, setSitename] = useState(settings.sitename);
   const [languageCode, setLanguageCode] = useState(settings.languageCode);
-  const [allowAnon, setAllowAnon] = useState(settings.allowAnonymousEditing);
   const [livePreview, setLivePreview] = useState(settings.enableLivePreview);
   const [selectedSkin, setSelectedSkin] = useState<WikiSkin>(skin);
   const [dpoContact, setDpoContact] = useState(
@@ -31,28 +30,65 @@ export const LocalSettingsModal: React.FC<LocalSettingsModalProps> = ({ isOpen, 
     settings.hideEmailOnUserPages !== false
   );
   const [savedAlert, setSavedAlert] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSitename(settings.sitename);
+      setLanguageCode(settings.languageCode);
+      setLivePreview(settings.enableLivePreview);
+      setSelectedSkin(skin);
+      setDpoContact(settings.lgpdDpoContact || LEGAL_COMPLIANCE_INFO.defaultDpoContact);
+      setRetentionMonths(
+        settings.marcoCivilRetentionMonths ?? LEGAL_COMPLIANCE_INFO.defaultRetentionMonths
+      );
+      setRequireExplicitConsent(settings.requireExplicitConsent !== false);
+      setHideEmailOnUserPages(settings.hideEmailOnUserPages !== false);
+      setErrorMessage(null);
+      setSavedAlert(false);
+    }
+  }, [isOpen, settings, skin]);
 
   if (!isOpen) return null;
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateSettings({
-      sitename,
-      languageCode,
-      allowAnonymousEditing: allowAnon,
-      enableLivePreview: livePreview,
-      defaultSkin: selectedSkin,
-      lgpdDpoContact: dpoContact.trim() || LEGAL_COMPLIANCE_INFO.defaultDpoContact,
-      marcoCivilRetentionMonths: Math.max(6, Number(retentionMonths) || 6),
-      requireExplicitConsent,
-      hideEmailOnUserPages,
-    });
-    setSkin(selectedSkin);
-    setSavedAlert(true);
-    setTimeout(() => {
-      setSavedAlert(false);
-      onClose();
-    }, 600);
+    setErrorMessage(null);
+
+    if (!isBureaucrat) {
+      setErrorMessage('Acesso negado: apenas Burocratas autenticados podem alterar as configurações globais da Wiki.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await updateSettings({
+        sitename,
+        languageCode,
+        allowAnonymousEditing: false,
+        enableLivePreview: livePreview,
+        defaultSkin: selectedSkin,
+        lgpdDpoContact: dpoContact.trim() || LEGAL_COMPLIANCE_INFO.defaultDpoContact,
+        marcoCivilRetentionMonths: Math.max(6, Number(retentionMonths) || 6),
+        requireExplicitConsent,
+        hideEmailOnUserPages,
+      });
+      setSkin(selectedSkin);
+      setSavedAlert(true);
+      setTimeout(() => {
+        setSavedAlert(false);
+        onClose();
+      }, 600);
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : 'Erro ao salvar configurações no Firestore. Verifique se sua conta possui permissão de Burocrata.'
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   const codeRepresentation = `// LocalSettings.ts - WikiWazzimaGiygg (${WIKI_SITE_VERSION}) Configuration
@@ -62,7 +98,7 @@ export const config: WikiSettings = {
   siteVersion: "${WIKI_SITE_VERSION}",
   sitename: "${sitename}",
   languageCode: "${languageCode}",
-  allowAnonymousEditing: ${allowAnon},
+  allowAnonymousEditing: false, // Bloqueado por política de segurança
   enableLivePreview: ${livePreview},
   defaultSkin: "${selectedSkin}",
   maxRecentChanges: 50,
@@ -91,7 +127,7 @@ export const config: WikiSettings = {
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -99,6 +135,37 @@ export const config: WikiSettings = {
 
         {/* Form Body */}
         <form onSubmit={handleSave} className="p-4 space-y-4 max-h-[80vh] overflow-y-auto">
+          {!isBureaucrat && (
+            <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800 text-red-900 dark:text-red-200 rounded flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-start gap-2">
+                <ShieldAlert className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="block">Acesso Restrito — Somente Burocratas</strong>
+                  <span>
+                    As configurações globais da Wiki só podem ser alteradas por contas com privilégio de Burocrata.
+                  </span>
+                </div>
+              </div>
+              {currentUser.isAnonymous && (
+                <button
+                  type="button"
+                  onClick={loginWithGoogle}
+                  className="px-3 py-1.5 bg-[#3366cc] hover:bg-[#254b99] text-white rounded font-medium text-xs flex items-center gap-1 shrink-0 cursor-pointer"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Entrar com Google</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800 text-red-800 dark:text-red-200 rounded flex items-center gap-1.5">
+              <ShieldAlert className="w-3.5 h-3.5 text-red-600 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           {savedAlert && (
             <div className="p-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 rounded flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -106,124 +173,130 @@ export const config: WikiSettings = {
             </div>
           )}
 
-          <div>
-            <label className="font-semibold text-gray-700 dark:text-gray-300 block mb-1">
-              $wgSitename (Nome da Wiki):
-            </label>
-            <input
-              type="text"
-              required
-              value={sitename}
-              onChange={e => setSitename(e.target.value)}
-              className="w-full p-2 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded text-xs"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
+          <fieldset disabled={!isBureaucrat || saving} className="space-y-4 disabled:opacity-65">
             <div>
               <label className="font-semibold text-gray-700 dark:text-gray-300 block mb-1">
-                $wgLanguageCode:
+                $wgSitename (Nome da Wiki):
               </label>
-              <select
-                value={languageCode}
-                onChange={e => setLanguageCode(e.target.value)}
-                className="w-full p-2 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded text-xs"
-              >
-                <option value="pt-br">pt-br (Português do Brasil)</option>
-                <option value="pt">pt (Português de Portugal)</option>
-                <option value="en">en (English)</option>
-                <option value="es">es (Español)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="font-semibold text-gray-700 dark:text-gray-300 block mb-1">
-                $wgDefaultSkin:
-              </label>
-              <select
-                value={selectedSkin}
-                onChange={e => setSelectedSkin(e.target.value as WikiSkin)}
-                className="w-full p-2 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded text-xs"
-              >
-                <option value="vector-modern">Vector Moderno (2022)</option>
-                <option value="vector-legacy">Vector Clássico (2010)</option>
-                <option value="dark-mode">Modo Escuro</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-800">
-            <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
               <input
-                type="checkbox"
-                checked={allowAnon}
-                onChange={e => setAllowAnon(e.target.checked)}
-                className="rounded text-blue-600"
+                type="text"
+                required
+                value={sitename}
+                onChange={e => setSitename(e.target.value)}
+                className="w-full p-2 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded text-xs"
               />
-              <span>$wgGroupPermissions[&apos;*&apos;][&apos;edit&apos;] (Permitir edições de anônimos)</span>
-            </label>
-
-            <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
-              <input
-                type="checkbox"
-                checked={livePreview}
-                onChange={e => setLivePreview(e.target.checked)}
-                className="rounded text-blue-600"
-              />
-              <span>$wgLivePreview (Habilitar previsão ao vivo)</span>
-            </label>
-          </div>
-
-          {/* LGPD & Marco Civil da Internet Settings */}
-          <div className="space-y-2.5 pt-3 border-t border-gray-200 dark:border-gray-800">
-            <div className="font-semibold text-gray-800 dark:text-gray-200 text-[11px] uppercase tracking-wider">
-              Conformidade LGPD (Lei 13.709/2018) &amp; Marco Civil (Lei 12.965/2014)
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="font-semibold text-gray-700 dark:text-gray-300 block mb-1">
-                  $wgLgpdDpoContact (Canal do Encarregado / DPO):
+                  $wgLanguageCode:
                 </label>
-                <input
-                  type="text"
-                  value={dpoContact}
-                  onChange={e => setDpoContact(e.target.value)}
+                <select
+                  value={languageCode}
+                  onChange={e => setLanguageCode(e.target.value)}
                   className="w-full p-2 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded text-xs"
-                />
+                >
+                  <option value="pt-br">pt-br (Português do Brasil)</option>
+                  <option value="pt">pt (Português de Portugal)</option>
+                  <option value="en">en (English)</option>
+                  <option value="es">es (Español)</option>
+                </select>
               </div>
+
               <div>
                 <label className="font-semibold text-gray-700 dark:text-gray-300 block mb-1">
-                  $wgMarcoCivilRetentionMonths (Guarda Art. 15, mín. 6 meses):
+                  $wgDefaultSkin:
                 </label>
-                <input
-                  type="number"
-                  min={6}
-                  max={60}
-                  value={retentionMonths}
-                  onChange={e => setRetentionMonths(Math.max(6, Number(e.target.value) || 6))}
+                <select
+                  value={selectedSkin}
+                  onChange={e => setSelectedSkin(e.target.value as WikiSkin)}
                   className="w-full p-2 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded text-xs"
-                />
+                >
+                  <option value="vector-modern">Vector Moderno (2022)</option>
+                  <option value="vector-legacy">Vector Clássico (2010)</option>
+                  <option value="dark-mode">Modo Escuro</option>
+                </select>
               </div>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
-              <input
-                type="checkbox"
-                checked={requireExplicitConsent}
-                onChange={e => setRequireExplicitConsent(e.target.checked)}
-                className="rounded text-blue-600"
-              />
-              <span>$wgRequireExplicitConsent (Exigir banner de consentimento granular de cookies)</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
-              <input
-                type="checkbox"
-                checked={hideEmailOnUserPages}
-                onChange={e => setHideEmailOnUserPages(e.target.checked)}
-                className="rounded text-blue-600"
-              />
-              <span>$wgHideEmailOnUserPages (Privacidade por padrão: ocultar e-mail em páginas de usuário)</span>
-            </label>
-          </div>
+
+            <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-800">
+              <label className="flex items-center gap-2 text-gray-500 dark:text-gray-400 cursor-not-allowed">
+                <input
+                  type="checkbox"
+                  checked={false}
+                  disabled
+                  readOnly
+                  className="rounded text-blue-600"
+                />
+                <Lock className="w-3 h-3 text-amber-600 shrink-0" />
+                <span>
+                  $wgGroupPermissions[&apos;*&apos;][&apos;edit&apos;] — Edições sem login bloqueadas permanentemente por segurança
+                </span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={livePreview}
+                  onChange={e => setLivePreview(e.target.checked)}
+                  className="rounded text-blue-600"
+                />
+                <span>$wgLivePreview (Habilitar previsão ao vivo)</span>
+              </label>
+            </div>
+
+            {/* LGPD & Marco Civil da Internet Settings */}
+            <div className="space-y-2.5 pt-3 border-t border-gray-200 dark:border-gray-800">
+              <div className="font-semibold text-gray-800 dark:text-gray-200 text-[11px] uppercase tracking-wider">
+                Conformidade LGPD (Lei 13.709/2018) &amp; Marco Civil (Lei 12.965/2014)
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-gray-700 dark:text-gray-300 block mb-1">
+                    $wgLgpdDpoContact (Canal do Encarregado / DPO):
+                  </label>
+                  <input
+                    type="text"
+                    value={dpoContact}
+                    onChange={e => setDpoContact(e.target.value)}
+                    className="w-full p-2 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-gray-700 dark:text-gray-300 block mb-1">
+                    $wgMarcoCivilRetentionMonths (Guarda Art. 15, mín. 6 meses):
+                  </label>
+                  <input
+                    type="number"
+                    min={6}
+                    max={60}
+                    value={retentionMonths}
+                    onChange={e => setRetentionMonths(Math.max(6, Number(e.target.value) || 6))}
+                    className="w-full p-2 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded text-xs"
+                  />
+                </div>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={requireExplicitConsent}
+                  onChange={e => setRequireExplicitConsent(e.target.checked)}
+                  className="rounded text-blue-600"
+                />
+                <span>$wgRequireExplicitConsent (Exigir banner de consentimento granular de cookies)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={hideEmailOnUserPages}
+                  onChange={e => setHideEmailOnUserPages(e.target.checked)}
+                  className="rounded text-blue-600"
+                />
+                <span>$wgHideEmailOnUserPages (Privacidade por padrão: ocultar e-mail em páginas de usuário)</span>
+              </label>
+            </div>
+          </fieldset>
 
           {/* Live TypeScript Code Preview */}
           <div>
@@ -243,15 +316,18 @@ export const config: WikiSettings = {
               onClick={onClose}
               className="px-3 py-1.5 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 text-gray-700 dark:text-gray-300 rounded cursor-pointer"
             >
-              Cancelar
+              Fechar
             </button>
-            <button
-              type="submit"
-              className="px-4 py-1.5 bg-[#3366cc] hover:bg-[#254b99] text-white rounded font-medium shadow-2xs flex items-center gap-1 cursor-pointer"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>Salvar configurações</span>
-            </button>
+            {isBureaucrat && (
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-4 py-1.5 bg-[#3366cc] hover:bg-[#254b99] disabled:opacity-50 text-white rounded font-medium shadow-2xs flex items-center gap-1 cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{saving ? 'Salvando...' : 'Salvar configurações'}</span>
+              </button>
+            )}
           </div>
         </form>
       </div>

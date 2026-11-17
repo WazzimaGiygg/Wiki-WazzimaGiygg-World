@@ -105,15 +105,17 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSettings }) => {
               <span>Modo Escuro</span>
             </button>
 
-            <button
-              type="button"
-              onClick={onOpenSettings}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium border bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-              title="Abrir configurações globais da Wiki ($wg)"
-            >
-              <Settings className="w-3 h-3" />
-              <span>Configurações ($wg)</span>
-            </button>
+            {isBureaucrat && (
+              <button
+                type="button"
+                onClick={onOpenSettings}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium border bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                title="Abrir configurações globais da Wiki ($wg — Somente Burocratas)"
+              >
+                <Settings className="w-3 h-3" />
+                <span>Configurações ($wg)</span>
+              </button>
+            )}
           </div>
         </div>
 

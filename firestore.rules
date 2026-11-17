@@ -2,13 +2,44 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // Helper functions — strict non-anonymous authentication & RBAC
     function isSignedIn() {
-      return request.auth != null;
+      return request.auth != null
+        && request.auth.uid is string
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.size() > 0;
+    function isBureaucrat() {
+      return isSignedIn() && (
+        (
+          request.auth.token.email == 'pedrohenriquecardonaperes@gmail.com'
+          && request.auth.token.email_verified == true
+        )
+        || (
+          exists(/databases/$(database)/documents/user_roles/$(request.auth.uid))
+          && get(/databases/$(database)/documents/user_roles/$(request.auth.uid)).data.groups.hasAny(['burocrata'])
+        )
+      );
+    }
+
+    function isAdminOrBureaucrat() {
+      return isBureaucrat() || (
+        isSignedIn()
+        && exists(/databases/$(database)/documents/user_roles/$(request.auth.uid))
+        && get(/databases/$(database)/documents/user_roles/$(request.auth.uid)).data.groups.hasAny(['burocrata', 'administrador'])
+      );
+    }
+
+    function isNotBlocked() {
+      return isSignedIn() && (
+        !exists(/databases/$(database)/documents/user_roles/$(request.auth.uid))
+        || !get(/databases/$(database)/documents/user_roles/$(request.auth.uid)).data.groups.hasAny(['bloqueado'])
+      );
+    }
+
+    function isMaintenanceMode() {
+      return exists(/databases/$(database)/documents/wiki_settings/global)
+        && get(/databases/$(database)/documents/wiki_settings/global).data.maintenanceMode == true;
     }
 
     function isValidPage(data) {
@@ -40,40 +71,9 @@ service cloud.firestore {
     }
 
     function isValidSettings(data) {
-      return data.sitename is string && data.sitename.size() <= 100
-        && data.languageCode is string && data.languageCode.size() <= 10;
-    }
-
-    // Wiki Pages collection
-    match /wiki_pages/{pageId} {
-      allow read: if true;
-      allow create: if isSignedIn() && isValidPage(request.resource.data);
-      allow update: if isSignedIn() && isValidPage(request.resource.data);
-      allow delete: if isSignedIn();
-
-      // Revisions subcollection (immutable, authenticated only)
-      match /revisions/{revId} {
-        allow read: if true;
-        allow create: if isSignedIn() && isValidRevision(request.resource.data);
-        allow update: if false; // Revisions are immutable
-        allow delete: if isSignedIn();
-      }
-
-      // Talks subcollection (discussion comments, authenticated only)
-      match /talks/{talkId} {
-        allow read: if true;
-        allow create: if isSignedIn() && isValidTalk(request.resource.data);
-        allow update: if isSignedIn() && isValidTalk(request.resource.data);
-        allow delete: if isSignedIn();
-      }
-    }
-
-    // Recent changes log (authenticated only)
-    match /recent_changes/{changeId} {
-      allow read: if true;
-      allow create: if isSignedIn() && isValidRecentChange(request.resource.data);
-      allow update: if false; // Recent change log is append-only
-      allow delete: if isSignedIn();
+      return (!('sitename' in data) || (data.sitename is string && data.sitename.size() > 0 && data.sitename.size() <= 100))
+        && (!('languageCode' in data) || (data.languageCode is string && data.languageCode.size() > 0 && data.languageCode.size() <= 10))
+        && (!('allowAnonymousEditing' in data) || data.allowAnonymousEditing == false);
     }
 
     function isValidExtension(data) {
@@ -82,86 +82,109 @@ service cloud.firestore {
         && data.description is string && data.description.size() <= 2000;
     }
 
-    // Wiki settings configuration (authenticated only)
+    // Wiki Pages collection — strictly authenticated, non-blocked users only (bureaucrats bypass maintenance)
+    match /wiki_pages/{pageId} {
+      allow read: if true;
+      allow create, update: if isNotBlocked()
+        && isValidPage(request.resource.data)
+        && (isBureaucrat() || !isMaintenanceMode());
+      allow delete: if isBureaucrat();
+
+      // Revisions subcollection (immutable, authenticated non-blocked only)
+      match /revisions/{revId} {
+        allow read: if true;
+        allow create: if isNotBlocked()
+          && isValidRevision(request.resource.data)
+          && (isBureaucrat() || !isMaintenanceMode());
+        allow update: if false; // Revisions are immutable
+        allow delete: if isBureaucrat();
+      }
+
+      // Talks subcollection (discussion comments, authenticated non-blocked only)
+      match /talks/{talkId} {
+        allow read: if true;
+        allow create: if isNotBlocked() && isValidTalk(request.resource.data);
+        allow update: if isBureaucrat() || (isNotBlocked() && resource.data.authorId == request.auth.uid && isValidTalk(request.resource.data));
+        allow delete: if isBureaucrat() || (isNotBlocked() && resource.data.authorId == request.auth.uid);
+      }
+    }
+
+    // Recent changes log (authenticated non-blocked only, append-only)
+    match /recent_changes/{changeId} {
+      allow read: if true;
+      allow create: if isNotBlocked() && isValidRecentChange(request.resource.data);
+      allow update: if false;
+      allow delete: if isBureaucrat();
+    }
+
+    // Wiki settings configuration — STRICTLY BUREAUCRAT ONLY
     match /wiki_settings/{settingId} {
       allow read: if true;
-      allow create, update: if isSignedIn() && isValidSettings(request.resource.data);
-      allow delete: if isSignedIn();
+      allow create, update: if isBureaucrat() && isValidSettings(request.resource.data);
+      allow delete: if false;
     }
 
-    // User roles / permissions
+    // User roles / permissions — STRICTLY BUREAUCRAT ONLY (prevents privilege escalation)
     match /user_roles/{userId} {
       allow read: if true;
-      allow create, update: if isSignedIn();
-      allow delete: if isSignedIn();
+      allow create, update, delete: if isBureaucrat();
     }
 
-    // Bureaucrat logs
+    // Bureaucrat logs — STRICTLY BUREAUCRAT ONLY, append-only
     match /bureaucrat_logs/{logId} {
       allow read: if true;
-      allow create: if isSignedIn();
+      allow create: if isBureaucrat();
       allow update, delete: if false;
     }
 
-    // Page protection logs
+    // Page protection logs — ADMIN/BUREAUCRAT ONLY, append-only
     match /page_protection_logs/{logId} {
       allow read: if true;
-      allow create: if isSignedIn();
+      allow create: if isAdminOrBureaucrat();
       allow update, delete: if false;
     }
 
-    // Wiki extensions (synchronized with codebase & Firestore, managed by bureaucrats)
+    // Wiki extensions — STRICTLY BUREAUCRAT ONLY
     match /wiki_extensions/{extensionId} {
       allow read: if true;
-      allow create, update: if isSignedIn() && isValidExtension(request.resource.data);
-      allow delete: if isSignedIn();
+      allow create, update: if isBureaucrat() && isValidExtension(request.resource.data);
+      allow delete: if isBureaucrat();
     }
 
-    // CheckUser / Sockpuppet cases
+    // CheckUser / Sockpuppet cases — authenticated submit, admin/bureaucrat manage
     match /checkuser_cases/{caseId} {
       allow read: if true;
-      allow create, update: if isSignedIn();
-      allow delete: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isAdminOrBureaucrat();
     }
 
-    // Unblock discussion requests
+    // Unblock discussion requests — authenticated users can submit/comment, bureaucrats decide
     match /unblock_requests/{requestId} {
       allow read: if true;
-      allow create, update: if isSignedIn();
-      allow delete: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isAdminOrBureaucrat() || (isSignedIn() && resource.data.userUid == request.auth.uid);
+      allow delete: if isBureaucrat();
     }
 
     // Arbitration Committee (ArbCom) cases
     match /arbcom_cases/{caseId} {
       allow read: if true;
-      allow create, update: if isSignedIn();
-      allow delete: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isAdminOrBureaucrat();
     }
 
     // Universal Code of Conduct (UCoC) reports
     match /ucoc_reports/{reportId} {
       allow read: if true;
-      allow create, update: if isSignedIn();
-      allow delete: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isAdminOrBureaucrat();
     }
 
-    // Wiki files and uploaded images (requires signed in)
+    // Wiki files and uploaded images (requires authenticated non-blocked user)
     match /wiki_files/{fileId} {
       allow read: if true;
-      allow create, update: if isSignedIn();
-      allow delete: if isSignedIn();
-    }
-
-    function isPrivacyOfficerOrAdmin() {
-      return isSignedIn() && (
-        request.auth.token.email == 'pedrohenriquecardonaperes@gmail.com'
-        || (
-          exists(/databases/$(database)/documents/user_roles/$(request.auth.uid))
-          && (
-            get(/databases/$(database)/documents/user_roles/$(request.auth.uid)).data.groups.hasAny(['burocrata', 'administrador'])
-          )
-        )
-      );
+      allow create: if isNotBlocked();
+      allow update, delete: if isBureaucrat();
     }
 
     function isValidPrivacyRequest(data) {
@@ -203,13 +226,13 @@ service cloud.firestore {
     match /privacy_requests/{requestId} {
       allow read: if isSignedIn() && (
         resource.data.requesterUid == request.auth.uid
-        || isPrivacyOfficerOrAdmin()
+        || isAdminOrBureaucrat()
       );
       allow create: if isSignedIn()
         && request.resource.data.requesterUid == request.auth.uid
         && request.resource.data.status == 'recebida'
         && isValidPrivacyRequest(request.resource.data);
-      allow update: if isPrivacyOfficerOrAdmin()
+      allow update: if isAdminOrBureaucrat()
         && request.resource.data.requesterUid == resource.data.requesterUid
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'responseNote', 'handledBy', 'updatedAt'])
@@ -230,8 +253,8 @@ service cloud.firestore {
 
     // Centralized Firebase admin audit logs (bureaucrat/admin only, append-only)
     match /admin_audit_logs/{logId} {
-      allow read: if isPrivacyOfficerOrAdmin();
-      allow create: if isPrivacyOfficerOrAdmin() && isValidAdminAuditLog(request.resource.data);
+      allow read: if isAdminOrBureaucrat();
+      allow create: if isAdminOrBureaucrat() && isValidAdminAuditLog(request.resource.data);
       allow update, delete: if false;
     }
 

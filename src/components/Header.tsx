@@ -40,6 +40,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
     navigateToPage,
     settings,
     setSidebarOpen,
+    isBureaucrat,
   } = useWiki();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -582,15 +583,17 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
             </button>
           </div>
 
-          {/* Quick LocalSettings config button */}
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            className="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
-            title="Configurações da Wiki (LocalSettings.ts)"
-          >
-            <Sliders className="w-4 h-4" />
-          </button>
+          {/* Quick LocalSettings config button (Bureaucrats only) */}
+          {isBureaucrat && (
+            <button
+              type="button"
+              onClick={onOpenSettings}
+              className="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded cursor-pointer"
+              title="Configurações da Wiki (LocalSettings.ts — Somente Burocratas)"
+            >
+              <Sliders className="w-4 h-4" />
+            </button>
+          )}
 
           {/* User Profile / Auth */}
           <div className="relative">
