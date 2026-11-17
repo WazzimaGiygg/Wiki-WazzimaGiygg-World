@@ -3,6 +3,7 @@ import { Sliders, X, Check, Code, Save, RotateCcw } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { WikiSkin } from '../types/wiki';
 import { WIKI_SITE_VERSION } from '../core/version';
+import { LEGAL_COMPLIANCE_INFO } from '../core/compliance';
 
 interface LocalSettingsModalProps {
   isOpen: boolean;
@@ -17,6 +18,18 @@ export const LocalSettingsModal: React.FC<LocalSettingsModalProps> = ({ isOpen, 
   const [allowAnon, setAllowAnon] = useState(settings.allowAnonymousEditing);
   const [livePreview, setLivePreview] = useState(settings.enableLivePreview);
   const [selectedSkin, setSelectedSkin] = useState<WikiSkin>(skin);
+  const [dpoContact, setDpoContact] = useState(
+    settings.lgpdDpoContact || LEGAL_COMPLIANCE_INFO.defaultDpoContact
+  );
+  const [retentionMonths, setRetentionMonths] = useState(
+    settings.marcoCivilRetentionMonths ?? LEGAL_COMPLIANCE_INFO.defaultRetentionMonths
+  );
+  const [requireExplicitConsent, setRequireExplicitConsent] = useState(
+    settings.requireExplicitConsent !== false
+  );
+  const [hideEmailOnUserPages, setHideEmailOnUserPages] = useState(
+    settings.hideEmailOnUserPages !== false
+  );
   const [savedAlert, setSavedAlert] = useState(false);
 
   if (!isOpen) return null;
@@ -29,6 +42,10 @@ export const LocalSettingsModal: React.FC<LocalSettingsModalProps> = ({ isOpen, 
       allowAnonymousEditing: allowAnon,
       enableLivePreview: livePreview,
       defaultSkin: selectedSkin,
+      lgpdDpoContact: dpoContact.trim() || LEGAL_COMPLIANCE_INFO.defaultDpoContact,
+      marcoCivilRetentionMonths: Math.max(6, Number(retentionMonths) || 6),
+      requireExplicitConsent,
+      hideEmailOnUserPages,
     });
     setSkin(selectedSkin);
     setSavedAlert(true);
@@ -49,7 +66,12 @@ export const config: WikiSettings = {
   enableLivePreview: ${livePreview},
   defaultSkin: "${selectedSkin}",
   maxRecentChanges: 50,
-  repositoryUrl: "https://github.com/WazzimaGiygg/WikiWazzimaGiygg"
+  repositoryUrl: "https://github.com/WazzimaGiygg/WikiWazzimaGiygg",
+  // Conformidade LGPD (Lei 13.709/2018) & Marco Civil (Lei 12.965/2014)
+  lgpdDpoContact: "${dpoContact}",
+  marcoCivilRetentionMonths: ${Math.max(6, Number(retentionMonths) || 6)},
+  requireExplicitConsent: ${requireExplicitConsent},
+  hideEmailOnUserPages: ${hideEmailOnUserPages}
 };`;
 
   return (
@@ -149,6 +171,57 @@ export const config: WikiSettings = {
                 className="rounded text-blue-600"
               />
               <span>$wgLivePreview (Habilitar previsão ao vivo)</span>
+            </label>
+          </div>
+
+          {/* LGPD & Marco Civil da Internet Settings */}
+          <div className="space-y-2.5 pt-3 border-t border-gray-200 dark:border-gray-800">
+            <div className="font-semibold text-gray-800 dark:text-gray-200 text-[11px] uppercase tracking-wider">
+              Conformidade LGPD (Lei 13.709/2018) &amp; Marco Civil (Lei 12.965/2014)
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="font-semibold text-gray-700 dark:text-gray-300 block mb-1">
+                  $wgLgpdDpoContact (Canal do Encarregado / DPO):
+                </label>
+                <input
+                  type="text"
+                  value={dpoContact}
+                  onChange={e => setDpoContact(e.target.value)}
+                  className="w-full p-2 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded text-xs"
+                />
+              </div>
+              <div>
+                <label className="font-semibold text-gray-700 dark:text-gray-300 block mb-1">
+                  $wgMarcoCivilRetentionMonths (Guarda Art. 15, mín. 6 meses):
+                </label>
+                <input
+                  type="number"
+                  min={6}
+                  max={60}
+                  value={retentionMonths}
+                  onChange={e => setRetentionMonths(Math.max(6, Number(e.target.value) || 6))}
+                  className="w-full p-2 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded text-xs"
+                />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
+              <input
+                type="checkbox"
+                checked={requireExplicitConsent}
+                onChange={e => setRequireExplicitConsent(e.target.checked)}
+                className="rounded text-blue-600"
+              />
+              <span>$wgRequireExplicitConsent (Exigir banner de consentimento granular de cookies)</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
+              <input
+                type="checkbox"
+                checked={hideEmailOnUserPages}
+                onChange={e => setHideEmailOnUserPages(e.target.checked)}
+                className="rounded text-blue-600"
+              />
+              <span>$wgHideEmailOnUserPages (Privacidade por padrão: ocultar e-mail em páginas de usuário)</span>
             </label>
           </div>
 

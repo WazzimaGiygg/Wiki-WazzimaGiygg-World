@@ -19,6 +19,7 @@ import {
 } from '../services/extensionService';
 import { WikiExtensionDoc } from '../extensions';
 import { slugify } from '../core/parser';
+import { LEGAL_COMPLIANCE_INFO, hasPreferenceStorageConsent } from '../core/compliance';
 
 interface WikiContextType {
   currentUser: WikiUser;
@@ -54,6 +55,10 @@ const DEFAULT_SETTINGS: WikiSettings = {
   defaultSkin: 'vector-modern',
   maxRecentChanges: 50,
   repositoryUrl: 'https://github.com/WazzimaGiygg/WikiWazzimaGiygg',
+  lgpdDpoContact: LEGAL_COMPLIANCE_INFO.defaultDpoContact,
+  marcoCivilRetentionMonths: LEGAL_COMPLIANCE_INFO.defaultRetentionMonths,
+  requireExplicitConsent: true,
+  hideEmailOnUserPages: true,
 };
 
 const WikiContext = createContext<WikiContextType | null>(null);
@@ -211,10 +216,12 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
-  // Persist skin
+  // Persist skin (only if user consented to preference storage or hasn't opted out)
   const handleSetSkin = (newSkin: WikiSkin) => {
     setSkin(newSkin);
-    localStorage.setItem('mw_skin', newSkin);
+    if (hasPreferenceStorageConsent()) {
+      localStorage.setItem('mw_skin', newSkin);
+    }
     if (newSkin === 'dark-mode') {
       document.documentElement.classList.add('dark');
     } else {
@@ -263,7 +270,9 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
   const setGuestNickname = (name: string) => {
     const clean = name.trim() || 'Colaborador_Anônimo';
     setGuestName(clean);
-    localStorage.setItem('mw_guest_name', clean);
+    if (hasPreferenceStorageConsent()) {
+      localStorage.setItem('mw_guest_name', clean);
+    }
   };
 
   const navigateToPage = (target: string, tab: 'view' | 'edit' | 'history' | 'talk' = 'view') => {

@@ -1114,11 +1114,11 @@ async function createInitialUserPage(
     `| subtítulo = Colaborador(a) do WikiWazzimaGiygg`,
     ...(extra?.photoURL ? [`| foto = ${extra.photoURL}`, `| legenda = Perfil de ${userName}`] : []),
     `| usuário = ${userName}`,
-    ...(extra?.email ? [`| e-mail = ${extra.email}`] : []),
     `| uid = \`${uid}\``,
     `| função = Colaborador Registrado`,
     `| página_de_discussão = [[${slugify(talkTitle)}|Discussão de ${userName}]]`,
     `| registrado_em = ${registeredDate}`,
+    `| privacidade = E-mail oculto por padrão (LGPD)`,
     `| status = Ativo`,
     '}}',
   ].join('\n');

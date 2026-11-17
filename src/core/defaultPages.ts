@@ -547,6 +547,106 @@ Acesse a lista de pedidos e delibere em [[Especial:Discussão_de_desbloqueio]].
 
 [[Categoria:Políticas]]
 [[Categoria:Administração]]`
+  },
+
+  'Wiki:Política_de_Privacidade': {
+    slug: 'Wiki:Política_de_Privacidade',
+    title: 'Wiki:Política de Privacidade',
+    namespace: 'Wiki',
+    author: 'Encarregado de Dados (DPO)',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_lgpd_privacy',
+    categories: ['Políticas', 'Privacidade', 'LGPD', 'Governança'],
+    createdAt: '2026-11-17T00:00:00.000Z',
+    updatedAt: '2026-11-17T00:00:00.000Z',
+    summary: 'Política de Privacidade e Proteção de Dados Pessoais em conformidade com a LGPD (Lei nº 13.709/2018)',
+    protectionLevel: 'semi_protected',
+    isLocked: false,
+    protectionReason: 'Documento institucional de conformidade com a LGPD',
+    content: `{{Aviso|Esta Política de Privacidade descreve como o '''WikiWazzimaGiygg''' (core.wazzimagiygg.com) trata dados pessoais em conformidade com a '''Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018 — LGPD)''' e o '''Marco Civil da Internet (Lei nº 12.965/2014)'''.}}
+
+== 1. Controlador e Encarregado (DPO — Art. 41 da LGPD) ==
+* '''Plataforma / Controlador:''' WikiWazzimaGiygg (core.wazzimagiygg.com) — Versão {{VERSÃO}}.
+* '''Canal do Encarregado (DPO):''' [mailto:privacidade@wazzimagiygg.com privacidade@wazzimagiygg.com]
+* '''Portal de Autoatendimento:''' [[Especial:Privacidade|Central de Privacidade e LGPD]]
+
+== 2. Princípios e Minimização de Dados (Art. 6º e Art. 46) ==
+Adotamos '''Privacidade por Padrão (Privacy by Default)''':
+* Visitantes podem ler todo o conteúdo enciclopédico sem criar conta nem fornecer dados pessoais.
+* Ao autenticar-se com conta Google, coletamos apenas o mínimo necessário para atribuição editorial e segurança (identificador técnico UID, nome de exibição, foto de perfil opcional e e-mail mantido privado).
+* Por padrão, o '''e-mail pessoal não é publicado''' na página pública \`Usuário:<Nome>\`.
+* Não comercializamos dados pessoais nem realizamos rastreamento publicitário comportamental.
+
+== 3. Bases Legais para o Tratamento (Art. 7º da LGPD) ==
+{| class="wikitable" style="width:100%; text-align:left;"
+! Finalidade !! Dados Tratados !! Base Legal (LGPD)
+|-
+| Autenticação e acesso de editores || UID, nome de exibição, e-mail privado, foto || Execução de contrato / Termos de Uso (Art. 7º, V)
+|-
+| Histórico público de revisões e atribuição || Nome público do autor, data/hora e conteúdo editado || Execução de contrato e legítimo interesse editorial sob CC BY-SA 4.0 (Art. 7º, V e IX)
+|-
+| Guarda de registros de acesso a aplicações || Data, hora e identificador técnico || Cumprimento de obrigação legal — Art. 15 do Marco Civil (Art. 7º, II)
+|-
+| Preferências de tema e integrações opcionais || Escolha de tema (Vector/Escuro) e preferências de consentimento || Consentimento do titular, revogável a qualquer momento (Art. 7º, I e Art. 8º, § 5º)
+|}
+
+== 4. Direitos do Titular (Art. 18 da LGPD) ==
+Você pode exercer gratuitamente, a qualquer momento, através da [[Especial:Privacidade|Central de Privacidade e LGPD]]:
+# '''Confirmação e acesso''' aos dados pessoais tratados.
+# '''Correção''' de dados incompletos, inexatos ou desatualizados.
+# '''Anonimização, bloqueio ou eliminação''' de dados desnecessários ou excessivos.
+# '''Portabilidade''' mediante exportação estruturada em formato JSON.
+# '''Revogação do consentimento''' para cookies e armazenamento não essenciais.
+
+== 5. Segurança da Informação (Art. 46 da LGPD) ==
+Empregamos criptografia em trânsito (HTTPS/TLS), controle de acesso baseado em papéis e regras de isolamento de dados pessoais (PII) no Google Cloud Firestore, além de cabeçalhos HTTP de proteção de privacidade.
+
+[[Categoria:Políticas]]
+[[Categoria:Privacidade]]
+[[Categoria:LGPD]]`
+  },
+
+  'Wiki:Termos_de_Uso': {
+    slug: 'Wiki:Termos_de_Uso',
+    title: 'Wiki:Termos de Uso',
+    namespace: 'Wiki',
+    author: 'Comitê de Governança',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_marco_civil_terms',
+    categories: ['Políticas', 'Marco Civil', 'Governança'],
+    createdAt: '2026-11-17T00:00:00.000Z',
+    updatedAt: '2026-11-17T00:00:00.000Z',
+    summary: 'Termos de Uso alinhados ao Marco Civil da Internet (Lei nº 12.965/2014) e licença CC BY-SA 4.0',
+    protectionLevel: 'semi_protected',
+    isLocked: false,
+    protectionReason: 'Termos de Uso oficiais em conformidade com o Marco Civil da Internet',
+    content: `{{Aviso|Estes Termos de Uso regem a utilização do '''WikiWazzimaGiygg''' (core.wazzimagiygg.com) em conformidade com o '''Marco Civil da Internet (Lei nº 12.965/2014)''', o '''Decreto nº 8.771/2016''' e a '''LGPD (Lei nº 13.709/2018)'''.}}
+
+== 1. Princípios e Direitos dos Usuários (Art. 3º e Art. 7º do Marco Civil) ==
+O WikiWazzimaGiygg assegura aos usuários:
+* '''Liberdade de expressão e acesso ao conhecimento''' na construção colaborativa de artigos enciclopédicos.
+* '''Inviolabilidade da intimidade e da vida privada''' e transparência clara sobre o tratamento de dados (consulte [[Wiki:Política_de_Privacidade]]).
+* '''Informações claras e completas''' sobre coleta, uso, armazenamento e exclusão de dados.
+
+== 2. Guarda de Registros de Acesso a Aplicações (Art. 15 e Art. 22) ==
+Em cumprimento ao '''Art. 15 da Lei nº 12.965/2014''', os registros de acesso à aplicação são mantidos sob sigilo, em ambiente controlado e de segurança, pelo prazo mínimo de '''6 (seis) meses'''. A disponibilização desses registros a terceiros somente ocorre mediante '''ordem judicial específica''', nos termos do Art. 22 do Marco Civil da Internet.
+
+== 3. Responsabilidade por Conteúdo de Terceiros e Remoção (Art. 19 e Art. 21) ==
+* '''Art. 19 (Regra Geral):''' Com o intuito de assegurar a liberdade de expressão e impedir a censura, a remoção compulsória de conteúdo gerado por terceiros depende de '''ordem judicial específica''' que contenha a identificação clara e inequívoca do endereço/URL da página.
+* '''Art. 21 (Exceção Urgente):''' Mediante simples notificação do participante ou de seu representante legal — com indicação clara da página/URL — será promovida a indisponibilização diligente de conteúdo contendo cenas de nudez ou atos sexuais de caráter privado divulgados sem autorização.
+* '''Conduta Comunitária:''' Conteúdos que violem o [[Wiki:Código_Universal_de_Conduta]] (assédio, discurso de ódio, doxxing ou vandalismo) continuam sujeitos à moderação editorial da comunidade.
+
+Para protocolar notificações formais ou pedidos legais, utilize a [[Especial:Privacidade|Central de Privacidade e Marco Civil]].
+
+== 4. Licenciamento das Contribuições ==
+Ao publicar textos ou edições no WikiWazzimaGiygg, o colaborador concorda em licenciá-los sob a '''Creative Commons Atribuição-CompartilhaIgual 4.0 Internacional (CC BY-SA 4.0)''' e a '''GNU General Public License v2+''', preservando-se a atribuição de autoria no histórico de revisões.
+
+[[Categoria:Políticas]]
+[[Categoria:Marco Civil]]
+[[Categoria:Governança]]`
   }
 };
+
 

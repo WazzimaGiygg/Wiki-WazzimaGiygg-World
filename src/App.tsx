@@ -18,6 +18,8 @@ import { SpecialGitHubSync } from './components/SpecialGitHubSync';
 import { SpecialBureaucratAdmin } from './components/SpecialBureaucratAdmin';
 import { SpecialExtensions } from './components/SpecialExtensions';
 import { SpecialUpload } from './components/SpecialUpload';
+import { SpecialPrivacy } from './components/SpecialPrivacy';
+import { ConsentBanner } from './components/ConsentBanner';
 import { LocalSettingsModal } from './components/LocalSettingsModal';
 import { subscribeToPage } from './services/wikiService';
 import { WikiPage } from './types/wiki';
@@ -160,6 +162,14 @@ function WikiMain() {
     ) {
       return <SpecialUpload />;
     }
+    if (
+      currentSlug === 'Especial:Privacidade' ||
+      currentSlug === 'Especial:LGPD' ||
+      currentSlug === 'Especial:Marco_Civil' ||
+      currentSlug === 'Special:Privacy'
+    ) {
+      return <SpecialPrivacy />;
+    }
 
     // Standard wiki page tabs
     if (activeTab === 'edit') {
@@ -244,6 +254,7 @@ function WikiMain() {
       </div>
 
       <LocalSettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <ConsentBanner />
     </div>
   );
 }

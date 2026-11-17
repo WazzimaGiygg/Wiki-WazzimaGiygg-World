@@ -169,6 +169,10 @@ export interface WikiSettings {
   defaultSkin: WikiSkin;
   maxRecentChanges: number;
   repositoryUrl: string;
+  lgpdDpoContact?: string;
+  marcoCivilRetentionMonths?: number;
+  requireExplicitConsent?: boolean;
+  hideEmailOnUserPages?: boolean;
 }
 
 // 1. Verificação de Contas (CheckUser / Fantoches)
@@ -304,5 +308,37 @@ export interface UCoCReport {
   createdAt: string;
   updatedAt?: string;
 }
+
+// 5. LGPD (Lei 13.709/2018) & Marco Civil da Internet (Lei 12.965/2014)
+export type PrivacyRequestType =
+  | 'lgpd_acesso'
+  | 'lgpd_retificacao'
+  | 'lgpd_anonimizacao_eliminacao'
+  | 'lgpd_portabilidade'
+  | 'lgpd_revogacao_consentimento'
+  | 'marco_civil_art19'
+  | 'marco_civil_art21';
+
+export type PrivacyRequestStatus =
+  | 'recebida'
+  | 'em_analise'
+  | 'atendida'
+  | 'indeferida';
+
+export interface PrivacyRequestRecord {
+  id: string;
+  requesterUid: string;
+  requesterName: string;
+  requesterEmail?: string;
+  type: PrivacyRequestType;
+  targetUrlOrPage?: string;
+  details: string;
+  status: PrivacyRequestStatus;
+  responseNote?: string;
+  handledBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 

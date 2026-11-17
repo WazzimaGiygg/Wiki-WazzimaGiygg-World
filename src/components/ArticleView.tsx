@@ -470,6 +470,31 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
             </button>
           </div>
         </div>
+        <div className="print:hidden pt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+          <button
+            type="button"
+            onClick={() => navigateToPage('Wiki:Política_de_Privacidade')}
+            className="text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer"
+          >
+            Política de Privacidade (LGPD)
+          </button>
+          <span className="text-gray-300 dark:text-gray-700">·</span>
+          <button
+            type="button"
+            onClick={() => navigateToPage('Wiki:Termos_de_Uso')}
+            className="text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer"
+          >
+            Termos de Uso (Marco Civil da Internet)
+          </button>
+          <span className="text-gray-300 dark:text-gray-700">·</span>
+          <button
+            type="button"
+            onClick={() => navigateToPage('Especial:Privacidade')}
+            className="text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer"
+          >
+            Central de Privacidade e Direitos do Titular
+          </button>
+        </div>
       </footer>
 
       {/* Page Protection Modal */}

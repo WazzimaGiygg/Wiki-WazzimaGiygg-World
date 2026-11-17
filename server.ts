@@ -32,11 +32,20 @@ async function startServer() {
   app.use(express.json({ limit: '1mb' }));
   app.use((_req, res, next) => {
     res.setHeader('X-Wiki-Version', WIKI_SITE_VERSION);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    res.setHeader('X-Privacy-Compliance', 'LGPD-13709-2018; MarcoCivil-12965-2014');
     next();
   });
 
   app.get('/api/health', (_req: Request, res: Response) => {
-    res.json({ ok: true, domain: 'core.wazzimagiygg.com', version: WIKI_SITE_VERSION });
+    res.json({
+      ok: true,
+      domain: 'core.wazzimagiygg.com',
+      version: WIKI_SITE_VERSION,
+      compliance: ['LGPD (Lei 13.709/2018)', 'Marco Civil da Internet (Lei 12.965/2014)'],
+    });
   });
 
   app.post('/api/search-grounding', async (req: Request, res: Response) => {

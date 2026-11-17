@@ -152,6 +152,71 @@ service cloud.firestore {
       allow delete: if isSignedIn();
     }
 
+    function isPrivacyOfficerOrAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'pedrohenriquecardonaperes@gmail.com'
+        || (
+          exists(/databases/$(database)/documents/user_roles/$(request.auth.uid))
+          && (
+            get(/databases/$(database)/documents/user_roles/$(request.auth.uid)).data.groups.hasAny(['burocrata', 'administrador'])
+          )
+        )
+      );
+    }
+
+    function isValidPrivacyRequest(data) {
+      return data.keys().hasAll(['requesterUid', 'requesterName', 'type', 'details', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'requesterUid',
+          'requesterName',
+          'requesterEmail',
+          'type',
+          'targetUrlOrPage',
+          'details',
+          'status',
+          'responseNote',
+          'handledBy',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.requesterUid is string && data.requesterUid.size() > 0 && data.requesterUid.size() <= 128
+        && data.requesterName is string && data.requesterName.size() > 0 && data.requesterName.size() <= 100
+        && (!('requesterEmail' in data) || (data.requesterEmail is string && data.requesterEmail.size() <= 200))
+        && data.type in [
+          'lgpd_acesso',
+          'lgpd_retificacao',
+          'lgpd_anonimizacao_eliminacao',
+          'lgpd_portabilidade',
+          'lgpd_revogacao_consentimento',
+          'marco_civil_art19',
+          'marco_civil_art21'
+        ]
+        && (!('targetUrlOrPage' in data) || (data.targetUrlOrPage is string && data.targetUrlOrPage.size() <= 300))
+        && data.details is string && data.details.size() > 0 && data.details.size() <= 4000
+        && data.status in ['recebida', 'em_analise', 'atendida', 'indeferida']
+        && (!('responseNote' in data) || (data.responseNote is string && data.responseNote.size() <= 2000))
+        && (!('handledBy' in data) || (data.handledBy is string && data.handledBy.size() <= 100))
+        && data.createdAt is string && data.updatedAt is string;
+    }
+
+    // LGPD Art. 18 & Marco Civil Art. 19/21 privacy requests (strict PII isolation)
+    match /privacy_requests/{requestId} {
+      allow read: if isSignedIn() && (
+        resource.data.requesterUid == request.auth.uid
+        || isPrivacyOfficerOrAdmin()
+      );
+      allow create: if isSignedIn()
+        && request.resource.data.requesterUid == request.auth.uid
+        && request.resource.data.status == 'recebida'
+        && isValidPrivacyRequest(request.resource.data);
+      allow update: if isPrivacyOfficerOrAdmin()
+        && request.resource.data.requesterUid == resource.data.requesterUid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'responseNote', 'handledBy', 'updatedAt'])
+        && isValidPrivacyRequest(request.resource.data);
+      allow delete: if false;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

@@ -54,6 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
     { label: 'Carregar arquivo', slug: 'Especial:Carregar_arquivo', icon: Upload },
     { label: 'Versão do Software', slug: 'Especial:Versão', icon: Info },
     { label: 'Extensões do Wiki', slug: 'Especial:Extensões', icon: Blocks },
+    { label: 'Privacidade e LGPD', slug: 'Especial:Privacidade', icon: ShieldCheck },
     { label: 'Configurações ($wg)', action: onOpenSettings, icon: Settings },
     {
       label: 'Versão para impressão',
