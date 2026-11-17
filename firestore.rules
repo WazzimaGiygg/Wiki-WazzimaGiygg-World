@@ -217,6 +217,24 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    function isValidAdminAuditLog(data) {
+      return data.keys().hasAll(['action', 'target', 'details', 'performedBy', 'performedByUid', 'timestamp'])
+        && data.keys().hasOnly(['action', 'target', 'details', 'performedBy', 'performedByUid', 'timestamp'])
+        && data.action in ['page_delete', 'site_notice_update', 'maintenance_toggle', 'backup_export', 'system_resync', 'settings_update']
+        && data.target is string && data.target.size() > 0 && data.target.size() <= 200
+        && data.details is string && data.details.size() > 0 && data.details.size() <= 2000
+        && data.performedBy is string && data.performedBy.size() > 0 && data.performedBy.size() <= 100
+        && data.performedByUid is string && data.performedByUid == request.auth.uid
+        && data.timestamp is string;
+    }
+
+    // Centralized Firebase admin audit logs (bureaucrat/admin only, append-only)
+    match /admin_audit_logs/{logId} {
+      allow read: if isPrivacyOfficerOrAdmin();
+      allow create: if isPrivacyOfficerOrAdmin() && isValidAdminAuditLog(request.resource.data);
+      allow update, delete: if false;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

@@ -19,6 +19,7 @@ import {
   Flag,
   UserSearch,
   Globe,
+  Database,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import {
@@ -44,6 +45,7 @@ import { UnblockRequestsPanel } from './admin/UnblockRequestsPanel';
 import { ArbComPanel } from './admin/ArbComPanel';
 import { UCoCPanel } from './admin/UCoCPanel';
 import { SeoSearchPanel } from './admin/SeoSearchPanel';
+import { FirebaseAdminPanel } from './admin/FirebaseAdminPanel';
 
 export type BureaucratAdminTab =
   | 'manage'
@@ -54,7 +56,8 @@ export type BureaucratAdminTab =
   | 'unblock'
   | 'arbcom'
   | 'ucoc'
-  | 'seo';
+  | 'seo'
+  | 'database';
 
 export interface SpecialBureaucratAdminProps {
   initialTab?: BureaucratAdminTab;
@@ -514,6 +517,19 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
         >
           <Globe className="w-4 h-4 text-purple-600 dark:text-purple-400" />
           <span>SEO &amp; Buscadores</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('database')}
+          className={`px-3.5 py-2 font-medium border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 ${
+            activeTab === 'database'
+              ? 'border-purple-600 text-purple-700 dark:text-purple-400 font-semibold bg-purple-50/50 dark:bg-purple-950/20'
+              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+          }`}
+        >
+          <Database className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <span>Banco de Dados (Firebase)</span>
         </button>
       </div>
 
@@ -1158,6 +1174,9 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
 
       {/* TAB 9: SEO & BUSCADORES */}
       {activeTab === 'seo' && <SeoSearchPanel />}
+
+      {/* TAB 10: BANCO DE DADOS FIREBASE */}
+      {activeTab === 'database' && <FirebaseAdminPanel />}
 
       {/* Page Protection Modal */}
       {selectedPageForProtection && (

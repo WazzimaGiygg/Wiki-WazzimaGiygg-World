@@ -95,6 +95,10 @@
         "marcoCivilRetentionMonths": { "type": "number" },
         "requireExplicitConsent": { "type": "boolean" },
         "hideEmailOnUserPages": { "type": "boolean" },
+        "siteNotice": { "type": "string", "maxLength": 400 },
+        "siteNoticeLevel": { "type": "string", "enum": ["info", "warning", "alert"] },
+        "maintenanceMode": { "type": "boolean" },
+        "maintenanceMessage": { "type": "string", "maxLength": 400 },
         "updatedAt": { "type": "string" }
       },
       "required": ["sitename", "languageCode"]
@@ -271,6 +275,23 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["requesterUid", "requesterName", "type", "details", "status", "createdAt", "updatedAt"]
+    },
+    "AdminAuditLog": {
+      "title": "AdminAuditLog",
+      "description": "Immutable audit trail of Firebase database administration operations performed by bureaucrats",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": ["page_delete", "site_notice_update", "maintenance_toggle", "backup_export", "system_resync", "settings_update"]
+        },
+        "target": { "type": "string", "maxLength": 200 },
+        "details": { "type": "string", "maxLength": 2000 },
+        "performedBy": { "type": "string", "maxLength": 100 },
+        "performedByUid": { "type": "string", "maxLength": 128 },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["action", "target", "details", "performedBy", "performedByUid", "timestamp"]
     }
   },
   "firestore": {
@@ -325,6 +346,10 @@
     "/privacy_requests/{requestId}": {
       "schema": { "$ref": "#/entities/PrivacyRequest" },
       "description": "PII-isolated LGPD Art. 18 and Marco Civil Art. 19/21 requests accessible only to the requester and authorized administrators/DPO"
+    },
+    "/admin_audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AdminAuditLog" },
+      "description": "Immutable append-only audit trail for Firebase database administration actions"
     }
   }
 }

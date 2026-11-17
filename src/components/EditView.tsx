@@ -64,6 +64,7 @@ export const EditView: React.FC<EditViewProps> = ({
     isBureaucrat,
     toggleBlazePlan,
     navigateToPage,
+    settings,
   } = useWiki();
 
   // Image insertion modal state
@@ -351,10 +352,20 @@ export const EditView: React.FC<EditViewProps> = ({
   };
 
   const editPermission = useMemo(() => {
+    if (settings.maintenanceMode && !currentUser.isBureaucrat) {
+      return {
+        allowed: false,
+        isProtected: true,
+        level: 'locked' as const,
+        reason:
+          settings.maintenanceMessage ||
+          'Modo de manutenção ativo no banco de dados. Apenas Burocratas podem salvar edições no momento.',
+      };
+    }
     return page
       ? canUserEditPage(page, currentUser)
       : { allowed: !currentUser.isAnonymous, isProtected: false, level: 'unprotected' as const };
-  }, [page, currentUser]);
+  }, [page, currentUser, settings.maintenanceMode, settings.maintenanceMessage]);
 
   const [copiedSource, setCopiedSource] = useState<boolean>(false);
 

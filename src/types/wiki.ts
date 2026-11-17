@@ -173,6 +173,10 @@ export interface WikiSettings {
   marcoCivilRetentionMonths?: number;
   requireExplicitConsent?: boolean;
   hideEmailOnUserPages?: boolean;
+  siteNotice?: string;
+  siteNoticeLevel?: 'info' | 'warning' | 'alert';
+  maintenanceMode?: boolean;
+  maintenanceMessage?: string;
 }
 
 // 1. Verificação de Contas (CheckUser / Fantoches)
@@ -339,6 +343,26 @@ export interface PrivacyRequestRecord {
   createdAt: string;
   updatedAt: string;
 }
+
+// 6. Auditoria Administrativa Centralizada (Firebase Firestore)
+export type AdminAuditAction =
+  | 'page_delete'
+  | 'site_notice_update'
+  | 'maintenance_toggle'
+  | 'backup_export'
+  | 'system_resync'
+  | 'settings_update';
+
+export interface AdminAuditLogEntry {
+  id?: string;
+  action: AdminAuditAction;
+  target: string;
+  details: string;
+  performedBy: string;
+  performedByUid: string;
+  timestamp: string;
+}
+
 
 
 

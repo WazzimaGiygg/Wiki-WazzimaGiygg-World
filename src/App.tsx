@@ -27,7 +27,7 @@ import { Loader2 } from 'lucide-react';
 import { updateDocumentSEO } from './utils/seo';
 
 function WikiMain() {
-  const { currentSlug, activeTab, setActiveTab, skin, sidebarOpen, setSidebarOpen } = useWiki();
+  const { currentSlug, activeTab, setActiveTab, skin, sidebarOpen, setSidebarOpen, settings } = useWiki();
 
   const [currentPage, setCurrentPage] = useState<WikiPage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -148,6 +148,13 @@ function WikiMain() {
       return <SpecialBureaucratAdmin initialTab="seo" />;
     }
     if (
+      currentSlug === 'Especial:Banco_de_Dados' ||
+      currentSlug === 'Especial:Firebase' ||
+      currentSlug === 'Special:Database'
+    ) {
+      return <SpecialBureaucratAdmin initialTab="database" />;
+    }
+    if (
       currentSlug === 'Especial:Extensões' ||
       currentSlug === 'Especial:Extensoes' ||
       currentSlug === 'Special:Extensions'
@@ -249,6 +256,30 @@ function WikiMain() {
         <Sidebar onOpenSettings={() => setSettingsOpen(true)} />
 
         <main className="flex-1 min-w-0 pb-16">
+          {(settings.maintenanceMode || settings.siteNotice) && (
+            <div className="print:hidden px-4 sm:px-8 pt-3 max-w-5xl space-y-2">
+              {settings.maintenanceMode && (
+                <div className="px-3.5 py-2 rounded border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs">
+                  <strong>Modo de Manutenção (Somente Leitura):</strong>{' '}
+                  {settings.maintenanceMessage ||
+                    'O sistema está temporariamente em manutenção. Edições permanecem restritas a Burocratas.'}
+                </div>
+              )}
+              {settings.siteNotice && (
+                <div
+                  className={`px-3.5 py-2 rounded border text-xs ${
+                    settings.siteNoticeLevel === 'alert'
+                      ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-900 dark:text-red-200'
+                      : settings.siteNoticeLevel === 'warning'
+                      ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200'
+                      : 'border-blue-300 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200'
+                  }`}
+                >
+                  {settings.siteNotice}
+                </div>
+              )}
+            </div>
+          )}
           <div className={`wiki-content-box ${contentBoxClass}`}>{renderContent()}</div>
         </main>
       </div>
