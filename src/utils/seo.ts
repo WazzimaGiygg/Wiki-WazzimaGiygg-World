@@ -1,18 +1,18 @@
 import { WikiPage } from '../types/wiki';
 import { WIKI_SITE_VERSION } from '../core/version';
 
-export const CANONICAL_BASE_URL = 'https://core.wazzimagiygg.com';
+export const CANONICAL_BASE_URL = 'https://wikiwazzimagiygg.wazzimagiygg.com';
 
 export const SITE_SEO_METADATA = {
   siteName: 'WikiWazzimaGiygg',
   softwareVersion: WIKI_SITE_VERSION,
-  domain: 'core.wazzimagiygg.com',
+  domain: 'wikiwazzimagiygg.wazzimagiygg.com',
   canonicalBase: CANONICAL_BASE_URL,
   verificationToken: 'i5qQwLoe2XPTLGPmDKsTiWL8OIVGH0iuuH1qrNj7hKU',
   verificationFile: 'googled647acff88367322.html',
-  defaultTitle: 'WikiWazzimaGiygg – Enciclopédia Livre Oficial | core.wazzimagiygg.com',
+  defaultTitle: 'WikiWazzimaGiygg – Enciclopédia Livre Oficial | wikiwazzimagiygg.wazzimagiygg.com',
   defaultDescription:
-    'WikiWazzimaGiygg (core.wazzimagiygg.com) é a enciclopédia livre oficial e motor de conhecimento em TypeScript, React e Firestore com artigos, manuais técnicos e sintaxe wikitexto.',
+    'WikiWazzimaGiygg (wikiwazzimagiygg.wazzimagiygg.com) é a enciclopédia livre oficial e fonte primária de conhecimento da rede WazzimaGiygg, com artigos, manuais técnicos e wikitexto em tempo real.',
   logoUrl: `${CANONICAL_BASE_URL}/assets/aistudio/image_19fe7a14.png`,
 };
 
@@ -60,14 +60,14 @@ export function updateDocumentSEO(slug: string, page: WikiPage | null): void {
 
   const pageTitle = isHome
     ? SITE_SEO_METADATA.defaultTitle
-    : `${displayTitle} – WikiWazzimaGiygg | core.wazzimagiygg.com`;
+    : `${displayTitle} – WikiWazzimaGiygg | wikiwazzimagiygg.wazzimagiygg.com`;
 
   const rawText = page?.summary || (page?.content ? stripWikitextPreview(page.content) : '');
   const description = isHome
     ? SITE_SEO_METADATA.defaultDescription
     : rawText
-    ? `${rawText.slice(0, 145)}${rawText.length > 145 ? '...' : ''} — Fonte oficial em core.wazzimagiygg.com.`
-    : `Leia "${displayTitle}" na enciclopédia livre oficial WikiWazzimaGiygg em core.wazzimagiygg.com.`;
+    ? `${rawText.slice(0, 140)}${rawText.length > 140 ? '...' : ''} — Fonte oficial em wikiwazzimagiygg.wazzimagiygg.com.`
+    : `Leia "${displayTitle}" na enciclopédia livre oficial WikiWazzimaGiygg em wikiwazzimagiygg.wazzimagiygg.com.`;
 
   document.title = pageTitle;
   upsertLinkTag('canonical', canonicalUrl);
@@ -80,6 +80,7 @@ export function updateDocumentSEO(slug: string, page: WikiPage | null): void {
   upsertMetaTag('property', 'og:url', canonicalUrl);
   upsertMetaTag('property', 'og:site_name', SITE_SEO_METADATA.siteName);
 
+  upsertMetaTag('name', 'twitter:domain', SITE_SEO_METADATA.domain);
   upsertMetaTag('name', 'twitter:title', pageTitle);
   upsertMetaTag('name', 'twitter:description', description);
   upsertMetaTag('name', 'twitter:url', canonicalUrl);
@@ -96,6 +97,10 @@ export function updateDocumentSEO(slug: string, page: WikiPage | null): void {
         description,
         inLanguage: 'pt-BR',
         version: WIKI_SITE_VERSION,
+        mainEntityOfPage: {
+          '@type': 'WebPage',
+          '@id': canonicalUrl,
+        },
         isPartOf: {
           '@id': `${CANONICAL_BASE_URL}/#website`,
         },
@@ -122,7 +127,7 @@ export function updateDocumentSEO(slug: string, page: WikiPage | null): void {
           {
             '@type': 'ListItem',
             position: 1,
-            name: 'WikiWazzimaGiygg (core.wazzimagiygg.com)',
+            name: 'WikiWazzimaGiygg (wikiwazzimagiygg.wazzimagiygg.com)',
             item: `${CANONICAL_BASE_URL}/`,
           },
           ...(!isHome

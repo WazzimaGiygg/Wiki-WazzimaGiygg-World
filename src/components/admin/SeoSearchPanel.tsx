@@ -12,7 +12,7 @@ import { SITE_SEO_METADATA } from '../../utils/seo';
 import { queryGoogleSearchGrounding, SearchGroundingResult } from '../../services/groundingService';
 
 export const SeoSearchPanel: React.FC = () => {
-  const [query, setQuery] = useState('site:core.wazzimagiygg.com OR WikiWazzimaGiygg');
+  const [query, setQuery] = useState('site:wikiwazzimagiygg.wazzimagiygg.com OR WikiWazzimaGiygg');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SearchGroundingResult | null>(null);
@@ -38,7 +38,7 @@ export const SeoSearchPanel: React.FC = () => {
 
   return (
     <div className="space-y-5 text-xs">
-      {/* SEO Configuration Summary for core.wazzimagiygg.com */}
+      {/* SEO Configuration Summary for wikiwazzimagiygg.wazzimagiygg.com */}
       <div className="p-4 bg-[#f8f9fa] dark:bg-gray-900 border border-[#a2a9b1] dark:border-gray-700 rounded shadow-2xs space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 dark:border-gray-800 pb-2">
           <h2 className="font-serif font-bold text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
@@ -112,7 +112,7 @@ export const SeoSearchPanel: React.FC = () => {
           </h3>
           <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
             Consulte resultados reais da web via Google Search para verificar referências ao domínio{' '}
-            <code>core.wazzimagiygg.com</code> e termos da wiki.
+            <code>wikiwazzimagiygg.wazzimagiygg.com</code> e termos da wiki.
           </p>
         </div>
 
@@ -121,7 +121,7 @@ export const SeoSearchPanel: React.FC = () => {
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Ex: site:core.wazzimagiygg.com ou WikiWazzimaGiygg"
+            placeholder="Ex: site:wikiwazzimagiygg.wazzimagiygg.com ou WikiWazzimaGiygg"
             className="flex-1 min-w-[240px] px-3 py-1.5 text-xs bg-[#f8f9fa] dark:bg-gray-800 border border-[#a2a9b1] dark:border-gray-700 rounded focus:outline-hidden focus:border-[#3366cc]"
           />
           <button

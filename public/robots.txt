@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
 
-Host: core.wazzimagiygg.com
-Sitemap: https://core.wazzimagiygg.com/sitemap.xml
+Host: wikiwazzimagiygg.wazzimagiygg.com
+Sitemap: https://wikiwazzimagiygg.wazzimagiygg.com/sitemap.xml

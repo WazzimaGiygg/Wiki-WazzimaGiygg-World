@@ -317,7 +317,7 @@ export const EditView: React.FC<EditViewProps> = ({
         discussao: currentUser.userTalkSlug
           ? `[[${currentUser.userTalkSlug}|Discussão]]`
           : '[[Discussão_Usuário:Maria_Silva|Enviar mensagem]]',
-        site: 'https://core.wazzimagiygg.com',
+        site: 'https://wikiwazzimagiygg.wazzimagiygg.com',
         status: 'Ativo',
         biografia: 'Contribuidor(a) voluntário(a) da enciclopédia livre.',
       });
@@ -338,7 +338,7 @@ export const EditView: React.FC<EditViewProps> = ({
       linguagem: 'TypeScript, React',
       plataforma: 'Web, Linux, Windows, macOS',
       licenca: 'GPL-2.0-or-later / MIT',
-      site: 'https://core.wazzimagiygg.com',
+      site: 'https://wikiwazzimagiygg.wazzimagiygg.com',
       repositorio: 'https://github.com/WazzimaGiygg/WikiWazzimaGiygg',
       documentacao: '[[Ajuda:Wikitexto|Documentação Oficial]]',
       status: 'Ativo',
@@ -1680,7 +1680,7 @@ export const EditView: React.FC<EditViewProps> = ({
 | versão_estável = WC1.16.C7.1
 | linguagem = TypeScript, React
 | licença = MIT
-| site = https://core.wazzimagiygg.com
+| site = https://wikiwazzimagiygg.wazzimagiygg.com
 | status = Ativo
 }}`}</pre>
                     </div>
@@ -2099,7 +2099,7 @@ export const EditView: React.FC<EditViewProps> = ({
                               type="url"
                               value={infoboxFields.site}
                               onChange={e => setInfoboxFields(prev => ({ ...prev, site: e.target.value }))}
-                              placeholder="https://core.wazzimagiygg.com"
+                              placeholder="https://wikiwazzimagiygg.wazzimagiygg.com"
                               className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 font-mono text-xs"
                             />
                           </div>

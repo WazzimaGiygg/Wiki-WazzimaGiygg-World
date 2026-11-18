@@ -22,7 +22,7 @@ export const FooterBadges: React.FC<FooterBadgesProps> = ({
       <button
         type="button"
         onClick={() => onNavigate('Página_principal')}
-        title="WikiWazzimaGiygg — Enciclopédia Livre (core.wazzimagiygg.com)"
+        title="WikiWazzimaGiygg — Enciclopédia Livre (wikiwazzimagiygg.wazzimagiygg.com)"
         className={`${BADGE_BASE_CLASS} bg-gradient-to-b from-white to-slate-100 dark:from-slate-800 dark:to-slate-900 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100`}
       >
         <img

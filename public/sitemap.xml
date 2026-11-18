@@ -1,47 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://core.wazzimagiygg.com/</loc>
+    <loc>https://wikiwazzimagiygg.wazzimagiygg.com/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://core.wazzimagiygg.com/#/wiki/P%C3%A1gina_principal</loc>
+    <loc>https://wikiwazzimagiygg.wazzimagiygg.com/#/wiki/P%C3%A1gina_principal</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://core.wazzimagiygg.com/#/wiki/Arquitetura_WikiWazzimaGiygg</loc>
+    <loc>https://wikiwazzimagiygg.wazzimagiygg.com/#/wiki/Arquitetura_WikiWazzimaGiygg</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://core.wazzimagiygg.com/#/wiki/Ajuda%3AWikitexto</loc>
+    <loc>https://wikiwazzimagiygg.wazzimagiygg.com/#/wiki/Ajuda%3AWikitexto</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://core.wazzimagiygg.com/#/wiki/Manual%3ALocalSettings.ts</loc>
+    <loc>https://wikiwazzimagiygg.wazzimagiygg.com/#/wiki/Ajuda%3AInfobox</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://wikiwazzimagiygg.wazzimagiygg.com/#/wiki/Manual%3ALocalSettings.ts</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://core.wazzimagiygg.com/#/wiki/WikiWazzimaGiygg%3AC%C3%B3digo_Universal_de_Conduta</loc>
+    <loc>https://wikiwazzimagiygg.wazzimagiygg.com/#/wiki/Wiki%3APol%C3%ADtica_de_Privacidade</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://core.wazzimagiygg.com/#/wiki/WikiWazzimaGiygg%3AComit%C3%AA_de_Arbitragem</loc>
+    <loc>https://wikiwazzimagiygg.wazzimagiygg.com/#/wiki/Wiki%3ATermos_de_Uso</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://wikiwazzimagiygg.wazzimagiygg.com/#/wiki/WikiWazzimaGiygg%3AC%C3%B3digo_Universal_de_Conduta</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://wikiwazzimagiygg.wazzimagiygg.com/#/wiki/WikiWazzimaGiygg%3AComit%C3%AA_de_Arbitragem</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://core.wazzimagiygg.com/#/wiki/WikiWazzimaGiygg%3ACheckUser</loc>
+    <loc>https://wikiwazzimagiygg.wazzimagiygg.com/#/wiki/WikiWazzimaGiygg%3ACheckUser</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://core.wazzimagiygg.com/#/wiki/WikiWazzimaGiygg%3APedidos_de_desbloqueio</loc>
+    <loc>https://wikiwazzimagiygg.wazzimagiygg.com/#/wiki/WikiWazzimaGiygg%3APedidos_de_desbloqueio</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://wikiwazzimagiygg.wazzimagiygg.com/#/wiki/Especial%3AVers%C3%A3o</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://wikiwazzimagiygg.wazzimagiygg.com/#/wiki/Especial%3APrivacidade</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

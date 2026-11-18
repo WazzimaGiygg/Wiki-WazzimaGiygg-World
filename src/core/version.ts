@@ -1,6 +1,6 @@
 export const WIKI_SITE_VERSION = 'WC1.16.C7.1';
 export const WIKI_SITE_NAME = 'WikiWazzimaGiygg';
-export const WIKI_SITE_DOMAIN = 'core.wazzimagiygg.com';
+export const WIKI_SITE_DOMAIN = 'wikiwazzimagiygg.wazzimagiygg.com';
 export const WIKI_VERSION_LABEL = `Wiki-Site ${WIKI_SITE_VERSION}`;
 
 export const WIKI_VERSION_INFO = {

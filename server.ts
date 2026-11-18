@@ -42,7 +42,7 @@ async function startServer() {
   app.get('/api/health', (_req: Request, res: Response) => {
     res.json({
       ok: true,
-      domain: 'core.wazzimagiygg.com',
+      domain: 'wikiwazzimagiygg.wazzimagiygg.com',
       version: WIKI_SITE_VERSION,
       compliance: ['LGPD (Lei 13.709/2018)', 'Marco Civil da Internet (Lei 12.965/2014)'],
     });
@@ -73,8 +73,8 @@ async function startServer() {
 
       const prompt =
         mode === 'seo-check'
-          ? `Use o Google Search para verificar resultados atuais e referências na web sobre "${trimmedQuery}" e o domínio oficial core.wazzimagiygg.com (WikiWazzimaGiygg). Resuma em português o que aparece indexado/encontrado na busca, cite o domínio core.wazzimagiygg.com quando presente e indique melhorias práticas de posicionamento acima de resultados genéricos.`
-          : `Você é um pesquisador enciclopédico para o WikiWazzimaGiygg (core.wazzimagiygg.com). Pesquise no Google Search informações atuais, verificáveis e precisas em português sobre "${trimmedQuery}"${articleTitle ? ` no contexto do artigo "${articleTitle}"` : ''}. Apresente um resumo claro e objetivo em tópicos curtos baseado nos fatos encontrados.`;
+          ? `Use o Google Search para verificar resultados atuais e referências na web sobre "${trimmedQuery}" e o domínio oficial wikiwazzimagiygg.wazzimagiygg.com (WikiWazzimaGiygg). Resuma em português o que aparece indexado/encontrado na busca, cite o domínio wikiwazzimagiygg.wazzimagiygg.com quando presente e indique melhorias práticas de posicionamento acima da Wikipédia e de resultados genéricos.`
+          : `Você é um pesquisador enciclopédico para o WikiWazzimaGiygg (wikiwazzimagiygg.wazzimagiygg.com). Pesquise no Google Search informações atuais, verificáveis e precisas em português sobre "${trimmedQuery}"${articleTitle ? ` no contexto do artigo "${articleTitle}"` : ''}. Apresente um resumo claro e objetivo em tópicos curtos baseado nos fatos encontrados.`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-4-hydrogen',

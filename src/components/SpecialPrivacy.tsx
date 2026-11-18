@@ -451,7 +451,7 @@ export const SpecialPrivacy: React.FC = () => {
                       type="text"
                       value={targetUrlOrPage}
                       onChange={e => setTargetUrlOrPage(e.target.value)}
-                      placeholder="Ex: https://core.wazzimagiygg.com/#/wiki/Nome_da_Pagina"
+                      placeholder="Ex: https://wikiwazzimagiygg.wazzimagiygg.com/#/wiki/Nome_da_Pagina"
                       className="w-full p-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100"
                     />
                   </div>

@@ -86,7 +86,7 @@ export const scribuntoExtension: ExtensionDefinition = {
 | linguagem = TypeScript, React
 | plataforma = Web, Node.js
 | licença = GPL-2.0-or-later
-| site = https://core.wazzimagiygg.com
+| site = https://wikiwazzimagiygg.wazzimagiygg.com
 | repositório = https://github.com/WazzimaGiygg/WikiWazzimaGiygg
 | status = Ativo
 }}`,

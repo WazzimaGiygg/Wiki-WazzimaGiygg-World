@@ -32,7 +32,7 @@ export const INITIAL_PAGES: Record<string, WikiPage> = {
 | plataforma = Web (React 19 + Node.js / Express)
 | banco_de_dados = Google Cloud Firestore (em tempo real)
 | licença = GPL v2.0+ / MIT
-| site = https://core.wazzimagiygg.com
+| site = https://wikiwazzimagiygg.wazzimagiygg.com
 | repositório = https://github.com/WazzimaGiygg/WikiWazzimaGiygg
 | status = Ativo
 }}
@@ -191,7 +191,7 @@ O '''Wikitexto''' é a linguagem de formatação utilizada para estruturar artig
 == Ligações (Links) ==
 * '''Link Interno:''' \`[[Página_principal]]\`
 * '''Link com Rótulo:''' \`[[Página_principal|Início]]\`
-* '''Link Externo:''' \`[https://core.wazzimagiygg.com Site Oficial]\`
+* '''Link Externo:''' \`[https://wikiwazzimagiygg.wazzimagiygg.com Site Oficial]\`
 * '''Link de E-mail:''' \`[mailto:contato@exemplo.com Enviar e-mail]\`
 * Se o artigo não existir no Firebase, o link aparecerá em '''vermelho'''!
 
@@ -257,7 +257,7 @@ A predefinição \`{{Infobox software}}\` cria um painel lateral direito padroni
 | linguagem = TypeScript, Node.js
 | plataforma = Web, Linux, macOS, Windows
 | licença = MIT
-| site = https://core.wazzimagiygg.com
+| site = https://wikiwazzimagiygg.wazzimagiygg.com
 | repositório = https://github.com/WazzimaGiygg/WikiWazzimaGiygg
 | documentação = [[Arquitetura_WikiWazzimaGiygg|Arquitetura e Docs]]
 | status = Ativo
@@ -291,7 +291,7 @@ A predefinição \`{{Infobox software}}\` cria um painel lateral direito padroni
 | versão_estável = 2.0-ts
 | linguagem = Wikitexto / TypeScript
 | plataforma = WikiWazzimaGiygg Web
-| site = https://core.wazzimagiygg.com
+| site = https://wikiwazzimagiygg.wazzimagiygg.com
 | documentação = [[Ajuda:Wikitexto|Guia de Wikitexto]]
 | status = Ativo
 }}
@@ -384,7 +384,7 @@ Utilizado em artigos de aplicativos, bibliotecas, sistemas operacionais e projet
 | linguagem = TypeScript, React
 | plataforma = Web, Linux, Windows, macOS
 | licença = MIT
-| site = https://core.wazzimagiygg.com
+| site = https://wikiwazzimagiygg.wazzimagiygg.com
 | repositório = https://github.com/WazzimaGiygg/WikiWazzimaGiygg
 | status = Ativo
 }}
@@ -564,10 +564,10 @@ Acesse a lista de pedidos e delibere em [[Especial:Discussão_de_desbloqueio]].
     protectionLevel: 'semi_protected',
     isLocked: false,
     protectionReason: 'Documento institucional de conformidade com a LGPD',
-    content: `{{Aviso|Esta Política de Privacidade descreve como o '''WikiWazzimaGiygg''' (core.wazzimagiygg.com) trata dados pessoais em conformidade com a '''Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018 — LGPD)''' e o '''Marco Civil da Internet (Lei nº 12.965/2014)'''.}}
+    content: `{{Aviso|Esta Política de Privacidade descreve como o '''WikiWazzimaGiygg''' (wikiwazzimagiygg.wazzimagiygg.com) trata dados pessoais em conformidade com a '''Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018 — LGPD)''' e o '''Marco Civil da Internet (Lei nº 12.965/2014)'''.}}
 
 == 1. Controlador e Encarregado (DPO — Art. 41 da LGPD) ==
-* '''Plataforma / Controlador:''' WikiWazzimaGiygg (core.wazzimagiygg.com) — Versão {{VERSÃO}}.
+* '''Plataforma / Controlador:''' WikiWazzimaGiygg (wikiwazzimagiygg.wazzimagiygg.com) — Versão {{VERSÃO}}.
 * '''Canal do Encarregado (DPO):''' [mailto:pedrohenriquecardonaperes@gmail.com pedrohenriquecardonaperes@gmail.com]
 * '''Portal de Autoatendimento:''' [[Especial:Privacidade|Central de Privacidade e LGPD]]
 
@@ -622,7 +622,7 @@ Empregamos criptografia em trânsito (HTTPS/TLS), controle de acesso baseado em 
     protectionLevel: 'semi_protected',
     isLocked: false,
     protectionReason: 'Termos de Uso oficiais em conformidade com o Marco Civil da Internet',
-    content: `{{Aviso|Estes Termos de Uso regem a utilização do '''WikiWazzimaGiygg''' (core.wazzimagiygg.com) em conformidade com o '''Marco Civil da Internet (Lei nº 12.965/2014)''', o '''Decreto nº 8.771/2016''' e a '''LGPD (Lei nº 13.709/2018)'''.}}
+    content: `{{Aviso|Estes Termos de Uso regem a utilização do '''WikiWazzimaGiygg''' (wikiwazzimagiygg.wazzimagiygg.com) em conformidade com o '''Marco Civil da Internet (Lei nº 12.965/2014)''', o '''Decreto nº 8.771/2016''' e a '''LGPD (Lei nº 13.709/2018)'''.}}
 
 == 1. Princípios e Direitos dos Usuários (Art. 3º e Art. 7º do Marco Civil) ==
 O WikiWazzimaGiygg assegura aos usuários:
