@@ -292,7 +292,55 @@ function WikiMain() {
   );
 }
 
+function isBlockedIframeContext(): boolean {
+  try {
+    const hostname = window.location.hostname.toLowerCase();
+    const isAiStudioPreview =
+      hostname.startsWith('ais-dev-') || hostname.startsWith('ais-pre-');
+    if (isAiStudioPreview) return false;
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+}
+
 export default function App() {
+  const [blockedInIframe] = useState<boolean>(() => isBlockedIframeContext());
+
+  useEffect(() => {
+    if (!blockedInIframe) return;
+    try {
+      window.top?.location.replace(window.location.href);
+    } catch {
+      // Cross-origin top frame blocks programmatic redirect; UI lock screen remains enforced
+    }
+  }, [blockedInIframe]);
+
+  if (blockedInIframe) {
+    return (
+      <div className="min-h-screen bg-[#f8f9fa] text-gray-900 flex items-center justify-center p-6 font-sans">
+        <div className="max-w-md w-full bg-white border border-red-300 rounded-lg p-6 shadow-sm text-center space-y-3">
+          <h1 className="text-lg font-serif font-bold text-red-700">
+            Exibição em iframe bloqueada por segurança
+          </h1>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            O <strong>WikiWazzimaGiygg</strong> não permite carregamento incorporado em{' '}
+            <code>&lt;iframe&gt;</code> para proteger os usuários contra ataques de{' '}
+            <em>clickjacking</em> e captura indevida de sessão.
+          </p>
+          <a
+            href="https://wikiwazzimagiygg.wazzimagiygg.com/"
+            target="_top"
+            rel="noopener noreferrer"
+            className="inline-block px-4 py-2 bg-[#3366cc] hover:bg-[#254b99] text-white text-xs font-medium rounded no-underline"
+          >
+            Abrir WikiWazzimaGiygg diretamente
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <WikiProvider>
       <WikiMain />

@@ -30,7 +30,16 @@ function getGeminiClient(): GoogleGenAI | null {
 async function startServer() {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
-  app.use((_req, res, next) => {
+  app.use((req, res, next) => {
+    const host = (req.headers.host || '').toLowerCase();
+    const isAiStudioPreview =
+      host.startsWith('ais-dev-') || host.startsWith('ais-pre-');
+
+    if (!isAiStudioPreview) {
+      res.setHeader('X-Frame-Options', 'DENY');
+      res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
+    }
+
     res.setHeader('X-Wiki-Version', WIKI_SITE_VERSION);
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
