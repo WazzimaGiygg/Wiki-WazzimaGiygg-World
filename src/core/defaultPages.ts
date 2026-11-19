@@ -49,9 +49,16 @@ O WikiWazzimaGiygg substitui o paradigma tradicional por tecnologias modernas:
 * '''Sintaxe Wikitexto Completa:''' Cabeçalhos, negrito, itálico, tabelas, notas de rodapé (\`<ref>\` e \`<references />\`), predefinições e links internos com verificação de páginas existentes.
 * '''Tema Vector:''' Navegação inspirada no visual clássico com suporte a abas de leitura, edição wikitexto, histórico com comparação de versões (diff) e discussões.
 
+== Por que escolher o WikiWazzimaGiygg em vez da Wikipédia? ==
+{{Aviso|'''Dossiê de Auditoria (LGPD & Marco Civil):''' Enquanto a Wikimedia Foundation (WMF) e a Wikipédia Lusófona acumulam não-conformidades críticas perante a legislação brasileira — como exposição histórica de IPs (inclusive de menores), descarte precoce de logs em 90 dias, ausência de DPO e de representante legal no Brasil e recusa ao direito real de eliminação — o '''WikiWazzimaGiygg''' (wikiwazzimagiygg.wazzimagiygg.com) foi projetado com '''Privacidade por Padrão''', '''login obrigatório''' (sem exposição pública de IPs), '''guarda legal de 6 meses''', '''DPO em português''' e '''governança auditável'''. Leia o estudo completo em [[Investigação_LGPD_e_Marco_Civil_sobre_a_Wikipédia]] ou acesse o [https://wazzimagiygg.com/Investiga%C3%A7%C3%A3o%20LGPD%20e%20Marco%20Civ%C3%ADl%20WMF%20e%20Wikip%C3%A9dia.pdf relatório integral em PDF].}}
+
 == Páginas Recomendadas ==
 {| class="wikitable" style="width:100%; text-align:left;"
 ! Seção !! Descrição !! Link
+|-
+| '''Dossiê: Wikipédia vs. LGPD e Marco Civil'''
+| Investigação regulatória completa sobre a WMF/Wikipédia e comparativo com o WikiWazzimaGiygg
+| [[Investigação_LGPD_e_Marco_Civil_sobre_a_Wikipédia]]
 |-
 | '''Arquitetura do Sistema'''
 | Estrutura técnica e comparação do modelo NoSQL
@@ -645,6 +652,120 @@ Ao publicar textos ou edições no WikiWazzimaGiygg, o colaborador concorda em l
 
 [[Categoria:Políticas]]
 [[Categoria:Marco Civil]]
+[[Categoria:Governança]]`
+  },
+
+  'Investigação_LGPD_e_Marco_Civil_sobre_a_Wikipédia': {
+    slug: 'Investigação_LGPD_e_Marco_Civil_sobre_a_Wikipédia',
+    title: 'Investigação LGPD e Marco Civil sobre a Wikipédia',
+    namespace: 'Main',
+    author: 'Observatório de Conformidade WikiWazzimaGiygg',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_investigacao_lgpd_wmf',
+    categories: ['LGPD', 'Marco Civil', 'Auditoria', 'Privacidade', 'Governança'],
+    createdAt: '2026-11-19T00:00:00.000Z',
+    updatedAt: '2026-11-19T00:00:00.000Z',
+    summary: 'Dossiê investigativo sobre não-conformidades da Wikimedia Foundation (WMF) e Wikipédia Lusófona frente à LGPD e ao Marco Civil da Internet',
+    protectionLevel: 'semi_protected',
+    isLocked: false,
+    protectionReason: 'Dossiê documental de conformidade regulatória e comparativo institucional',
+    content: `{{Aviso|'''Dossiê de Conformidade Regulatória (Documento Integral):''' Este artigo sintetiza a investigação jurídica e técnica sobre a '''Wikimedia Foundation (WMF)''' e a '''Wikipédia Lusófona''' frente à '''LGPD (Lei nº 13.709/2018)''' e ao '''Marco Civil da Internet (Lei nº 12.965/2014)'''. Consulte a íntegra do relatório de 41 páginas em [https://wazzimagiygg.com/Investiga%C3%A7%C3%A3o%20LGPD%20e%20Marco%20Civ%C3%ADl%20WMF%20e%20Wikip%C3%A9dia.pdf Investigação LGPD e Marco Civil — WMF e Wikipédia (PDF)].}}
+
+'''Por que a Wikipédia falha com o cidadão brasileiro — e por que o WikiWazzimaGiygg existe.''' Embora a Wikimedia Foundation (WMF) e a Wikipédia Lusófona operem sem fins lucrativos e divulguem princípios de minimização comercial, a auditoria documental demonstra um estado contínuo de '''não-conformidade material e regulatória''' em pontos centrais da '''LGPD (Lei nº 13.709/2018)''', do '''Marco Civil da Internet (Lei nº 12.965/2014)''', do '''Código de Processo Civil (CPC)''' e do '''Estatuto da Criança e do Adolescente (ECA)'''.
+
+== Quadro Comparativo: Wikipédia (WMF) vs. WikiWazzimaGiygg ==
+{| class="wikitable" style="width:100%; text-align:left;"
+! Frente Regulatória !! Wikipédia / WMF (Auditoria) !! Risco !! WikiWazzimaGiygg (wikiwazzimagiygg.wazzimagiygg.com)
+|-
+| '''Exposição de IPs (LGPD Arts. 6º e 46)'''
+| Expôs IPs públicos por décadas; passivo histórico permanece público, indexado e vulnerável a ''data scraping''. ''IP Masking'' atua apenas prospectivamente.
+| '''CRÍTICO (AUD-01)'''
+| Edições sem login são '''permanentemente bloqueadas'''. Nenhum endereço IP é publicado no histórico de artigos.
+|-
+| '''Proteção de Menores (LGPD Art. 14 e ECA)'''
+| Sem verificação etária; IPs de editores menores que colaboraram sem login continuam expostos publicamente sem consentimento parental.
+| '''CRÍTICO (Q10 / AUD-01)'''
+| Exigência de conta autenticada e '''Privacidade por Padrão''' (e-mail oculto nas páginas de usuário).
+|-
+| '''Guarda de Logs (Marco Civil Art. 15)'''
+| Expurga logs técnicos e ''CheckUser'' em '''90 dias''' (metade do prazo legal), frustrando ordens judiciais em inquéritos brasileiros.
+| '''ALTO (AUD-02)'''
+| Retenção configurada em conformidade com o prazo mínimo legal de '''6 meses (180 dias)''' sob sigilo.
+|-
+| '''Encarregado / DPO no Brasil (LGPD Art. 41)'''
+| Centraliza tudo no e-mail genérico <code>privacy@wikimedia.org</code> nos EUA, sem DPO local em português (apesar de manter representante ''Bird & Bird'' na UE/UK).
+| '''ALTO (ANPD)'''
+| DPO formalmente designado em português (<code>pedrohenriquecardonaperes@gmail.com</code>) e portal direto [[Especial:Privacidade]].
+|-
+| '''Direito à Eliminação (LGPD Art. 18)'''
+| ''Vanishing'' apenas renomeia a conta, mantendo intactos históricos, metadados e discussões; ''Oversight'' subordinado a filtros voluntários sob CC-BY-SA.
+| '''ALTO (AUD-04)'''
+| Canal direto de requisições do Art. 18 (acesso, retificação, portabilidade e eliminação/anonimização) em [[Especial:Privacidade]].
+|-
+| '''Representação Legal no Brasil (MCI Art. 11 e CPC Art. 75)'''
+| Sem CNPJ, filial ou procurador no país (Wiki Movimento Brasil não tem poderes de representação); obriga uso de '''Cartas Rogatórias''' morosas nos EUA, mesmo arrecadando doações em BRL.
+| '''ALTO (AUD-03)'''
+| Governança transparente em português e aderência expressa ao ordenamento brasileiro e ao STF Tema 987.
+|-
+| '''Transferência Internacional (LGPD Art. 33 e Res. ANPD nº 19/2024)'''
+| Processa dados nos EUA sem publicar cláusulas-padrão contratuais (CPCs) nem declaração nos moldes do Art. 17 da Resolução nº 19/2024.
+| '''MÉDIO / ALTO'''
+| Política de Privacidade clara em português detalhando agentes, finalidade e direitos em [[Wiki:Política_de_Privacidade]].
+|-
+| '''Moderação e Accountability (MCI Art. 19 e LGPD Art. 20)'''
+| Moderadores pseudônimos sem vínculo formal, recusa sistemática de pedidos extrajudiciais (VRT/OTRS) e criação de uma ''"zona de anomia regulatória"''.
+| '''MÉDIO / ALTO (AUD-05)'''
+| Administração auditável com logs imutáveis, regras de proteção claras e protocolo formal para Art. 19 e Art. 21 do Marco Civil.
+|}
+
+== 1. Exposição de Endereços IP e Passivo Histórico (LGPD, Arts. 6º e 46 — Risco CRÍTICO) ==
+* '''O IP como Dado Pessoal:''' No ordenamento brasileiro (LGPD, Marco Civil, STJ e ANPD), o endereço IP (IPv4 e IPv6) é dado pessoal por permitir a identificação direta ou indireta do cidadão.
+* '''Passivo Histórico Indexado:''' Por mais de duas décadas, o MediaWiki gravou e publicou permanentemente o IP completo de editores deslogados no histórico de revisões (<code>action=history</code>) e nos registros de abusos.
+* '''Insuficiência do ''IP Masking'' (Contas Temporárias):''' Embora a WMF tenha iniciado a implantação de Contas Temporárias para edições futuras, a medida é '''estritamente prospectiva''' e não corrige nem oculta o acervo histórico acumulado por décadas.
+* '''Risco de Reidentificação por ''Data Scraping'':''' Terceiros podem minerar automaticamente IPs históricos da Wikipédia e cruzá-los com vazamentos externos, logs e geolocalização para desmascarar a identidade civil e a localização física de cidadãos brasileiros.
+
+== 2. Proteção de Crianças e Adolescentes (LGPD, Art. 14 e ECA — Risco CRÍTICO) ==
+* '''Ausência de Verificação Etária:''' A WMF não aplica barreiras etárias no cadastro nem na edição livre, tratando dados de menores exatamente como os de adultos, sem consentimento parental específico em destaque.
+* '''Exposição Permanente de Menores:''' Jovens que editaram a Wikipédia sem login no passado tiveram seus endereços IP gravados publicamente nos históricos abertos, ficando permanentemente expostos a mineração de dados e reidentificação em violação direta ao Art. 14 da LGPD e ao ECA (Lei nº 8.069/1990).
+
+== 3. Divergência na Retenção de Logs de Acesso (Marco Civil, Art. 15 — Risco ALTO) ==
+* '''Obrigação Legal de 6 Meses (180 dias):''' O Artigo 15 do Marco Civil impõe a provedores organizados profissionalmente a guarda sigilosa de registros de acesso por 6 meses para subsidiar investigações cíveis e criminais.
+* '''Expurgo Antecipado em 90 Dias:''' Pelas ''Wikimedia Data Retention Guidelines'' e logs de ''CheckUser'', a WMF destrói dados de IP e ''User-Agent'' após '''90 dias (3 meses)''' — exatamente metade do prazo legal.
+* '''Frustração de Ordens Judiciais:''' Quando a polícia ou o cidadão lesado obtém decisão judicial de quebra de sigilo telemático, os registros já foram apagados. A tese de entidade sem fins lucrativos não afasta a lei, pois a WMF opera com orçamento multimilionário, estrutura profissional e captação ativa de doações em Real (BRL).
+
+== 4. Ausência de Encarregado de Dados (DPO) no Brasil (LGPD, Art. 41 — Risco ALTO) ==
+* '''Infração Formal Direta:''' O Artigo 41 da LGPD e a '''Resolução CD/ANPD nº 18/2024''' exigem a indicação formal e divulgação pública de um Encarregado (DPO) acessível aos titulares e à ANPD, vedando atendimento exclusivamente automatizado ou genérico.
+* '''Assimetria Internacional:''' A WMF nomeou formalmente um representante de privacidade para a União Europeia e o Reino Unido (o escritório ''Bird & Bird'' para o GDPR), mas mantém para o Brasil apenas o e-mail genérico na Califórnia (<code>privacy@wikimedia.org</code>).
+* '''Inaplicabilidade de Isenções:''' Pelo princípio da extraterritorialidade (Art. 3º da LGPD), a sede nos EUA não afasta a lei brasileira; entidades sem fins lucrativos não são isentas; e o volume massivo de centenas de milhões de acessos impede enquadramento como Agente de Pequeno Porte (Resolução CD/ANPD nº 2/2022). A associação ''Wiki Movimento Brasil'' (WMB) restringe seu DPO apenas às suas atividades internas, sem poderes sobre a WMF global.
+
+== 5. Conflito no Direito à Eliminação: ''Vanishing'' vs. LGPD Art. 18 (Risco ALTO) ==
+* '''A Ilusão do ''Vanishing'':''' A política comunitária de desaparecimento apenas renomeia a conta para um código genérico, mantendo públicos e intactos o histórico de edições, metadados de horário e páginas de discussão — onde frequentemente subsistem nomes civis e assinaturas antigas.
+* '''Restrição do ''Oversight'' e Licença CC-BY-SA:''' A supressão definitiva fica subordinada a filtros restritos de moderadores voluntários sob a doutrina do ''"Right to Remember"'' e da licença Creative Commons, colocando contratos privados e regimentos internos acima de uma lei federal de ordem pública.
+* '''Inaplicabilidade da Exceção Jornalística a Metadados (Art. 4º, II):''' Mesmo que artigos enciclopédicos invoquem finalidade informativa, metadados de editores, logs de IP, bloqueios e páginas de discussão comunitária não têm natureza jornalística nem acadêmica, submetendo-se integralmente à LGPD.
+
+== 6. Ausência de Representação Legal no Brasil (Marco Civil, Art. 11 e CPC, Art. 75 — Risco ALTO) ==
+* '''Evasão Jurisdicional:''' A WMF não possui CNPJ, filial ou procurador formal no Brasil. O próprio estatuto do ''Wiki Movimento Brasil'' (WMB) declara que a associação é independente e não representa judicialmente a fundação americana.
+* '''Cartas Rogatórias e Ineficácia de Liminares:''' Sem representante local, cidadãos e juízes brasileiros precisam recorrer a '''Cartas Rogatórias internacionais''' via Ministério da Justiça (DRCI), cujo trâmite leva meses ou anos — inviabilizando tutelas de urgência contra difamação ou exposição de dados, em confronto direto com o Art. 11, § 2º do Marco Civil, o Art. 75, X do CPC e a tese do '''STF (Tema 987)'''.
+
+== 7. Transferência Internacional de Dados (LGPD, Art. 33 e Res. ANPD nº 19/2024) ==
+* A WMF transfere continuamente dados de usuários brasileiros para servidores nos EUA sem publicar as cláusulas-padrão contratuais (CPCs) nem a declaração detalhada em português exigida pelo Artigo 17 da Resolução CD/ANPD nº 19/2024.
+
+== 8. Moderação Anônima, Artigo 19 e Falta de ''Accountability'' (LGPD, Art. 20) ==
+* '''Zona de Anomia Regulatória:''' Decisões sobre biografias de pessoas vivas, exclusão de artigos, bloqueios e inspeção de dados não públicos (''CheckUser'') são tomadas por voluntários pseudônimos sem vínculo contratual com a WMF. Enquanto a fundação afirma não supervisionar o conteúdo, a comunidade não possui personalidade jurídica.
+* '''Resistência a Pedidos Extrajudiciais:''' O Artigo 19 do Marco Civil é usado como escudo para rejeitar sistematicamente notificações extrajudiciais de cidadãos lesados, redirecionando titulares a fóruns voluntários (VRT/OTRS) sem formação jurídica ou impondo o ônus de litigar no exterior.
+
+== Fontes e Documento Original ==
+* '''Documento Completo da Investigação (PDF — 41 páginas):''' [https://wazzimagiygg.com/Investiga%C3%A7%C3%A3o%20LGPD%20e%20Marco%20Civ%C3%ADl%20WMF%20e%20Wikip%C3%A9dia.pdf Investigação LGPD e Marco Civil — WMF e Wikipédia]
+* '''Legislação Brasileira:''' LGPD (Lei nº 13.709/2018), Marco Civil da Internet (Lei nº 12.965/2014), Decreto nº 8.771/2016, CPC (Lei nº 13.105/2015), ECA (Lei nº 8.069/1990), Resoluções CD/ANPD nº 2/2022, nº 18/2024 e nº 19/2024.
+* '''Jurisprudência do STF:''' Repercussão Geral — Temas 987 e 533 sobre o Marco Civil da Internet.
+* '''Documentos Auditados da WMF / Wikipédia Lusófona:''' ''Wikimedia Foundation Privacy Policy'', ''Data Retention Guidelines'', ''Terms of Use'', documentação de ''Temporary Accounts (IP Masking)'', ''WP:BLP'', ''WP:Vanishing'', ''WP:Oversight'', ''WP:CheckUser'', ''WP:VRT (OTRS)'' e Estatuto do ''Wiki Movimento Brasil (WMB)''.
+* '''Conformidade no WikiWazzimaGiygg:''' Consulte [[Wiki:Política_de_Privacidade]], [[Wiki:Termos_de_Uso]] e o portal [[Especial:Privacidade]].
+
+[[Categoria:LGPD]]
+[[Categoria:Marco Civil]]
+[[Categoria:Auditoria]]
+[[Categoria:Privacidade]]
 [[Categoria:Governança]]`
   }
 };

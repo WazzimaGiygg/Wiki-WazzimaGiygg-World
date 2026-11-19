@@ -20,6 +20,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSettings }) => {
     { label: 'Política de Privacidade', slug: 'Wiki:Política_de_Privacidade' },
     { label: 'Termos de Uso', slug: 'Wiki:Termos_de_Uso' },
     { label: 'Portal LGPD & Marco Civil', slug: 'Especial:Privacidade' },
+    { label: 'Investigação LGPD (Wikipédia)', slug: 'Investigação_LGPD_e_Marco_Civil_sobre_a_Wikipédia' },
     { label: 'Código de Conduta (UCoC)', slug: 'Wiki:Código_Universal_de_Conduta' },
     { label: 'Sobre a Wiki', slug: 'Página_principal' },
     { label: `Versão (${WIKI_SITE_VERSION})`, slug: 'Especial:Versão' },
@@ -127,6 +128,33 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSettings }) => {
           <p className="text-[10.5px] text-slate-600 dark:text-slate-400 mt-0.5">
             Frase Principal da Wiki • &ldquo;Não, o Tempo não é o senhor do conhecimento!&rdquo;
           </p>
+        </div>
+
+        {/* Counter-Campaign Dossier Callout: WikiWazzimaGiygg vs Wikipédia (LGPD & Marco Civil) */}
+        <div className="bg-amber-50/90 dark:bg-amber-950/25 border border-amber-300/80 dark:border-amber-900/60 rounded-lg px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px]">
+          <div className="text-center sm:text-left text-amber-950 dark:text-amber-200 leading-snug">
+            <strong className="font-semibold">
+              Por que o WikiWazzimaGiygg supera a Wikipédia em privacidade?
+            </strong>{' '}
+            Sem exposição histórica de IPs, com DPO no Brasil, guarda de 6 meses (Marco Civil Art. 15) e direitos reais da LGPD.
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => navigateToPage('Investigação_LGPD_e_Marco_Civil_sobre_a_Wikipédia')}
+              className="px-2.5 py-1 rounded bg-amber-600 hover:bg-amber-700 text-white font-semibold text-[10.5px] transition-colors cursor-pointer"
+            >
+              Ler Dossiê Completo
+            </button>
+            <a
+              href="https://wazzimagiygg.com/Investiga%C3%A7%C3%A3o%20LGPD%20e%20Marco%20Civ%C3%ADl%20WMF%20e%20Wikip%C3%A9dia.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2.5 py-1 rounded border border-amber-400 dark:border-amber-700 bg-white/80 dark:bg-slate-900 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40 font-medium text-[10.5px] transition-colors no-underline"
+            >
+              PDF (41 págs.)
+            </a>
+          </div>
         </div>
 
         {/* Bottom Legal, Compliance & 88x31 Badges Row */}

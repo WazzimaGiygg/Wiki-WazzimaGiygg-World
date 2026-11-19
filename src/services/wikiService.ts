@@ -190,14 +190,15 @@ export function subscribeToPage(
     snapshot => {
       if (snapshot.exists()) {
         callback(snapshot.data() as WikiPage);
+      } else if (INITIAL_PAGES[slug]) {
+        callback(INITIAL_PAGES[slug]);
       } else {
-        // Only return data if it actually exists in Firestore
         callback(null);
       }
     },
     error => {
       console.warn(`Firestore onSnapshot error for page ${slug}:`, error);
-      callback(null);
+      callback(INITIAL_PAGES[slug] || null);
     }
   );
 }

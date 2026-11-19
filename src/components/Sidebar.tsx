@@ -33,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
 
   const navLinks = [
     { label: 'Página principal', slug: 'Página_principal', icon: Home },
+    { label: 'Dossiê: Wikipédia vs. LGPD', slug: 'Investigação_LGPD_e_Marco_Civil_sobre_a_Wikipédia', icon: ShieldCheck },
     { label: 'Mudanças recentes', slug: 'Especial:Mudanças_recentes', icon: Clock },
     { label: 'Página aleatória', action: handleRandomPage, icon: Shuffle },
     { label: 'Ajuda de wikitexto', slug: 'Ajuda:Wikitexto', icon: HelpCircle },
