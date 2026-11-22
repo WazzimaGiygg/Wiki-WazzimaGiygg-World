@@ -39,6 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
     { label: 'Página aleatória', action: handleRandomPage, icon: Shuffle },
     { label: 'Ajuda de wikitexto', slug: 'Ajuda:Wikitexto', icon: HelpCircle },
     { label: 'Predefinições', slug: 'Ajuda:Predefinições', icon: Braces },
+    { label: 'Exemplo de Predefinições', slug: 'Exemplo_de_Uso_de_Predefinições', icon: FileText },
     { label: 'Tutorial: Infobox', slug: 'Ajuda:Infobox', icon: FileText },
     { label: 'Todas as páginas', slug: 'Especial:Todas_as_páginas', icon: List },
   ];

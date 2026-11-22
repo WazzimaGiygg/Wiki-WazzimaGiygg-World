@@ -76,6 +76,14 @@ O WikiWazzimaGiygg substitui o paradigma tradicional por tecnologias modernas:
 | Como usar Infobox de usuário e de software
 | [[Ajuda:Infobox]]
 |-
+| '''Tutorial: Predefinições'''
+| Guia de transclusão, parâmetros e tags de inclusão
+| [[Ajuda:Predefinições]]
+|-
+| '''Exemplo de Predefinições'''
+| Artigo prático demonstrando {{Nome|params}} em ação
+| [[Exemplo_de_Uso_de_Predefinições]]
+|-
 | '''Índice Geral'''
 | Explore todas as páginas armazenadas no Firestore
 | [[Especial:Todas_as_páginas]]
@@ -156,6 +164,119 @@ Você pode alterar estas configurações clicando em '''Ferramentas > Configura�
 
 [[Categoria:Manual]]
 [[Categoria:Configuração]]`
+  },
+
+  'Exemplo_de_Uso_de_Predefinições': {
+    slug: 'Exemplo_de_Uso_de_Predefinições',
+    title: 'Exemplo de Uso de Predefinições',
+    namespace: 'Main',
+    author: 'Equipe Editorial WikiWazzimaGiygg',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_template_example_article',
+    categories: ['Predefinições', 'Tutoriais', 'Wikitexto', 'WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Artigo demonstrativo com exemplos reais de expansão de pré-definições {{Nome|parâmetro}} processadas pelo templateService e renderizadas no ArticleView',
+    content: `{{Ver_também|Ajuda:Predefinições|Ajuda:Wikitexto|Ajuda:Infobox}}
+
+{{Ambox
+| tipo = estilo
+| título = Artigo de Demonstração Prática de Pré-definições
+| texto = Todo o conteúdo visual estruturado desta página — caixas de aviso, citações, notas de topo e referências — é expandido dinamicamente pelo serviço \`templateService.ts\` antes da renderização no visualizador de artigos.
+| data = Novembro de 2026
+}}
+
+{{Infobox software
+| nome = Sistema de Pré-definições
+| subtítulo = Transclusão Dinâmica MediaWiki
+| tipo = Motor de Templates Wikitexto
+| plataforma = {{SITENAME}} ({{CURRENTVERSION}})
+| linguagem = TypeScript + React
+| armazenamento = Firebase Firestore
+| status = Ativo
+| documentação = [[Ajuda:Predefinições]]
+}}
+
+Um artigo bem estruturado no '''{{SITENAME}}''' utiliza '''pré-definições''' (\`templates\`) para padronizar caixas informativas, citações bibliográficas e avisos editoriais sem precisar repetir marcações complexas em cada página.<ref>{{Fonte|WazzimaGiygg Engineering|Especificação do Motor de Pré-definições e Transclusão em TypeScript|{{CURRENTYEAR}}|https://wikiwazzimagiygg.wazzimagiygg.com}}</ref>
+
+== 1. Caixa Informativa com Parâmetros Nomeados ==
+{{Artigo_principal|Ajuda:Predefinições}}
+
+Ao utilizar parâmetros nomeados como \`título=\` e \`texto=\`, a ordem dos argumentos deixa de importar e o wikitexto do artigo permanece legível. Veja o código e o resultado renderizado logo abaixo:
+
+<syntaxhighlight lang="text">
+{{Info
+| título = Exemplo de Parâmetros Dinâmicos
+| texto = Esta caixa foi gerada a partir da [[Predefinição:Info]] na página '''{{PAGENAME}}''' em {{CURRENTDATE}}.
+}}
+</syntaxhighlight>
+
+{{Info
+| título = Exemplo de Parâmetros Dinâmicos
+| texto = Esta caixa foi gerada a partir da [[Predefinição:Info]] na página '''{{PAGENAME}}''' em {{CURRENTDATE}}.
+}}
+
+== 2. Aviso Editorial com Parâmetros Posicionais e Nomeados ==
+Você também pode combinar chamadas curtas posicionais ou nomeadas usando a [[Predefinição:Aviso]]:
+
+<syntaxhighlight lang="text">
+{{Aviso|título=Boas Práticas|texto=Sempre prefira pré-definições reutilizáveis para manter a consistência visual entre todos os artigos da enciclopédia.}}
+</syntaxhighlight>
+
+{{Aviso|título=Boas Práticas|texto=Sempre prefira pré-definições reutilizáveis para manter a consistência visual entre todos os artigos da enciclopédia.}}
+
+== 3. Bloco de Citação com Autor e Fonte ==
+A [[Predefinição:Citação]] aceita até três parâmetros posicionais (\`{{{1}}}\`, \`{{{2}}}\`, \`{{{3}}}\`) ou nomeados (\`texto\`, \`autor\`, \`fonte\`), além de suportar palavras mágicas como \`{{CURRENTYEAR}}\` dentro dos próprios argumentos:
+
+<syntaxhighlight lang="text">
+{{Citação|O conhecimento livre prospera quando modelos padronizados permitem que qualquer colaborador concentre esforços na qualidade das fontes.|Comunidade WikiWazzimaGiygg|Manual Editorial ({{CURRENTYEAR}})}}
+</syntaxhighlight>
+
+{{Citação|O conhecimento livre prospera quando modelos padronizados permitem que qualquer colaborador concentre esforços na qualidade das fontes.|Comunidade WikiWazzimaGiygg|Manual Editorial ({{CURRENTYEAR}})}}
+
+== 4. Estado do Artigo e Lógica Condicional ==
+Mesmo funções condicionais como \`{{#if:...}}\` e expressões matemáticas \`{{#expr:...}}\` funcionam junto das pré-definições. Por exemplo, \`21 * 2\` calculado em tempo real no servidor de parser resulta em '''{{#expr: 21 * 2}}'''.
+
+Abaixo está um exemplo da [[Predefinição:Em_construção]] recebendo o parâmetro dinâmico \`editor\`:
+
+<syntaxhighlight lang="text">
+{{Em_construção|editor=Equipe Editorial WikiWazzimaGiygg}}
+</syntaxhighlight>
+
+{{Em_construção|editor=Equipe Editorial WikiWazzimaGiygg}}
+
+== 5. Resumo das Chamadas Utilizadas Neste Artigo ==
+{| class="wikitable" style="width:100%; text-align:left;"
+! Pré-definição !! Sintaxe Utilizada !! Tipo de Parâmetro
+|-
+| [[Predefinição:Ver_também]] || \`{{Ver_também|Ajuda:Predefinições|Ajuda:Wikitexto|Ajuda:Infobox}}\` || Posicional múltiplo
+|-
+| [[Predefinição:Ambox]] || \`{{Ambox|tipo=estilo|título=...|texto=...|data=...}}\` || Nomeado com \`#switch\`
+|-
+| [[Predefinição:Info]] || \`{{Info|título=...|texto=...}}\` || Nomeado + Palavras mágicas
+|-
+| [[Predefinição:Aviso]] || \`{{Aviso|título=...|texto=...}}\` || Nomeado com \`#if\`
+|-
+| [[Predefinição:Citação]] || \`{{Citação|Texto|Autor|Fonte}}\` || Posicional (3 argumentos)
+|-
+| [[Predefinição:Fonte]] || \`<ref>{{Fonte|Autor|Título|Ano|URL}}</ref>\` || Transclusão dentro de \`<ref>\`
+|-
+| [[Predefinição:Esboço]] || \`{{Esboço|Pré-definições MediaWiki}}\` || Posicional + autocategorização
+|}
+
+== 6. Marcação de Esboço ao Rodapé ==
+Ao final do artigo, a chamada \`{{Esboço|Pré-definições MediaWiki}}\` exibe o banner de expansão e adiciona automaticamente o artigo à [[:Categoria:Esboços]]:
+
+{{Esboço|Pré-definições MediaWiki}}
+
+== Referências ==
+<references />
+
+[[Categoria:Predefinições]]
+[[Categoria:Tutoriais]]
+[[Categoria:Wikitexto]]
+[[Categoria:WikiWazzimaGiygg]]`
   },
 
   'Ajuda:Wikitexto': {
@@ -781,7 +902,7 @@ Ao publicar textos ou edições no WikiWazzimaGiygg, o colaborador concorda em l
     createdAt: '2026-11-22T00:00:00.000Z',
     updatedAt: '2026-11-22T00:00:00.000Z',
     summary: 'Guia completo de Predefinições (Templates) no estilo MediaWiki: transclusão, parâmetros, tags de inclusão, subst e ParserFunctions',
-    content: `{{Aviso|Este guia explica como criar, documentar e transcluir '''Predefinições''' (espaço nominal <code>Predefinição:</code>) exatamente como no MediaWiki.}}
+    content: `{{Aviso|Este guia explica como criar, documentar e transcluir '''Predefinições''' (espaço nominal <code>Predefinição:</code>) exatamente como no MediaWiki. Veja também o artigo prático [[Exemplo_de_Uso_de_Predefinições]] para conferir todas elas renderizadas ao vivo.}}
 
 Uma '''Predefinição''' é uma página especial do espaço nominal <code>Predefinição:</code> cujo conteúdo é projetado para ser reutilizado (''transcluído'') dentro de outros artigos por meio de chaves duplas <code>{{Nome}}</code>. Quando a predefinição é atualizada, todas as páginas que a utilizam refletem a mudança automaticamente.
 
