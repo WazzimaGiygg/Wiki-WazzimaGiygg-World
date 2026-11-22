@@ -246,29 +246,31 @@ Abaixo está um exemplo da [[Predefinição:Em_construção]] recebendo o parâm
 
 {{Em_construção|editor=Equipe Editorial WikiWazzimaGiygg}}
 
-== 5. Resumo das Chamadas Utilizadas Neste Artigo ==
+== 5. Selos Comparativos em Tabelas e Notas Contextuais ==
+As predefinições [[Predefinição:Sim]], [[Predefinição:Não]] e [[Predefinição:Parcial]] podem ser inseridas diretamente dentro de tabelas wikitexto, enquanto [[Predefinição:Nota]] exibe dicas contextuais estilizadas:
+
+{{Nota|tipo=dica|título=Dica para Novos Editores|texto=Na tela de edição, use a barra de ferramentas visual acima do campo de texto (ou o botão '''Atalhos \`{{}}\`''') para inserir tabelas, links e pré-definições com apenas um clique!}}
+
 {| class="wikitable" style="width:100%; text-align:left;"
-! Pré-definição !! Sintaxe Utilizada !! Tipo de Parâmetro
+! Pré-definição !! Sintaxe Utilizada !! Resultado Renderizado
 |-
-| [[Predefinição:Ver_também]] || \`{{Ver_também|Ajuda:Predefinições|Ajuda:Wikitexto|Ajuda:Infobox}}\` || Posicional múltiplo
+| [[Predefinição:Sim]] || \`{{Sim|Suportado}}\` || {{Sim|Suportado}}
 |-
-| [[Predefinição:Ambox]] || \`{{Ambox|tipo=estilo|título=...|texto=...|data=...}}\` || Nomeado com \`#switch\`
+| [[Predefinição:Parcial]] || \`{{Parcial|Opcional}}\` || {{Parcial|Opcional}}
 |-
-| [[Predefinição:Info]] || \`{{Info|título=...|texto=...}}\` || Nomeado + Palavras mágicas
+| [[Predefinição:Não]] || \`{{Não|Desativado}}\` || {{Não|Desativado}}
 |-
-| [[Predefinição:Aviso]] || \`{{Aviso|título=...|texto=...}}\` || Nomeado com \`#if\`
+| [[Predefinição:Ambox]] || \`{{Ambox|tipo=estilo|título=...|texto=...}}\` || Caixa de mensagem editorial
 |-
-| [[Predefinição:Citação]] || \`{{Citação|Texto|Autor|Fonte}}\` || Posicional (3 argumentos)
-|-
-| [[Predefinição:Fonte]] || \`<ref>{{Fonte|Autor|Título|Ano|URL}}</ref>\` || Transclusão dentro de \`<ref>\`
-|-
-| [[Predefinição:Esboço]] || \`{{Esboço|Pré-definições MediaWiki}}\` || Posicional + autocategorização
+| [[Predefinição:Fonte]] || \`<ref>{{Fonte|Autor|Título|Ano|URL}}</ref>\` || Transclusão em nota de rodapé
 |}
 
-== 6. Marcação de Esboço ao Rodapé ==
+== 6. Marcação de Esboço e Portais ao Rodapé ==
 Ao final do artigo, a chamada \`{{Esboço|Pré-definições MediaWiki}}\` exibe o banner de expansão e adiciona automaticamente o artigo à [[:Categoria:Esboços]]:
 
 {{Esboço|Pré-definições MediaWiki}}
+
+{{Portal|Wikitexto|Predefinições|TypeScript}}
 
 == Referências ==
 <references />
@@ -977,6 +979,30 @@ As predefinições do WikiWazzimaGiygg suportam palavras mágicas e lógica cond
 | [[Predefinição:Fonte]] || \`{{Fonte|Autor|Título|Ano|URL}}\` || Referência formatada inline
 |-
 | [[Predefinição:Info]] || \`{{Info|título=Nota|texto=...}}\` || Quadro informativo azul padrão MediaWiki
+|-
+| [[Predefinição:Nota]] || \`{{Nota|tipo=dica|título=...|texto=...}}\` || Nota contextual com estilos (\`nota\`, \`dica\`, \`importante\`, \`cuidado\`)
+|-
+| [[Predefinição:Atenção]] || \`{{Atenção|título=Alerta|texto=...}}\` || Banner vermelho/laranja para alertas críticos de segurança ou quebra
+|-
+| [[Predefinição:Carece_de_revisão]] || \`{{Carece_de_revisão|motivo=...|data=...}}\` || Marca artigo para revisão editorial técnica
+|-
+| [[Predefinição:Atualizar]] || \`{{Atualizar|data=Nov/2026|seção=...}}\` || Indica conteúdo ou seção desatualizada
+|-
+| [[Predefinição:Evento_atual]] || \`{{Evento_atual|assunto=...}}\` || Avisa sobre evento em andamento com informações em evolução
+|-
+| [[Predefinição:Sem_referências]] || \`{{Sem_referências|data=Nov/2026}}\` || Banner para artigos que ainda não possuem nenhuma fonte
+|-
+| [[Predefinição:Atalho]] || \`{{Atalho|WP:PRE|AJ:PRE}}\` || Caixa lateral com atalhos rápidos do wiki
+|-
+| [[Predefinição:Sim]] || \`{{Sim}}\` ou \`{{Sim|Suportado}}\` || Selo verde positivo para tabelas comparativas
+|-
+| [[Predefinição:Não]] || \`{{Não}}\` ou \`{{Não|Indisponível}}\` || Selo vermelho negativo para tabelas comparativas
+|-
+| [[Predefinição:Parcial]] || \`{{Parcial}}\` ou \`{{Parcial|Beta}}\` || Selo âmbar para suporte parcial em tabelas
+|-
+| [[Predefinição:Colunas]] || \`{{Colunas|colunas=2|conteúdo=...}}\` || Distribui listas e conteúdos em 2 ou 3 colunas responsivas
+|-
+| [[Predefinição:Portal]] || \`{{Portal|Tecnologia|Privacidade}}\` || Caixa de rodapé indicando portais temáticos relacionados
 |}
 
 [[Categoria:Ajuda]]
@@ -1269,6 +1295,316 @@ Exibe um quadro informativo azul para observações técnicas ou esclarecimentos
 <syntaxhighlight lang="text">
 {{Info|Dica Técnica|Você pode usar Predefinições aninhadas dentro de artigos!}}
 {{Info|título=Observação|texto=Texto informativo aqui.}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Nota': {
+    slug: 'Predefinição:Nota',
+    title: 'Predefinição:Nota',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_nota',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Bloco de nota contextual com variações de estilo (nota, dica, importante, cuidado)',
+    content: `<includeonly><div class="my-3 p-3 rounded border border-l-4 text-xs shadow-2xs flex items-start gap-2.5 {{#switch:{{{tipo|nota}}}|dica=bg-emerald-50/75 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 border-l-emerald-600 text-emerald-950 dark:text-emerald-200|importante=bg-indigo-50/75 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800 border-l-indigo-600 text-indigo-950 dark:text-indigo-200|cuidado=bg-amber-50/80 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 border-l-amber-500 text-amber-950 dark:text-amber-200|#default=bg-[#f8f9fa] dark:bg-gray-800/80 border-[#a2a9b1] dark:border-gray-700 border-l-slate-500 text-gray-800 dark:text-gray-200}}"><span class="text-sm leading-none shrink-0 mt-0.5">{{#switch:{{{tipo|nota}}}|dica=💡|importante=📌|cuidado=⚠️|#default=📝}}</span><div class="min-w-0 flex-1">{{#if:{{{título|{{{titulo|}}}}}}|<div class="font-bold mb-0.5">{{{título|{{{titulo|}}}}}}</div>|}}<div class="leading-relaxed">{{{texto|{{{1|Nota editorial.}}}}}}</div></div></div></includeonly><noinclude>
+Exibe um bloco de nota contextual com suporte a variações visuais.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Nota|Este recurso requer autenticação no Firestore.}}
+{{Nota|tipo=dica|título=Dica para Editores|texto=Use Ctrl+B para aplicar negrito rapidamente.}}
+</syntaxhighlight>
+
+== Parâmetros ==
+* \`tipo\`: \`nota\` (padrão), \`dica\`, \`importante\` ou \`cuidado\`.
+* \`título\` (opcional): Título em negrito.
+* \`texto\` ou \`1\`: Conteúdo da nota.
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Atenção': {
+    slug: 'Predefinição:Atenção',
+    title: 'Predefinição:Atenção',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_atencao',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Banner vermelho de alerta crítico para segurança, compatibilidade ou conformidade legal',
+    content: `<includeonly><div class="my-3 p-3.5 rounded border border-red-300 dark:border-red-800 border-l-[6px] border-l-red-600 bg-red-50/85 dark:bg-red-950/35 text-xs text-red-950 dark:text-red-200 flex items-start gap-3 shadow-2xs"><span class="text-lg leading-none shrink-0 mt-0.5">🚨</span><div class="min-w-0 flex-1"><div class="font-bold text-sm mb-0.5">{{{título|{{{titulo|Atenção Crítica}}}}}}</div><div class="leading-relaxed">{{{texto|{{{1|Verifique cuidadosamente os procedimentos antes de prosseguir.}}}}}}</div></div></div></includeonly><noinclude>
+Utilize para advertências críticas de segurança, perda de dados ou conformidade jurídica.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Atenção|Nunca compartilhe credenciais privadas no código-fonte de artigos.}}
+{{Atenção|título=Alteração Incompatível|texto=Revise as regras do Firestore antes de migrar coleções.}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Carece_de_revisão': {
+    slug: 'Predefinição:Carece_de_revisão',
+    title: 'Predefinição:Carece de revisão',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_revisao',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Sinaliza que o artigo necessita de revisão técnica, ortográfica ou editorial',
+    content: `<includeonly><div class="my-3 p-3 rounded border border-amber-300 dark:border-amber-800 border-l-[6px] border-l-amber-500 bg-amber-50/75 dark:bg-amber-950/30 text-xs text-amber-950 dark:text-amber-200 flex items-start gap-3 shadow-2xs"><span class="text-lg leading-none shrink-0 mt-0.5">🔍</span><div class="min-w-0 flex-1"><div class="font-bold text-sm">Este artigo ou seção necessita de revisão{{#if:{{{data|}}}| <span class="font-normal text-[11px] opacity-80">({{{data}}})</span>|}}.</div><div class="mt-0.5 leading-relaxed">{{#if:{{{motivo|{{{1|}}}}}}|'''Motivo indicado:''' {{{motivo|{{{1}}}}}}.|O conteúdo pode conter imprecisões técnicas, lacunas estruturais ou erros de formatação em wikitexto.}}</div></div></div>[[Categoria:Artigos que carecem de revisão]]</includeonly><noinclude>
+Marca uma página para revisão editorial e a adiciona à [[:Categoria:Artigos que carecem de revisão]].
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Carece_de_revisão}}
+{{Carece_de_revisão|motivo=Verificar sintaxe da seção de API|data=Novembro de 2026}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Atualizar': {
+    slug: 'Predefinição:Atualizar',
+    title: 'Predefinição:Atualizar',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_atualizar',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Indica que um artigo ou seção contém informações desatualizadas que precisam de atualização',
+    content: `<includeonly><div class="my-3 p-3 rounded border border-yellow-300 dark:border-yellow-800 border-l-[6px] border-l-yellow-500 bg-yellow-50/80 dark:bg-yellow-950/30 text-xs text-yellow-950 dark:text-yellow-200 flex items-start gap-3 shadow-2xs"><span class="text-lg leading-none shrink-0 mt-0.5">🔄</span><div class="min-w-0 flex-1"><div class="font-bold text-sm">{{#if:{{{seção|{{{1|}}}}}}|A seção "{{{seção|{{{1}}}}}}"|Este artigo}} precisa ser atualizado(a){{#if:{{{data|}}}| <span class="font-normal text-[11px] opacity-80">(desde {{{data}}})</span>|}}.</div><div class="mt-0.5 leading-relaxed">Os dados descritos podem refletir uma versão anterior do projeto ou da legislação vigente. Considere atualizar com fontes recentes.</div></div></div>[[Categoria:Artigos desatualizados]]</includeonly><noinclude>
+Sinaliza páginas ou seções cujo conteúdo precisa de atualização e categoriza em [[:Categoria:Artigos desatualizados]].
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Atualizar|data=Novembro de 2026}}
+{{Atualizar|seção=Configuração do Servidor|data=Novembro de 2026}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Evento_atual': {
+    slug: 'Predefinição:Evento_atual',
+    title: 'Predefinição:Evento atual',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_evento_atual',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Banner para temas ou acontecimentos em andamento sujeitos a rápidas alterações',
+    content: `<includeonly><div class="my-3 p-3 rounded border border-cyan-300 dark:border-cyan-800 border-l-[6px] border-l-cyan-600 bg-cyan-50/80 dark:bg-cyan-950/30 text-xs text-cyan-950 dark:text-cyan-200 flex items-start gap-3 shadow-2xs"><span class="text-lg leading-none shrink-0 mt-0.5">⏱️</span><div class="min-w-0 flex-1"><div class="font-bold text-sm">Evento ou tópico em andamento</div><div class="mt-0.5 leading-relaxed">Este artigo documenta {{#if:{{{assunto|{{{1|}}}}}}|'''{{{assunto|{{{1}}}}}}'''|um acontecimento recente}} cujas informações podem mudar rapidamente conforme novas fontes verificáveis são publicadas.</div></div></div>[[Categoria:Eventos atuais]]</includeonly><noinclude>
+Informa ao leitor que o artigo trata de um tópico em curso.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Evento_atual}}
+{{Evento_atual|assunto=Processo regulatório em curso}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Sem_referências': {
+    slug: 'Predefinição:Sem_referências',
+    title: 'Predefinição:Sem referências',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_sem_refs',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Banner editorial para páginas que não citam nenhuma fonte bibliográfica',
+    content: `<includeonly><div class="my-3 p-3.5 rounded border border-red-300 dark:border-red-800 border-l-[6px] border-l-orange-600 bg-orange-50/90 dark:bg-orange-950/35 text-xs text-orange-950 dark:text-orange-200 flex items-start gap-3 shadow-2xs"><span class="text-lg leading-none shrink-0 mt-0.5">📖</span><div class="min-w-0 flex-1"><div class="font-bold text-sm">Este artigo não cita nenhuma fonte ou referência{{#if:{{{data|{{{1|}}}}}}| <span class="font-normal text-[11px] opacity-80">(desde {{{data|{{{1}}}}}})</span>|}}.</div><div class="mt-0.5 leading-relaxed">Ajude a comprovar a verificabilidade deste conteúdo utilizando <code>&lt;ref&gt;{{Fonte|...}}&lt;/ref&gt;</code> e adicionando uma seção <code>== Referências ==</code> com <code>&lt;references /&gt;</code>.</div></div></div>[[Categoria:Artigos sem referências]]</includeonly><noinclude>
+Utilize no topo de artigos inteiros que ainda não possuem nenhuma fonte listada.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Sem_referências}}
+{{Sem_referências|data=Novembro de 2026}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Atalho': {
+    slug: 'Predefinição:Atalho',
+    title: 'Predefinição:Atalho',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_atalho',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Caixa lateral à direita exibindo códigos de atalho rápido da página no estilo Wikipédia',
+    content: `<includeonly><div class="md:float-right md:ml-4 my-2 p-2.5 rounded border border-[#a2a9b1] dark:border-gray-700 bg-[#f8f9fa] dark:bg-gray-800/90 text-[11px] text-center min-w-[140px] shadow-2xs"><div class="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-[10px] pb-1 mb-1 border-b border-gray-200 dark:border-gray-700">Atalho(s)</div><div class="font-mono font-semibold text-[#0645ad] dark:text-[#6ba4ff] space-y-0.5"><div>[[{{{1|WP:ATALHO}}}]]</div>{{#if:{{{2|}}}|<div>[[{{{2}}}]]</div>|}}{{#if:{{{3|}}}|<div>[[{{{3}}}]]</div>|}}</div></div></includeonly><noinclude>
+Exibe uma caixa compacta flutuando à direita com até 3 atalhos rápidos do wiki.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Atalho|Ajuda:Predefinições}}
+{{Atalho|WP:LGPD|Wiki:Política_de_Privacidade}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Sim': {
+    slug: 'Predefinição:Sim',
+    title: 'Predefinição:Sim',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_sim',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Indicador visual verde positivo (✓ Sim) para tabelas comparativas e listas de verificação',
+    content: `<includeonly><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 font-semibold text-[11px]">✓ {{{1|Sim}}}</span></includeonly><noinclude>
+Indicador verde positivo ideal para células de \`wikitable\`.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Sim}}
+{{Sim|Totalmente suportado}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Não': {
+    slug: 'Predefinição:Não',
+    title: 'Predefinição:Não',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_nao',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Indicador visual vermelho negativo (✗ Não) para tabelas comparativas',
+    content: `<includeonly><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800 font-semibold text-[11px]">✗ {{{1|Não}}}</span></includeonly><noinclude>
+Indicador vermelho negativo ideal para células de \`wikitable\`.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Não}}
+{{Não|Incompatível}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Parcial': {
+    slug: 'Predefinição:Parcial',
+    title: 'Predefinição:Parcial',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_parcial',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Indicador visual âmbar de suporte parcial (◐ Parcial) para tabelas comparativas',
+    content: `<includeonly><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 font-semibold text-[11px]">◐ {{{1|Parcial}}}</span></includeonly><noinclude>
+Indicador âmbar de implementação parcial para células de \`wikitable\`.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Parcial}}
+{{Parcial|Em fase Beta}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Colunas': {
+    slug: 'Predefinição:Colunas',
+    title: 'Predefinição:Colunas',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_colunas',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Organiza listas ou blocos de texto em 2 ou 3 colunas responsivas',
+    content: `<includeonly><div class="my-3 gap-6 {{#switch:{{{colunas|2}}}|3=columns-1 md:columns-3|4=columns-1 sm:columns-2 lg:columns-4|#default=columns-1 md:columns-2}}">
+{{{conteúdo|{{{conteudo|{{{1|* Item 1\n* Item 2}}}}}}}}}
+</div></includeonly><noinclude>
+Distribui listas longas em múltiplas colunas responsivas.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Colunas|colunas=2|conteúdo=
+* Primeiro tópico
+* Segundo tópico
+* Terceiro tópico
+* Quarto tópico
+}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Portal': {
+    slug: 'Predefinição:Portal',
+    title: 'Predefinição:Portal',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_portal',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Barra de portais temáticos relacionados ao artigo no estilo MediaWiki',
+    content: `<includeonly><div class="my-4 p-2.5 rounded border border-[#a2a9b1] dark:border-gray-700 bg-[#f8f9fa] dark:bg-gray-800/80 text-xs text-gray-800 dark:text-gray-200 flex flex-wrap items-center gap-2 shadow-2xs"><span class="font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1">🧭 Portais relacionados:</span><span class="font-medium">[[Portal:{{{1|Tecnologia}}}|{{{1|Tecnologia}}}]]</span>{{#if:{{{2|}}}|<span class="text-gray-400">·</span><span class="font-medium">[[Portal:{{{2}}}|{{{2}}}]]</span>|}}{{#if:{{{3|}}}|<span class="text-gray-400">·</span><span class="font-medium">[[Portal:{{{3}}}|{{{3}}}]]</span>|}}</div></includeonly><noinclude>
+Exibe links para até 3 portais temáticos ao final do artigo.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Portal|TypeScript|Firestore|Privacidade}}
 </syntaxhighlight>
 
 [[Categoria:Predefinições do WikiWazzimaGiygg]]

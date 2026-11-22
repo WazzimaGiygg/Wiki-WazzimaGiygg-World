@@ -35,6 +35,12 @@ import {
   Braces,
   Plus,
   Trash2,
+  Underline,
+  Strikethrough,
+  Heading3,
+  Tag,
+  Terminal,
+  ChevronDown,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { WikiPage } from '../types/wiki';
@@ -118,6 +124,18 @@ export const EditView: React.FC<EditViewProps> = ({
   );
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [templateFeedback, setTemplateFeedback] = useState<{ type: 'error' | 'success'; msg: string } | null>(null);
+
+  // Visual toolbar interactive drawers for new editors (Link builder, Table builder, Quick templates, Cheat sheet)
+  const [activeToolbarDrawer, setActiveToolbarDrawer] = useState<
+    'none' | 'link' | 'table' | 'templates' | 'cheatsheet'
+  >('none');
+  const [quickLinkType, setQuickLinkType] = useState<'internal' | 'external'>('internal');
+  const [quickLinkTarget, setQuickLinkTarget] = useState('');
+  const [quickLinkLabel, setQuickLinkLabel] = useState('');
+  const [quickTableRows, setQuickTableRows] = useState(3);
+  const [quickTableCols, setQuickTableCols] = useState(3);
+  const [quickTableHeader, setQuickTableHeader] = useState(true);
+  const [quickTableCaption, setQuickTableCaption] = useState('');
   const [infoboxModalTab, setInfoboxModalTab] = useState<'software' | 'user' | 'tutorial'>(() =>
     isUserNamespacePage ? 'user' : 'software'
   );
@@ -602,6 +620,64 @@ export const EditView: React.FC<EditViewProps> = ({
     }, 10);
   };
 
+  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!editPermission.allowed) return;
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+      const key = e.key.toLowerCase();
+      if (key === 'b') {
+        e.preventDefault();
+        insertSyntax("'''", "'''", 'texto em negrito');
+      } else if (key === 'i') {
+        e.preventDefault();
+        insertSyntax("''", "''", 'texto em itálico');
+      } else if (key === 'k') {
+        e.preventDefault();
+        setActiveToolbarDrawer(prev => (prev === 'link' ? 'none' : 'link'));
+      }
+    }
+  };
+
+  const quickLinkSuggestions = useMemo(() => {
+    if (activeToolbarDrawer !== 'link' || quickLinkType !== 'internal') return [];
+    const q = quickLinkTarget.trim().toLowerCase();
+    const all = Array.from(existingPageSlugs);
+    if (!q) return all.slice(0, 6);
+    return all.filter(s => s.toLowerCase().includes(q) || s.replace(/_/g, ' ').toLowerCase().includes(q)).slice(0, 6);
+  }, [activeToolbarDrawer, quickLinkType, quickLinkTarget, existingPageSlugs]);
+
+  const builtQuickLinkSyntax = useMemo(() => {
+    const target = quickLinkTarget.trim();
+    const label = quickLinkLabel.trim();
+    if (quickLinkType === 'internal') {
+      const safeTarget = target || 'Página_principal';
+      return label && label !== safeTarget.replace(/_/g, ' ')
+        ? `[[${safeTarget}|${label}]]`
+        : `[[${safeTarget}]]`;
+    }
+    const safeUrl = target || 'https://wikiwazzimagiygg.wazzimagiygg.com';
+    return label ? `[${safeUrl} ${label}]` : `[${safeUrl} Título do Link]`;
+  }, [quickLinkType, quickLinkTarget, quickLinkLabel]);
+
+  const builtQuickTableSyntax = useMemo(() => {
+    const cols = Math.max(1, Math.min(8, quickTableCols));
+    const rows = Math.max(1, Math.min(10, quickTableRows));
+    const lines: string[] = ['{| class="wikitable" style="width:100%; text-align:left;"'];
+    if (quickTableCaption.trim()) {
+      lines.push(`|+ ${quickTableCaption.trim()}`);
+    }
+    if (quickTableHeader) {
+      const headers = Array.from({ length: cols }, (_, i) => `Coluna ${i + 1}`).join(' !! ');
+      lines.push(`! ${headers}`);
+    }
+    for (let r = 0; r < rows; r++) {
+      lines.push('|-');
+      const cells = Array.from({ length: cols }, (_, c) => `Célula ${r + 1}.${c + 1}`).join(' || ');
+      lines.push(`| ${cells}`);
+    }
+    lines.push('|}');
+    return lines.join('\n') + '\n';
+  }, [quickTableRows, quickTableCols, quickTableHeader, quickTableCaption]);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (currentUser.isAnonymous) {
@@ -740,176 +816,608 @@ export const EditView: React.FC<EditViewProps> = ({
         </div>
       )}
 
-      {/* MediaWiki Classic Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 p-1.5 bg-[#f8f9fa] dark:bg-gray-800 border border-[#a2a9b1] dark:border-gray-700 rounded-t text-xs">
-        <button
-          type="button"
-          onClick={() => insertSyntax("'''", "'''", 'texto em negrito')}
-          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-          title="Negrito (''')"
-        >
-          <Bold className="w-4 h-4" />
-        </button>
+      {/* Visual Wikitext Editor Toolbar (2 clean rows for new & experienced editors) */}
+      <div className="bg-[#f8f9fa] dark:bg-gray-800 border border-[#a2a9b1] dark:border-gray-700 rounded-t text-xs divide-y divide-gray-200 dark:divide-gray-700">
+        {/* Row 1: Text Formatting & Document Structure */}
+        <div className="flex flex-wrap items-center gap-1 px-2 py-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mr-1 hidden sm:inline">
+            Texto:
+          </span>
 
-        <button
-          type="button"
-          onClick={() => insertSyntax("''", "''", 'texto em itálico')}
-          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-          title="Itálico ('')"
-        >
-          <Italic className="w-4 h-4" />
-        </button>
-
-        <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1" />
-
-        <button
-          type="button"
-          onClick={() => insertSyntax('[[', ']]', 'Título da Página')}
-          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-          title="Link interno ([[...]])"
-        >
-          <Link className="w-4 h-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => insertSyntax('\n== ', ' ==\n', 'Título da Seção')}
-          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-          title="Cabeçalho nível 2 (== ==)"
-        >
-          <Heading2 className="w-4 h-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => insertSyntax('* ', '', 'Item da lista')}
-          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-          title="Lista com marcadores (*)"
-        >
-          <List className="w-4 h-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => insertSyntax('# ', '', 'Item numerado')}
-          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-          title="Lista numerada (#)"
-        >
-          <ListOrdered className="w-4 h-4" />
-        </button>
-
-        <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1" />
-
-        <button
-          type="button"
-          onClick={() => insertSyntax('<syntaxhighlight lang="typescript">\n', '\n</syntaxhighlight>', '// Código TypeScript aqui')}
-          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-          title="Bloco de código (<syntaxhighlight>)"
-        >
-          <Code className="w-4 h-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => insertSyntax('{| class="wikitable"\n! Cabeçalho 1 !! Cabeçalho 2\n|-\n| Linha 1, Coluna 1 || Linha 1, Coluna 2\n|}\n')}
-          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-          title="Inserir tabela wikitexto"
-        >
-          <Table className="w-4 h-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => insertSyntax('<ref>', '</ref>', 'Referência bibliográfica ou link')}
-          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-serif font-bold text-xs"
-          title="Nota de rodapé (<ref>)"
-        >
-          [ref]
-        </button>
-
-        <button
-          type="button"
-          onClick={() => insertSyntax('{{Aviso|', '}}', 'Mensagem de alerta importante')}
-          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-amber-600 font-bold text-xs"
-          title="Predefinição de aviso {{Aviso|...}}"
-        >
-          {'{aviso}'}
-        </button>
-
-        {editPermission.allowed && (
-          <>
-            <button
-              type="button"
-              onClick={() => setShowTemplateModal(true)}
-              className="px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1 font-medium text-xs cursor-pointer transition-colors"
-              title="Inserir Predefinição MediaWiki ({{Nome}})"
-            >
-              <Braces className="w-3.5 h-3.5" />
-              <span>Predefinições</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowInfoboxModal(true)}
-              className="px-2 py-1 rounded bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1 font-medium text-xs cursor-pointer transition-colors"
-              title="Inserir caixa {{Infobox software}} com nome, e-mail e ficha técnica"
-            >
-              <PanelRight className="w-3.5 h-3.5" />
-              <span>Infobox</span>
-            </button>
-          </>
-        )}
-
-        <button
-          type="button"
-          onClick={() => insertSyntax('--~~~~')}
-          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-mono text-xs"
-          title="Assinatura com data (--~~~~)"
-        >
-          --~~~~
-        </button>
-
-        <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1" />
-
-        <button
-          type="button"
-          onClick={() => setShowImageModal(true)}
-          className={`px-2 py-1 rounded flex items-center gap-1.5 cursor-pointer transition-colors text-xs font-medium ${
-            isBlazePlanActive
-              ? 'bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 text-[#0645ad] dark:text-[#6ba4ff] border border-blue-200 dark:border-blue-800'
-              : 'bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
-          }`}
-          title="Inserir ou carregar imagem no artigo"
-        >
-          <ImageIcon className="w-3.5 h-3.5" />
-          <span>Imagem</span>
-          {isBlazePlanActive ? (
-            <span className="flex items-center gap-0.5 text-[9px] px-1 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200 font-semibold">
-              <Flame className="w-2.5 h-2.5 text-emerald-600" />
-              Blaze ON
-            </span>
-          ) : (
-            <span className="flex items-center gap-0.5 text-[9px] px-1 py-0.2 rounded bg-amber-200 text-amber-900 dark:bg-amber-900/80 dark:text-amber-200 font-semibold">
-              <Flame className="w-2.5 h-2.5 text-amber-600" />
-              Blaze OFF
-            </span>
-          )}
-        </button>
-
-        {editPermission.allowed && (
           <button
             type="button"
-            onClick={() => setShowResearchPanel(prev => !prev)}
-            className={`px-2 py-1 rounded flex items-center gap-1.5 cursor-pointer transition-colors text-xs font-medium border ${
-              showResearchPanel
-                ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 border-emerald-400 dark:border-emerald-700'
-                : 'bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600'
-            }`}
-            title="Buscar fatos atualizados e referências no Google Search"
+            disabled={!editPermission.allowed}
+            onClick={() => insertSyntax("'''", "'''", 'texto em negrito')}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 disabled:opacity-40 cursor-pointer font-medium"
+            title="Negrito (Ctrl+B) — envolve em '''texto'''"
           >
-            <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Fontes Google</span>
+            <Bold className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Negrito</span>
           </button>
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => insertSyntax("''", "''", 'texto em itálico')}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 disabled:opacity-40 cursor-pointer font-medium"
+            title="Itálico (Ctrl+I) — envolve em ''texto''"
+          >
+            <Italic className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Itálico</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => insertSyntax('<u>', '</u>', 'texto sublinhado')}
+            className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 cursor-pointer"
+            title="Sublinhado (<u>...</u>)"
+          >
+            <Underline className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => insertSyntax('<s>', '</s>', 'texto riscado')}
+            className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 cursor-pointer"
+            title="Tachado (<s>...</s>)"
+          >
+            <Strikethrough className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => insertSyntax('`', '`', 'código')}
+            className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 cursor-pointer"
+            title="Código inline (`...`)"
+          >
+            <Terminal className="w-3.5 h-3.5" />
+          </button>
+
+          <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1" />
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => insertSyntax('\n== ', ' ==\n', 'Título da Seção')}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 disabled:opacity-40 cursor-pointer font-medium"
+            title="Cabeçalho de Seção H2 (== ==)"
+          >
+            <Heading2 className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline">Seção</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => insertSyntax('\n=== ', ' ===\n', 'Subseção')}
+            className="inline-flex items-center gap-1 px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 cursor-pointer"
+            title="Subseção H3 (=== ===)"
+          >
+            <Heading3 className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => insertSyntax('\n* ', '', 'Item da lista')}
+            className="inline-flex items-center gap-1 px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 cursor-pointer"
+            title="Lista com marcadores (*)"
+          >
+            <List className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">Lista</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => insertSyntax('\n# ', '', 'Item numerado')}
+            className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 cursor-pointer"
+            title="Lista numerada (#)"
+          >
+            <ListOrdered className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => insertSyntax('{{Citação|', '|Autor|Fonte}}', 'Texto da citação')}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 cursor-pointer"
+            title="Bloco de citação ({{Citação|...}})"
+          >
+            <Quote className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">Citação</span>
+          </button>
+
+          <div className="ml-auto flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() =>
+                setActiveToolbarDrawer(prev => (prev === 'cheatsheet' ? 'none' : 'cheatsheet'))
+              }
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium cursor-pointer border transition-colors ${
+                activeToolbarDrawer === 'cheatsheet'
+                  ? 'bg-blue-100 dark:bg-blue-950/70 text-[#0645ad] dark:text-[#6ba4ff] border-blue-300 dark:border-blue-700'
+                  : 'bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
+              }`}
+              title="Mostrar guia rápido de sintaxe wikitexto para novos editores"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>Guia Rápido</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Row 2: Links, Tables, References, Templates & Media */}
+        <div className="flex flex-wrap items-center gap-1 px-2 py-1.5 bg-gray-50/70 dark:bg-gray-800/80">
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => setActiveToolbarDrawer(prev => (prev === 'link' ? 'none' : 'link'))}
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium cursor-pointer disabled:opacity-40 transition-colors ${
+              activeToolbarDrawer === 'link'
+                ? 'bg-blue-100 dark:bg-blue-950/70 text-[#0645ad] dark:text-[#6ba4ff] border-blue-400 dark:border-blue-700'
+                : 'bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600'
+            }`}
+            title="Construtor de Link Interno ou Externo (Ctrl+K)"
+          >
+            <Link className="w-3.5 h-3.5 text-[#0645ad] dark:text-[#6ba4ff]" />
+            <span>Link</span>
+            <ChevronDown className="w-3 h-3 opacity-70" />
+          </button>
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => setActiveToolbarDrawer(prev => (prev === 'table' ? 'none' : 'table'))}
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium cursor-pointer disabled:opacity-40 transition-colors ${
+              activeToolbarDrawer === 'table'
+                ? 'bg-blue-100 dark:bg-blue-950/70 text-[#0645ad] dark:text-[#6ba4ff] border-blue-400 dark:border-blue-700'
+                : 'bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600'
+            }`}
+            title="Construtor visual de tabela wikitexto ({| class=&quot;wikitable&quot; |})"
+          >
+            <Table className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+            <span>Tabela</span>
+            <ChevronDown className="w-3 h-3 opacity-70" />
+          </button>
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => insertSyntax('[[Categoria:', ']]', 'Geral')}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 cursor-pointer"
+            title="Adicionar Categoria ([[Categoria:...]])"
+          >
+            <Tag className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Categoria</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => insertSyntax('<ref>', '</ref>', 'Referência bibliográfica ou link')}
+            className="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-serif font-bold text-xs disabled:opacity-40 cursor-pointer"
+            title="Inserir nota de rodapé (<ref>...</ref>)"
+          >
+            [ref]
+          </button>
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => insertSyntax('\n== Referências ==\n<references />\n')}
+            className="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-mono text-[11px] disabled:opacity-40 cursor-pointer"
+            title="Inserir lista de referências (<references />)"
+          >
+            &lt;refs/&gt;
+          </button>
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() =>
+              insertSyntax('<syntaxhighlight lang="typescript">\n', '\n</syntaxhighlight>', '// Código aqui')
+            }
+            className="inline-flex items-center gap-1 px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 cursor-pointer"
+            title="Bloco de código formatado (<syntaxhighlight>)"
+          >
+            <Code className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline">Código</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => insertSyntax('<nowiki>', '</nowiki>', 'texto literal')}
+            className="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-mono text-[11px] disabled:opacity-40 cursor-pointer"
+            title="Texto sem formatação wiki (<nowiki>)"
+          >
+            &lt;nowiki&gt;
+          </button>
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => insertSyntax('--~~~~')}
+            className="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-mono text-[11px] disabled:opacity-40 cursor-pointer"
+            title="Assinatura com data (--~~~~)"
+          >
+            --~~~~
+          </button>
+
+          <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1" />
+
+          {editPermission.allowed && (
+            <>
+              <button
+                type="button"
+                onClick={() => setShowTemplateModal(true)}
+                className="px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1 font-medium text-xs cursor-pointer transition-colors"
+                title="Abrir Assistente Completo de Predefinições ({{Nome}})"
+              >
+                <Braces className="w-3.5 h-3.5" />
+                <span>Predefinições</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveToolbarDrawer(prev => (prev === 'templates' ? 'none' : 'templates'))
+                }
+                className={`px-2 py-1 rounded border text-xs font-medium flex items-center gap-1 cursor-pointer transition-colors ${
+                  activeToolbarDrawer === 'templates'
+                    ? 'bg-indigo-100 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-200 border-indigo-400'
+                    : 'bg-white dark:bg-gray-900 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
+                }`}
+                title="Barra de inserção rápida das predefinições mais usadas"
+              >
+                <Sparkles className="w-3 h-3" />
+                <span className="hidden sm:inline">Atalhos {'{{}}'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowInfoboxModal(true)}
+                className="px-2 py-1 rounded bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1 font-medium text-xs cursor-pointer transition-colors"
+                title="Inserir caixa {{Infobox software}} ou {{Infobox usuário}}"
+              >
+                <PanelRight className="w-3.5 h-3.5" />
+                <span>Infobox</span>
+              </button>
+            </>
+          )}
+
+          <button
+            type="button"
+            disabled={!editPermission.allowed}
+            onClick={() => setShowImageModal(true)}
+            className={`px-2 py-1 rounded flex items-center gap-1.5 cursor-pointer transition-colors text-xs font-medium disabled:opacity-40 ${
+              isBlazePlanActive
+                ? 'bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 text-[#0645ad] dark:text-[#6ba4ff] border border-blue-200 dark:border-blue-800'
+                : 'bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
+            }`}
+            title="Inserir ou carregar imagem no artigo"
+          >
+            <ImageIcon className="w-3.5 h-3.5" />
+            <span>Imagem</span>
+            {isBlazePlanActive ? (
+              <span className="hidden xl:flex items-center gap-0.5 text-[9px] px-1 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200 font-semibold">
+                <Flame className="w-2.5 h-2.5 text-emerald-600" />
+                Blaze ON
+              </span>
+            ) : (
+              <span className="hidden xl:flex items-center gap-0.5 text-[9px] px-1 py-0.2 rounded bg-amber-200 text-amber-900 dark:bg-amber-900/80 dark:text-amber-200 font-semibold">
+                <Flame className="w-2.5 h-2.5 text-amber-600" />
+                Blaze OFF
+              </span>
+            )}
+          </button>
+
+          {editPermission.allowed && (
+            <button
+              type="button"
+              onClick={() => setShowResearchPanel(prev => !prev)}
+              className={`px-2 py-1 rounded flex items-center gap-1.5 cursor-pointer transition-colors text-xs font-medium border ${
+                showResearchPanel
+                  ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 border-emerald-400 dark:border-emerald-700'
+                  : 'bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600'
+              }`}
+              title="Buscar fatos atualizados e referências no Google Search"
+            >
+              <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="hidden md:inline">Fontes Google</span>
+            </button>
+          )}
+        </div>
+
+        {/* Interactive Drawer 1: Quick Link Builder */}
+        {activeToolbarDrawer === 'link' && editPermission.allowed && (
+          <div className="p-3 bg-blue-50/70 dark:bg-blue-950/25 space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-100">
+                <Link className="w-3.5 h-3.5 text-[#0645ad] dark:text-[#6ba4ff]" />
+                <span>Inserir Link Wikitexto</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setQuickLinkType('internal')}
+                  className={`px-2.5 py-1 rounded text-[11px] font-medium cursor-pointer border ${
+                    quickLinkType === 'internal'
+                      ? 'bg-[#3366cc] text-white border-[#3366cc]'
+                      : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700'
+                  }`}
+                >
+                  Link Interno ([[Página]])
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuickLinkType('external')}
+                  className={`px-2.5 py-1 rounded text-[11px] font-medium cursor-pointer border ${
+                    quickLinkType === 'external'
+                      ? 'bg-[#3366cc] text-white border-[#3366cc]'
+                      : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700'
+                  }`}
+                >
+                  Link Externo ([https://...])
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveToolbarDrawer('none')}
+                  className="p-1 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer ml-1"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-0.5">
+                  {quickLinkType === 'internal' ? 'Nome ou Slug da Página no Wiki' : 'URL Externa Completa'}
+                </label>
+                <input
+                  type="text"
+                  value={quickLinkTarget}
+                  onChange={e => setQuickLinkTarget(e.target.value)}
+                  placeholder={
+                    quickLinkType === 'internal'
+                      ? 'Ex: Ajuda:Predefinições ou Página_principal'
+                      : 'https://exemplo.com.br/artigo'
+                  }
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-0.5">
+                  Texto Exibido ao Leitor (opcional)
+                </label>
+                <input
+                  type="text"
+                  value={quickLinkLabel}
+                  onChange={e => setQuickLinkLabel(e.target.value)}
+                  placeholder="Ex: leia mais neste guia"
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-xs"
+                />
+              </div>
+            </div>
+
+            {quickLinkType === 'internal' && quickLinkSuggestions.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1">
+                <span className="text-[10px] text-gray-500">Sugestões existentes:</span>
+                {quickLinkSuggestions.map(s => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setQuickLinkTarget(s)}
+                    className="px-1.5 py-0.5 rounded bg-white dark:bg-gray-900 border border-blue-200 dark:border-blue-800 text-[10px] text-[#0645ad] dark:text-[#6ba4ff] hover:bg-blue-100 dark:hover:bg-blue-900/40 cursor-pointer"
+                  >
+                    {s.replace(/_/g, ' ')}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <code className="px-2 py-1 rounded bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 font-mono text-[11px] text-gray-800 dark:text-gray-200">
+                {builtQuickLinkSyntax}
+              </code>
+              <button
+                type="button"
+                onClick={() => {
+                  insertRawText(builtQuickLinkSyntax);
+                  setQuickLinkTarget('');
+                  setQuickLinkLabel('');
+                  setActiveToolbarDrawer('none');
+                }}
+                className="px-3 py-1.5 bg-[#3366cc] hover:bg-[#254b99] text-white rounded font-medium text-xs flex items-center gap-1 cursor-pointer"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Inserir Link</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Interactive Drawer 2: Quick Table Builder */}
+        {activeToolbarDrawer === 'table' && editPermission.allowed && (
+          <div className="p-3 bg-teal-50/60 dark:bg-teal-950/20 space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                <Table className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                <span>Construtor Visual de Tabela Wikitexto</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveToolbarDrawer('none')}
+                className="p-1 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
+              <div>
+                <label className="block text-[11px] font-medium mb-0.5">Linhas de dados</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={quickTableRows}
+                  onChange={e => setQuickTableRows(Number(e.target.value) || 2)}
+                  className="w-full px-2 py-1 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium mb-0.5">Colunas</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={8}
+                  value={quickTableCols}
+                  onChange={e => setQuickTableCols(Number(e.target.value) || 2)}
+                  className="w-full px-2 py-1 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium mb-0.5">Legenda (opcional)</label>
+                <input
+                  type="text"
+                  value={quickTableCaption}
+                  onChange={e => setQuickTableCaption(e.target.value)}
+                  placeholder="Título da tabela"
+                  className="w-full px-2 py-1 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-xs"
+                />
+              </div>
+              <label className="inline-flex items-center gap-1.5 py-1.5 cursor-pointer text-[11px]">
+                <input
+                  type="checkbox"
+                  checked={quickTableHeader}
+                  onChange={e => setQuickTableHeader(e.target.checked)}
+                  className="rounded border-gray-300 text-teal-600"
+                />
+                <span>Linha de cabeçalho (!)</span>
+              </label>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <pre className="flex-1 min-w-[220px] p-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded font-mono text-[10px] text-gray-700 dark:text-gray-300 overflow-x-auto max-h-24">
+                {builtQuickTableSyntax}
+              </pre>
+              <button
+                type="button"
+                onClick={() => {
+                  insertRawText('\n' + builtQuickTableSyntax);
+                  setActiveToolbarDrawer('none');
+                }}
+                className="px-3 py-1.5 bg-teal-700 hover:bg-teal-800 text-white rounded font-medium text-xs flex items-center gap-1 cursor-pointer shrink-0"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Inserir Tabela</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Interactive Drawer 3: Quick One-Click Templates Strip */}
+        {activeToolbarDrawer === 'templates' && editPermission.allowed && (
+          <div className="p-2.5 bg-indigo-50/70 dark:bg-indigo-950/25 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-semibold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5 text-[11px]">
+                <Braces className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                <span>Inserção Rápida de Pré-definições (1 clique):</span>
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveToolbarDrawer('none');
+                    setShowTemplateModal(true);
+                  }}
+                  className="text-[11px] text-indigo-700 dark:text-indigo-300 hover:underline font-medium cursor-pointer"
+                >
+                  Abrir Assistente Completo →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveToolbarDrawer('none')}
+                  className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { label: '{{Aviso}}', code: '{{Aviso|título=Observação|texto=Mensagem importante aqui.}}\n' },
+                { label: '{{Info}}', code: '{{Info|título=Informação|texto=Detalhe técnico complementar.}}\n' },
+                { label: '{{Nota}}', code: '{{Nota|tipo=dica|título=Dica|texto=Sugestão útil ao leitor.}}\n' },
+                { label: '{{Atenção}}', code: '{{Atenção|título=Atenção|texto=Aviso crítico de segurança ou compatibilidade.}}\n' },
+                { label: '{{Ambox}}', code: '{{Ambox|tipo=aviso|título=Revisão|texto=Descrição da pendência editorial.|data=Novembro de 2026}}\n' },
+                { label: '{{Esboço}}', code: '{{Esboço|Tema do Artigo}}\n' },
+                { label: '{{Carece_de_fontes}}', code: '{{Carece_de_fontes|data=Novembro de 2026}}\n' },
+                { label: '{{Atualizar}}', code: '{{Atualizar|data=Novembro de 2026}}\n' },
+                { label: '{{Atalho}}', code: '{{Atalho|Página_principal}}\n' },
+                { label: '{{Sim}}', code: '{{Sim}}' },
+                { label: '{{Não}}', code: '{{Não}}' },
+                { label: '{{Parcial}}', code: '{{Parcial}}' },
+                { label: '{{Portal}}', code: '{{Portal|Tecnologia|Privacidade}}\n' },
+              ].map(item => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => insertRawText(item.code)}
+                  className="px-2 py-1 rounded bg-white dark:bg-gray-900 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 font-mono text-[11px] text-indigo-700 dark:text-indigo-300 cursor-pointer shadow-2xs"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Interactive Drawer 4: Beginner Wikitext Cheat Sheet */}
+        {activeToolbarDrawer === 'cheatsheet' && (
+          <div className="p-2.5 bg-amber-50/70 dark:bg-amber-950/20 space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-semibold text-amber-950 dark:text-amber-200 text-[11px]">
+                Guia Rápido de Wikitexto (clique em qualquer exemplo para inserir no texto):
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveToolbarDrawer('none')}
+                className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1.5 text-[11px]">
+              {[
+                { desc: 'Negrito', syntax: "'''negrito'''", before: "'''", after: "'''", sample: 'negrito' },
+                { desc: 'Itálico', syntax: "''itálico''", before: "''", after: "''", sample: 'itálico' },
+                { desc: 'Link interno', syntax: '[[Página|Texto]]', before: '[[', after: '|Texto]]', sample: 'Página' },
+                { desc: 'Link externo', syntax: '[https://site.com Nome]', before: '[https://', after: ' Nome]', sample: 'site.com' },
+                { desc: 'Seção', syntax: '== Título ==', before: '\n== ', after: ' ==\n', sample: 'Título' },
+                { desc: 'Lista', syntax: '* Item', before: '\n* ', after: '', sample: 'Item' },
+                { desc: 'Nota de rodapé', syntax: '<ref>Fonte</ref>', before: '<ref>', after: '</ref>', sample: 'Fonte' },
+                { desc: 'Pré-definição', syntax: '{{Nome|param}}', before: '{{', after: '|parâmetro}}', sample: 'Aviso' },
+              ].map(ex => (
+                <button
+                  key={ex.desc}
+                  type="button"
+                  disabled={!editPermission.allowed}
+                  onClick={() => insertSyntax(ex.before, ex.after, ex.sample)}
+                  className="flex items-center justify-between gap-2 px-2 py-1 bg-white dark:bg-gray-900 border border-amber-200 dark:border-amber-800/70 rounded hover:bg-amber-100/70 dark:hover:bg-amber-900/40 text-left cursor-pointer disabled:opacity-40"
+                >
+                  <span className="font-medium text-gray-700 dark:text-gray-300">{ex.desc}</span>
+                  <code className="font-mono text-[10px] text-[#0645ad] dark:text-[#6ba4ff]">{ex.syntax}</code>
+                </button>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 
@@ -1001,6 +1509,7 @@ export const EditView: React.FC<EditViewProps> = ({
         ref={textareaRef}
         value={content}
         onChange={e => setContent(e.target.value)}
+        onKeyDown={handleTextareaKeyDown}
         rows={18}
         readOnly={!editPermission.allowed}
         className={`w-full p-3 font-mono text-xs sm:text-sm border border-[#a2a9b1] dark:border-gray-700 border-t-0 resize-y leading-relaxed shadow-inner ${
