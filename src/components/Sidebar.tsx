@@ -14,6 +14,7 @@ import {
   Blocks,
   Share2,
   Upload,
+  Braces,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { getRandomPageSlug } from '../utils/randomPage';
@@ -37,6 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
     { label: 'Mudanças recentes', slug: 'Especial:Mudanças_recentes', icon: Clock },
     { label: 'Página aleatória', action: handleRandomPage, icon: Shuffle },
     { label: 'Ajuda de wikitexto', slug: 'Ajuda:Wikitexto', icon: HelpCircle },
+    { label: 'Predefinições', slug: 'Ajuda:Predefinições', icon: Braces },
     { label: 'Tutorial: Infobox', slug: 'Ajuda:Infobox', icon: FileText },
     { label: 'Todas as páginas', slug: 'Especial:Todas_as_páginas', icon: List },
   ];

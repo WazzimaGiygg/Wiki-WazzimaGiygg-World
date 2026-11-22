@@ -767,7 +767,393 @@ Ao publicar textos ou edições no WikiWazzimaGiygg, o colaborador concorda em l
 [[Categoria:Auditoria]]
 [[Categoria:Privacidade]]
 [[Categoria:Governança]]`
+  },
+
+  'Ajuda:Predefinições': {
+    slug: 'Ajuda:Predefinições',
+    title: 'Ajuda:Predefinições',
+    namespace: 'Help',
+    author: 'Equipe de Documentação',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_help_templates',
+    categories: ['Ajuda', 'Documentação', 'Predefinições', 'Wikitexto'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Guia completo de Predefinições (Templates) no estilo MediaWiki: transclusão, parâmetros, tags de inclusão, subst e ParserFunctions',
+    content: `{{Aviso|Este guia explica como criar, documentar e transcluir '''Predefinições''' (espaço nominal <code>Predefinição:</code>) exatamente como no MediaWiki.}}
+
+Uma '''Predefinição''' é uma página especial do espaço nominal <code>Predefinição:</code> cujo conteúdo é projetado para ser reutilizado (''transcluído'') dentro de outros artigos por meio de chaves duplas <code>{{Nome}}</code>. Quando a predefinição é atualizada, todas as páginas que a utilizam refletem a mudança automaticamente.
+
+== 1. Como Usar (Transcluir) uma Predefinição ==
+* '''Sem parâmetros:''' \`{{Esboço}}\` ou \`{{Predefinição:Esboço}}\`
+* '''Com parâmetros posicionais:''' \`{{Artigo_principal|Arquitetura_WikiWazzimaGiygg}}\`
+* '''Com parâmetros nomeados:''' \`{{Ambox|tipo=aviso|título=Revisão técnica|texto=Esta seção está sendo atualizada.}}\`
+* '''Transclusão de artigo comum:''' Use dois pontos no início, como \`{{:Página_principal}}\`.
+* '''Assistente no Editor:''' Ao editar qualquer artigo, clique no botão '''Predefinições ({{ }})''' na barra de ferramentas para pesquisar modelos, preencher parâmetros e inserir automaticamente.
+
+== 2. Criando suas Próprias Predefinições ==
+Para criar uma nova predefinição, crie uma página começando com <code>Predefinição:</code> — por exemplo, [[Predefinição:Minha_Caixa]].
+
+=== Parâmetros (Chaves Triplas) ===
+Dentro da predefinição, utilize chaves triplas <code>{{{...}}}</code> para receber valores passados por quem a chama:
+* '''Parâmetro posicional:''' \`{{{1}}}\` (primeiro argumento), \`{{{2}}}\` (segundo argumento).
+* '''Parâmetro nomeado:''' \`{{{título}}}\`, \`{{{autor}}}\`, \`{{{data}}}\`.
+* '''Valor padrão:''' Use uma barra vertical para definir um valor padrão caso o parâmetro seja omitido: \`{{{1|Valor padrão}}}\` ou vazio \`{{{texto|}}}\`.
+
+=== Tags de Controle de Inclusão ===
+Assim como na Wikipédia e no MediaWiki, você pode separar o código funcional da documentação da predefinição:
+{| class="wikitable" style="width:100%; text-align:left;"
+! Tag !! Quando é exibida no artigo (transclusão) !! Quando é exibida na página da Predefinição
+|-
+| \`<includeonly>...</includeonly>\` || '''Sim''' (é incluída no artigo) || Não (fica oculta na documentação)
+|-
+| \`<noinclude>...</noinclude>\` || Não (é ignorada no artigo) || '''Sim''' (ideal para ''== Uso =='' e categorias da predefinição)
+|-
+| \`<onlyinclude>...</onlyinclude>\` || '''Apenas''' o conteúdo dentro desta tag é incluído || '''Sim''' (exibida normalmente na página)
+|}
+
+== 3. Substituição Direta ({{subst:}}) ==
+Se você quiser copiar o wikitexto expandido de uma predefinição diretamente para o código-fonte do artigo no momento de salvar (sem vínculo dinâmico futuro), utilize o prefixo \`subst:\`:
+<syntaxhighlight lang="text">
+{{subst:Esboço|Computação}}
+{{subst:CURRENTDATE}}
+</syntaxhighlight>
+
+== 4. Palavras Mágicas e ParserFunctions ==
+As predefinições do WikiWazzimaGiygg suportam palavras mágicas e lógica condicional nativa:
+* '''Palavras Mágicas:''' \`{{PAGENAME}}\`, \`{{FULLPAGENAME}}\`, \`{{NAMESPACE}}\`, \`{{SITENAME}}\`, \`{{VERSÃO}}\`, \`{{CURRENTYEAR}}\`, \`{{CURRENTMONTH}}\`, \`{{CURRENTDAY}}\`, \`{{CURRENTDATE}}\`, \`{{NUMBEROFPAGES}}\`, \`{{!}}\` (pipe literal).
+* '''Condicionais e Matemática:'''
+<syntaxhighlight lang="text">
+{{#if: {{{autor|}}} | Por {{{autor}}} | Autor desconhecido }}
+{{#ifeq: {{{tipo|}}} | alerta | Atenção! | Nota }}
+{{#switch: {{{status|}}} | ativo = Em operação | beta = Experimental | #default = Indefinido }}
+{{#expr: (10 + 5) * 2 }}
+</syntaxhighlight>
+
+== 5. Predefinições Padrão Disponíveis ==
+{| class="wikitable" style="width:100%; text-align:left;"
+! Predefinição !! Chamada Típica !! Finalidade
+|-
+| [[Predefinição:Aviso]] || \`{{Aviso|Mensagem importante}}\` || Caixa de alerta estilizada
+|-
+| [[Predefinição:Ambox]] || \`{{Ambox|tipo=aviso|título=...|texto=...}}\` || Caixa de mensagem de artigo (Article Message Box)
+|-
+| [[Predefinição:Esboço]] || \`{{Esboço|Tema}}\` || Marca artigo como esboço e categoriza em Esboços
+|-
+| [[Predefinição:Carece_de_fontes]] || \`{{Carece_de_fontes|data=Nov/2026}}\` || Sinaliza ausência de referências verificáveis
+|-
+| [[Predefinição:Em_construção]] || \`{{Em_construção|editor=SeuNome}}\` || Informa que a página está em edição ativa
+|-
+| [[Predefinição:Desambiguação]] || \`{{Desambiguação}}\` || Identifica páginas de desambiguação
+|-
+| [[Predefinição:Artigo_principal]] || \`{{Artigo_principal|Nome_da_Página}}\` || Nota de topo apontando para o artigo principal
+|-
+| [[Predefinição:Ver_também]] || \`{{Ver_também|Página_1|Página_2}}\` || Nota de topo sugerindo leituras relacionadas
+|-
+| [[Predefinição:Citação]] || \`{{Citação|Texto|Autor|Fonte}}\` || Bloco de citação destacado com autoria
+|-
+| [[Predefinição:Fonte]] || \`{{Fonte|Autor|Título|Ano|URL}}\` || Referência formatada inline
+|-
+| [[Predefinição:Info]] || \`{{Info|título=Nota|texto=...}}\` || Quadro informativo azul padrão MediaWiki
+|}
+
+[[Categoria:Ajuda]]
+[[Categoria:Documentação]]
+[[Categoria:Predefinições]]`
+  },
+
+  'Predefinição:Aviso': {
+    slug: 'Predefinição:Aviso',
+    title: 'Predefinição:Aviso',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_aviso',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Exibe uma caixa de aviso destacada com ícone e mensagem personalizada',
+    content: `<includeonly><div class="my-3 p-3 bg-amber-50 dark:bg-amber-950/40 border-l-4 border-amber-500 rounded text-sm text-amber-900 dark:text-amber-200 flex items-start gap-2.5 shadow-xs"><span class="text-amber-600 dark:text-amber-400 font-bold text-base leading-none mt-0.5">ℹ</span><div class="min-w-0 flex-1">{{#if:{{{título|}}}|<div class="font-semibold mb-0.5">{{{título}}}</div>|}}<div>{{{texto|{{{1|Aviso importante.}}}}}}</div></div></div></includeonly><noinclude>
+Esta predefinição exibe uma caixa de aviso ou nota destacada no corpo do artigo.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Aviso|Mensagem simples de alerta ou observação.}}
+{{Aviso|título=Nota Editorial|texto=Conteúdo verificado conforme LGPD.}}
+</syntaxhighlight>
+
+== Parâmetros ==
+* \`1\` ou \`texto\`: Texto principal exibido dentro da caixa de aviso.
+* \`título\` (opcional): Título em negrito no topo do aviso.
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Ambox': {
+    slug: 'Predefinição:Ambox',
+    title: 'Predefinição:Ambox',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_ambox',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Caixa de mensagem de artigo (Article Message Box) clássica do MediaWiki com suporte a tipos (aviso, estilo, conteúdo, proteção, eliminação)',
+    content: `<includeonly><div class="my-3 mx-auto max-w-4xl p-3 rounded border border-[#a2a9b1] dark:border-gray-700 border-l-[6px] {{#switch:{{{tipo|aviso}}}|eliminação|eliminacao|grave=border-l-red-600 bg-red-50/70 dark:bg-red-950/25|conteúdo|conteudo=border-l-orange-500 bg-orange-50/70 dark:bg-orange-950/25|estilo=border-l-amber-400 bg-amber-50/60 dark:bg-amber-950/20|proteção|protecao=border-l-slate-500 bg-slate-100 dark:bg-slate-800/70|#default=border-l-[#3366cc] bg-[#f8f9fa] dark:bg-gray-800/80}} text-xs text-gray-800 dark:text-gray-200 flex items-start gap-3 shadow-2xs"><div class="text-lg leading-none select-none shrink-0 mt-0.5">{{#switch:{{{tipo|aviso}}}|eliminação|eliminacao|grave=⛔|conteúdo|conteudo=⚠️|estilo=🧹|proteção|protecao=🔒|#default=ℹ️}}</div><div class="min-w-0 flex-1 space-y-0.5">{{#if:{{{título|{{{titulo|}}}}}}|<div class="font-bold text-sm text-gray-900 dark:text-gray-100">{{{título|{{{titulo|}}}}}}</div>|}}<div class="leading-relaxed">{{{texto|{{{1|Mensagem informativa do artigo.}}}}}}</div>{{#if:{{{data|}}}|<div class="text-[11px] text-gray-500 dark:text-gray-400 italic">Marcado em: {{{data}}}</div>|}}</div></div></includeonly><noinclude>
+A '''Predefinição:Ambox''' (''Article Message Box'') é a caixa padronizada da MediaWiki para avisos editoriais no topo dos artigos.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Ambox
+| tipo = conteúdo
+| título = Este artigo necessita de atualização
+| texto = As seções técnicas abaixo referem-se a uma versão anterior.
+| data = Novembro de 2026
+}}
+</syntaxhighlight>
+
+== Parâmetros ==
+* \`tipo\`: Define cor da borda e ícone (\`aviso\`, \`conteúdo\`, \`estilo\`, \`proteção\`, \`eliminação\`).
+* \`título\`: Cabeçalho em negrito da mensagem.
+* \`texto\` (ou parâmetro posicional \`1\`): Descrição da mensagem.
+* \`data\` (opcional): Mês/ano da marcação.
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Esboço': {
+    slug: 'Predefinição:Esboço',
+    title: 'Predefinição:Esboço',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_esboco',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Marca um artigo curto como esboço e o adiciona automaticamente à Categoria:Esboços',
+    content: `<includeonly><div class="my-4 p-3 rounded border border-[#a2a9b1] dark:border-gray-700 border-l-4 border-l-emerald-600 bg-[#f8f9fa] dark:bg-gray-800/80 text-xs text-gray-700 dark:text-gray-300 flex items-center gap-3 shadow-2xs"><span class="text-xl leading-none shrink-0" aria-hidden="true">🧩</span><div>Este artigo {{#if:{{{1|}}}|sobre '''{{{1}}}''' |}}é um '''esboço'''. Você pode ajudar o WikiWazzimaGiygg [[{{{FULLPAGENAME}}}|expandindo-o]] com fontes verificáveis e informações adicionais.</div></div>[[Categoria:Esboços]]</includeonly><noinclude>
+Utilize esta predefinição ao final de artigos que ainda contêm apenas informações introdutórias ou breves.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Esboço}}
+{{Esboço|Ciência da Computação}}
+</syntaxhighlight>
+
+== Efeito Colateral ==
+Adiciona automaticamente a página à [[:Categoria:Esboços]].
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Carece_de_fontes': {
+    slug: 'Predefinição:Carece_de_fontes',
+    title: 'Predefinição:Carece de fontes',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_fontes',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Aviso editorial para artigos sem referências bibliográficas suficientes',
+    content: `<includeonly><div class="my-3 p-3 rounded border border-orange-300 dark:border-orange-800 border-l-[6px] border-l-orange-500 bg-orange-50/80 dark:bg-orange-950/30 text-xs text-orange-950 dark:text-orange-200 flex items-start gap-3 shadow-2xs"><span class="text-lg leading-none shrink-0 mt-0.5">📚</span><div><div class="font-bold text-sm">Este artigo ou seção necessita de fontes fiáveis{{#if:{{{data|{{{1|}}}}}}| <span class="font-normal text-[11px] opacity-80">(desde {{{data|{{{1}}}}}})</span>|}}.</div><p class="mt-0.5 leading-relaxed">Ajude a melhorar este conteúdo adicionando referências com <code>&lt;ref&gt;...&lt;/ref&gt;</code>. Afirmações sem verificabilidade podem ser questionadas ou removidas.</p></div></div>[[Categoria:Artigos que carecem de fontes]]</includeonly><noinclude>
+Sinaliza que o conteúdo precisa de referências bibliográficas ou fontes documentais.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Carece_de_fontes}}
+{{Carece_de_fontes|data=Novembro de 2026}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Em_construção': {
+    slug: 'Predefinição:Em_construção',
+    title: 'Predefinição:Em construção',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_construcao',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Informa aos leitores que o artigo está em elaboração ativa',
+    content: `<includeonly><div class="my-3 p-3 rounded border border-sky-300 dark:border-sky-800 border-l-[6px] border-l-sky-600 bg-sky-50/80 dark:bg-sky-950/30 text-xs text-sky-950 dark:text-sky-200 flex items-start gap-3 shadow-2xs"><span class="text-lg leading-none shrink-0 mt-0.5">🚧</span><div><div class="font-bold text-sm">Página em construção ou grande edição</div><div class="mt-0.5 leading-relaxed">Este artigo está passando por uma expansão ativa{{#if:{{{editor|{{{1|}}}}}}| coordenada por '''{{{editor|{{{1}}}}}}'''|}}. Aguarde alguns instantes antes de realizar alterações estruturais concorrentes ou utilize a aba '''Discussão'''.</div></div></div></includeonly><noinclude>
+Indica que o artigo está em desenvolvimento ativo por um editor.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Em_construção}}
+{{Em_construção|editor=João Silva}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Desambiguação': {
+    slug: 'Predefinição:Desambiguação',
+    title: 'Predefinição:Desambiguação',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_desambig',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Identifica uma página de desambiguação com múltiplos significados para o mesmo título',
+    content: `<includeonly><div class="my-3 p-3 rounded border border-[#a2a9b1] dark:border-gray-700 border-l-4 border-l-indigo-500 bg-[#f8f9fa] dark:bg-gray-800/80 text-xs text-gray-800 dark:text-gray-200 flex items-center gap-3 shadow-2xs"><span class="text-lg leading-none shrink-0">🔀</span><div><span class="font-semibold">Desambiguação:</span> Esta página lista artigos que podem compartilhar o título '''{{{1|{{PAGENAME}}}}}'''. Caso um link interno tenha trazido você até aqui, considere ajustá-lo para apontar diretamente para o artigo específico desejado.</div></div>[[Categoria:Desambiguação]]</includeonly><noinclude>
+Coloque ao topo ou rodapé de páginas de desambiguação.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Desambiguação}}
+{{Desambiguação|Termo}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Artigo_principal': {
+    slug: 'Predefinição:Artigo_principal',
+    title: 'Predefinição:Artigo principal',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_artigo_principal',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Nota de topo (hatnote) apontando para o artigo principal de uma seção',
+    content: `<includeonly><div class="my-1.5 pl-4 text-xs italic text-gray-700 dark:text-gray-300">↳ Artigo principal: [[{{{1|Página_principal}}}]]{{#if:{{{2|}}}| e [[{{{2}}}]]|}}</div></includeonly><noinclude>
+Cria uma nota de topo clássica indicando o artigo principal sobre o tema da seção.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Artigo_principal|Arquitetura_WikiWazzimaGiygg}}
+{{Artigo_principal|Wiki:Política_de_Privacidade|Wiki:Termos_de_Uso}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Ver_também': {
+    slug: 'Predefinição:Ver_também',
+    title: 'Predefinição:Ver também',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_ver_tambem',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Nota de topo (hatnote) sugerindo artigos relacionados',
+    content: `<includeonly><div class="my-1.5 pl-4 text-xs italic text-gray-700 dark:text-gray-300">↳ Ver também: [[{{{1|Página_principal}}}]]{{#if:{{{2|}}}|, [[{{{2}}}]]|}}{{#if:{{{3|}}}| e [[{{{3}}}]]|}}</div></includeonly><noinclude>
+Sugere até 3 artigos relacionados logo abaixo de um cabeçalho de seção.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Ver_também|Ajuda:Wikitexto|Ajuda:Infobox}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Citação': {
+    slug: 'Predefinição:Citação',
+    title: 'Predefinição:Citação',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_citacao',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Bloco de citação destacado com atribuição opcional de autor e obra/fonte',
+    content: `<includeonly><blockquote class="my-4 px-4 py-3 border-l-4 border-[#3366cc] bg-[#f8f9fa] dark:bg-gray-800/70 rounded-r text-sm text-gray-800 dark:text-gray-200 shadow-2xs"><div class="font-serif italic leading-relaxed">«{{{texto|{{{1|Citação não informada.}}}}}}»</div>{{#if:{{{autor|{{{2|}}}}}}|<footer class="mt-1.5 text-xs font-sans text-gray-600 dark:text-gray-400">— '''{{{autor|{{{2}}}}}}'''{{#if:{{{fonte|{{{3|}}}}}}|, em ''{{{fonte|{{{3}}}}}}''|}}</footer>|}}</blockquote></includeonly><noinclude>
+Exibe um bloco de citação tipográfica com autor e fonte opcionais.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Citação|O conhecimento livre pertence a toda a humanidade.|Autor Exemplo|Obra de Referência}}
+{{Citação|texto=Texto citado|autor=Maria Silva|fonte=Revista Científica}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Fonte': {
+    slug: 'Predefinição:Fonte',
+    title: 'Predefinição:Fonte',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_fonte',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Formata referências bibliográficas padronizadas (compatível com uso dentro de <ref>...</ref>)',
+    content: `<includeonly><span class="mw-citation text-xs">{{#if:{{{autor|{{{1|}}}}}}|{{{autor|{{{1}}}}}}. |}}''{{{título|{{{titulo|{{{2|Título da obra}}}}}}}}}''{{#if:{{{ano|{{{3|}}}}}}| ({{{ano|{{{3}}}}}})|}}{{#if:{{{url|{{{4|}}}}}}|. [{{{url|{{{4}}}}}} Acessar fonte]|}}.</span></includeonly><noinclude>
+Padroniza referências bibliográficas dentro de notas \`<ref>...</ref>\` ou listas de fontes.
+
+== Uso ==
+<syntaxhighlight lang="text">
+<ref>{{Fonte|Brasil|Lei nº 13.709 (LGPD)|2018|https://www.planalto.gov.br}}</ref>
+{{Fonte|autor=Autor|título=Relatório Técnico|ano=2026}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
+  },
+
+  'Predefinição:Info': {
+    slug: 'Predefinição:Info',
+    title: 'Predefinição:Info',
+    namespace: 'Template',
+    author: 'Sistema MediaWiki TS',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_tpl_info',
+    categories: ['Predefinições do WikiWazzimaGiygg'],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    updatedAt: '2026-11-22T00:00:00.000Z',
+    summary: 'Quadro informativo azul no estilo clássico MediaWiki com título e descrição',
+    content: `<includeonly><div class="my-3 p-3 rounded border border-blue-200 dark:border-blue-800 border-l-4 border-l-[#3366cc] bg-blue-50/70 dark:bg-blue-950/30 text-xs text-blue-950 dark:text-blue-200 flex items-start gap-2.5 shadow-2xs"><span class="text-[#3366cc] dark:text-[#6ba4ff] font-bold text-sm leading-none mt-0.5">ⓘ</span><div class="min-w-0 flex-1">{{#if:{{{título|{{{1|}}}}}}|<div class="font-semibold mb-0.5">{{{título|{{{1}}}}}}</div>|}}<div class="leading-relaxed">{{{texto|{{{2|Informação complementar.}}}}}}</div></div></div></includeonly><noinclude>
+Exibe um quadro informativo azul para observações técnicas ou esclarecimentos.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Info|Dica Técnica|Você pode usar Predefinições aninhadas dentro de artigos!}}
+{{Info|título=Observação|texto=Texto informativo aqui.}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+</noinclude>`
   }
 };
+
 
 

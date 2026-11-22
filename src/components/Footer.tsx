@@ -28,6 +28,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSettings }) => {
     { label: 'Mudanças recentes', slug: 'Especial:Mudanças_recentes' },
     { label: 'Ajuda de Wikitexto', slug: 'Ajuda:Wikitexto' },
     { label: 'Guia de Infobox', slug: 'Ajuda:Infobox' },
+    { label: 'Predefinições', slug: 'Ajuda:Predefinições' },
     ...(isBureaucrat ? [{ label: 'Administração', slug: 'Especial:Administração' }] : []),
   ];
 

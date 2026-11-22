@@ -28,8 +28,13 @@ export const SpecialAllPages: React.FC = () => {
   const namespaces = [
     { id: 'all', label: '(Todos os espaços nominais)' },
     { id: 'Main', label: 'Principal' },
+    { id: 'Template', label: 'Predefinição' },
     { id: 'Help', label: 'Ajuda' },
     { id: 'Manual', label: 'Manual' },
+    { id: 'Wiki', label: 'Wiki' },
+    { id: 'User', label: 'Usuário' },
+    { id: 'Category', label: 'Categoria' },
+    { id: 'File', label: 'Ficheiro' },
     { id: 'Special', label: 'Especial' },
   ];
 

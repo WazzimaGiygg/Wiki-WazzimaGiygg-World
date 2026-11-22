@@ -407,14 +407,17 @@ export async function savePage(params: {
   const byteSize = new Blob([params.content]).size;
   const revId = `rev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
+  const nsCheck = `${params.title} ${slug}`;
   let namespace: PageNamespace = params.namespace || 'Main';
-  if (params.title.startsWith('Ajuda:') || params.title.startsWith('Help:')) namespace = 'Help';
-  else if (params.title.startsWith('Discussão:') || params.title.startsWith('Talk:') || params.title.startsWith('Discussão_Usuário:')) namespace = 'Talk';
-  else if (params.title.startsWith('Especial:') || params.title.startsWith('Special:')) namespace = 'Special';
-  else if (params.title.startsWith('Manual:')) namespace = 'Manual';
-  else if (params.title.startsWith('Predefinição:') || params.title.startsWith('Template:')) namespace = 'Template';
-  else if (params.title.startsWith('Categoria:') || params.title.startsWith('Category:')) namespace = 'Category';
-  else if (params.title.startsWith('Usuário:') || params.title.startsWith('User:')) namespace = 'User';
+  if (/^(?:Ajuda|Help):/i.test(params.title) || /^(?:Ajuda|Help):/i.test(slug)) namespace = 'Help';
+  else if (/^(?:Discussão|Talk|Discussão_Usuário):/i.test(params.title) || /^(?:Discussão|Talk|Discussão_Usuário):/i.test(slug)) namespace = 'Talk';
+  else if (/^(?:Especial|Special):/i.test(params.title) || /^(?:Especial|Special):/i.test(slug)) namespace = 'Special';
+  else if (/^Manual:/i.test(params.title) || /^Manual:/i.test(slug)) namespace = 'Manual';
+  else if (/^(?:Predefinição|Predefinicao|Template):/i.test(params.title) || /^(?:Predefinição|Predefinicao|Template):/i.test(slug)) namespace = 'Template';
+  else if (/^(?:Categoria|Category):/i.test(params.title) || /^(?:Categoria|Category):/i.test(slug)) namespace = 'Category';
+  else if (/^(?:Usuário|User):/i.test(params.title) || /^(?:Usuário|User):/i.test(slug)) namespace = 'User';
+  else if (/^(?:Ficheiro|File|Imagem|Image):/i.test(params.title) || /^(?:Ficheiro|File|Imagem|Image):/i.test(slug)) namespace = 'File';
+  else if (/^Wiki:/i.test(params.title) || /^Wiki:/i.test(slug) || nsCheck.includes('Wiki:')) namespace = 'Wiki';
 
   const categoryMatches = params.content.matchAll(/\[\[(?:Categoria|Category):([^\]]+)\]\]/gi);
   const categories: string[] = [];

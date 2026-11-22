@@ -32,14 +32,27 @@ import {
   Info,
   User as UserIcon,
   BookOpen,
+  Braces,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { WikiPage } from '../types/wiki';
 import { savePage, canUserEditPage, getEffectiveProtectionLevel } from '../services/wikiService';
 import { saveUploadedFile, subscribeToUploadedFiles } from '../services/extensionService';
 import { queryGoogleSearchGrounding, SearchGroundingResult } from '../services/groundingService';
+import {
+  subscribeToTemplates,
+  saveTemplate,
+  deleteTemplate,
+  validateTemplate,
+  expandWikitextTemplates,
+  expandSubstInWikitext,
+  buildTemplateInvocation,
+  formatTemplateSlug,
+  TemplateCatalogEntry,
+} from '../services/templateService';
 import { WikiFileDoc } from '../extensions/types';
-import { parseWikitext } from '../core/parser';
 import { computeRevisionDiff } from '../core/diff';
 
 interface EditViewProps {
@@ -89,6 +102,22 @@ export const EditView: React.FC<EditViewProps> = ({
   // Infobox builder modal state (Software, Usuário, and Tutorial)
   const isUserNamespacePage = /^(?:Usuário|User):/i.test(page?.title || slug);
   const [showInfoboxModal, setShowInfoboxModal] = useState(false);
+
+  // MediaWiki Templates (Predefinições) modal state
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [templateModalTab, setTemplateModalTab] = useState<'use' | 'create'>('use');
+  const [liveTemplates, setLiveTemplates] = useState<TemplateCatalogEntry[]>([]);
+  const [templateSearch, setTemplateSearch] = useState('');
+  const [selectedTemplateSlug, setSelectedTemplateSlug] = useState<string>('Predefinição:Ambox');
+  const [templateParamValues, setTemplateParamValues] = useState<Record<string, string>>({});
+  const [templateUseSubst, setTemplateUseSubst] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState('');
+  const [newTemplateSummary, setNewTemplateSummary] = useState('');
+  const [newTemplateBody, setNewTemplateBody] = useState(
+    `<includeonly><div class="my-3 p-3 rounded border border-[#a2a9b1] dark:border-gray-700 border-l-4 border-l-indigo-500 bg-[#f8f9fa] dark:bg-gray-800/80 text-xs text-gray-800 dark:text-gray-200">{{#if:{{{título|}}}|<div class="font-bold mb-0.5">{{{título}}}</div>|}}<div>{{{1|{{{texto|Conteúdo da predefinição}}}}}}</div></div></includeonly><noinclude>\nDescreva aqui como usar esta predefinição.\n\n[[Categoria:Predefinições do WikiWazzimaGiygg]]\n</noinclude>`
+  );
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [templateFeedback, setTemplateFeedback] = useState<{ type: 'error' | 'success'; msg: string } | null>(null);
   const [infoboxModalTab, setInfoboxModalTab] = useState<'software' | 'user' | 'tutorial'>(() =>
     isUserNamespacePage ? 'user' : 'software'
   );
@@ -413,11 +442,134 @@ export const EditView: React.FC<EditViewProps> = ({
     setTimeout(() => setCopiedSource(false), 2000);
   };
 
-  // Computed live preview
+  // Real-time Firestore template catalog subscription
+  React.useEffect(() => {
+    const unsub = subscribeToTemplates(list => {
+      setLiveTemplates(list);
+    });
+    return () => unsub();
+  }, []);
+
+  // Computed live preview with templateService expansion
   const livePreview = useMemo(() => {
     if (activePreview !== 'preview') return null;
-    return parseWikitext(content, existingPageSlugs);
-  }, [content, activePreview, existingPageSlugs]);
+    return expandWikitextTemplates(content, existingPageSlugs, {
+      pageTitle: page?.title || slug.replace(/_/g, ' '),
+      pageSlug: slug,
+      namespace: page?.namespace,
+      totalPages: existingPageSlugs.size,
+    });
+  }, [content, activePreview, existingPageSlugs, page?.title, page?.namespace, slug, liveTemplates]);
+
+  const filteredTemplates = useMemo(() => {
+    const q = templateSearch.trim().toLowerCase();
+    if (!q) return liveTemplates;
+    return liveTemplates.filter(
+      t =>
+        t.name.toLowerCase().includes(q) ||
+        t.title.toLowerCase().includes(q) ||
+        t.summary.toLowerCase().includes(q)
+    );
+  }, [liveTemplates, templateSearch]);
+
+  const selectedTemplate = useMemo<TemplateCatalogEntry | null>(() => {
+    return (
+      liveTemplates.find(t => t.slug === selectedTemplateSlug) ||
+      filteredTemplates[0] ||
+      liveTemplates[0] ||
+      null
+    );
+  }, [liveTemplates, filteredTemplates, selectedTemplateSlug]);
+
+  const buildTemplateCallSyntax = (): string => {
+    if (!selectedTemplate) return '';
+    return buildTemplateInvocation(
+      selectedTemplate.name,
+      templateParamValues,
+      selectedTemplate.params,
+      templateUseSubst
+    );
+  };
+
+  const renderedTemplateCallPreview = useMemo(() => {
+    if (!showTemplateModal || templateModalTab !== 'use' || !selectedTemplate) return '';
+    const call = buildTemplateInvocation(
+      selectedTemplate.name,
+      templateParamValues,
+      selectedTemplate.params,
+      false
+    );
+    return expandWikitextTemplates(call, existingPageSlugs, {
+      pageTitle: page?.title || slug.replace(/_/g, ' '),
+      pageSlug: slug,
+      namespace: page?.namespace,
+    }).html;
+  }, [showTemplateModal, templateModalTab, selectedTemplate, templateParamValues, existingPageSlugs, page?.title, page?.namespace, slug, liveTemplates]);
+
+  const newTemplateValidation = useMemo(() => {
+    if (!showTemplateModal || templateModalTab !== 'create') return null;
+    return validateTemplate(newTemplateName, newTemplateBody);
+  }, [showTemplateModal, templateModalTab, newTemplateName, newTemplateBody]);
+
+  const handleInsertTemplate = () => {
+    const snippet = buildTemplateCallSyntax();
+    if (!snippet) return;
+    insertRawText(snippet + '\n');
+    setShowTemplateModal(false);
+  };
+
+  const handleSaveCustomTemplate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setTemplateFeedback(null);
+    setIsSavingTemplate(true);
+    try {
+      const saved = await saveTemplate({
+        name: newTemplateName,
+        content: newTemplateBody,
+        summary: newTemplateSummary,
+        user: currentUser,
+      });
+      setSelectedTemplateSlug(saved.slug);
+      setTemplateParamValues({});
+      setTemplateModalTab('use');
+      setTemplateFeedback({
+        type: 'success',
+        msg: `Predefinição "${saved.title}" salva no Firestore e pronta para reutilização!`,
+      });
+    } catch (err: unknown) {
+      setTemplateFeedback({
+        type: 'error',
+        msg: err instanceof Error ? err.message : 'Erro ao salvar predefinição no Firestore.',
+      });
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  };
+
+  const handleEditSelectedTemplateInModal = (tpl: TemplateCatalogEntry) => {
+    setNewTemplateName(tpl.name);
+    setNewTemplateSummary(tpl.summary);
+    setNewTemplateBody(tpl.content);
+    setTemplateFeedback(null);
+    setTemplateModalTab('create');
+  };
+
+  const handleDeleteCustomTemplate = async (tpl: TemplateCatalogEntry) => {
+    if (!isBureaucrat) return;
+    setTemplateFeedback(null);
+    try {
+      await deleteTemplate(tpl.slug, isBureaucrat);
+      setTemplateFeedback({
+        type: 'success',
+        msg: `Predefinição "${tpl.title}" removida do Firestore.`,
+      });
+    } catch (err: unknown) {
+      setTemplateFeedback({
+        type: 'error',
+        msg: err instanceof Error ? err.message : 'Erro ao remover predefinição.',
+      });
+    }
+  };
 
   // Computed diff preview
   const diffRows = useMemo(() => {
@@ -470,10 +622,14 @@ export const EditView: React.FC<EditViewProps> = ({
 
     try {
       const pageTitle = page?.title || slug.replace(/_/g, ' ');
+      const expandedContent = expandSubstInWikitext(content, pageTitle);
+      if (expandedContent !== content) {
+        setContent(expandedContent);
+      }
       const saved = await savePage({
         slug,
         title: pageTitle,
-        content,
+        content: expandedContent,
         summary: summary || (page ? 'Edição de conteúdo' : 'Criação inicial da página'),
         author: currentUser.username,
         authorId: currentUser.uid,
@@ -681,15 +837,27 @@ export const EditView: React.FC<EditViewProps> = ({
         </button>
 
         {editPermission.allowed && (
-          <button
-            type="button"
-            onClick={() => setShowInfoboxModal(true)}
-            className="px-2 py-1 rounded bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1 font-medium text-xs cursor-pointer transition-colors"
-            title="Inserir caixa {{Infobox software}} com nome, e-mail e ficha técnica"
-          >
-            <PanelRight className="w-3.5 h-3.5" />
-            <span>Infobox</span>
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => setShowTemplateModal(true)}
+              className="px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1 font-medium text-xs cursor-pointer transition-colors"
+              title="Inserir Predefinição MediaWiki ({{Nome}})"
+            >
+              <Braces className="w-3.5 h-3.5" />
+              <span>Predefinições</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowInfoboxModal(true)}
+              className="px-2 py-1 rounded bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1 font-medium text-xs cursor-pointer transition-colors"
+              title="Inserir caixa {{Infobox software}} com nome, e-mail e ficha técnica"
+            >
+              <PanelRight className="w-3.5 h-3.5" />
+              <span>Infobox</span>
+            </button>
+          </>
         )}
 
         <button
@@ -2173,6 +2341,453 @@ export const EditView: React.FC<EditViewProps> = ({
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MediaWiki Predefinições (Templates) Assistant Modal */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-[#1a1f2c] border border-gray-300 dark:border-gray-700 rounded-lg shadow-2xl max-w-4xl w-full my-8 overflow-hidden text-gray-900 dark:text-gray-100">
+            {/* Modal Header */}
+            <div className="p-4 bg-[#f8f9fa] dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded text-indigo-700 dark:text-indigo-300">
+                  <Braces className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-base">
+                    Gerenciador e Assistente de Predefinições (MediaWiki)
+                  </h3>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    Reutilize <code>{'{{NomeDaPredefinição|parâmetro}}'}</code> ou crie novos modelos salvos no Firestore sem perder seu rascunho.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTemplateModal(false)}
+                className="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Tabs */}
+            <div className="flex flex-wrap border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-850 px-4 pt-2 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setTemplateModalTab('use');
+                  setTemplateFeedback(null);
+                }}
+                className={`px-3 py-2 font-medium border-b-2 cursor-pointer transition-colors flex items-center gap-1.5 ${
+                  templateModalTab === 'use'
+                    ? 'border-indigo-600 text-indigo-700 dark:text-indigo-300'
+                    : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                }`}
+              >
+                <Braces className="w-3.5 h-3.5" />
+                <span>Usar Predefinição ({liveTemplates.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setTemplateModalTab('create');
+                  setTemplateFeedback(null);
+                }}
+                className={`px-3 py-2 font-medium border-b-2 cursor-pointer transition-colors flex items-center gap-1.5 ${
+                  templateModalTab === 'create'
+                    ? 'border-indigo-600 text-indigo-700 dark:text-indigo-300'
+                    : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                }`}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Criar / Editar Modelo no Firestore</span>
+              </button>
+            </div>
+
+            {templateFeedback && (
+              <div
+                className={`mx-4 mt-3 p-2.5 rounded text-xs border ${
+                  templateFeedback.type === 'error'
+                    ? 'bg-red-50 dark:bg-red-950/40 border-red-300 dark:border-red-800 text-red-800 dark:text-red-200'
+                    : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+                }`}
+              >
+                {templateFeedback.msg}
+              </div>
+            )}
+
+            {/* Tab 1: Use Existing Template */}
+            {templateModalTab === 'use' ? (
+              <div className="grid grid-cols-1 md:grid-cols-5 max-h-[62vh] text-xs">
+                {/* Left Column: Template Catalog */}
+                <div className="md:col-span-2 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 p-3 flex flex-col gap-2.5 bg-gray-50/70 dark:bg-gray-900/60 overflow-y-auto max-h-[62vh]">
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2" />
+                    <input
+                      type="text"
+                      value={templateSearch}
+                      onChange={e => setTemplateSearch(e.target.value)}
+                      placeholder="Filtrar predefinições..."
+                      className="w-full pl-8 pr-2.5 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1 flex-1 overflow-y-auto">
+                    {filteredTemplates.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500 text-[11px]">
+                        Nenhuma predefinição encontrada para &quot;{templateSearch}&quot;.
+                      </div>
+                    ) : (
+                      filteredTemplates.map(tpl => {
+                        const isSelected = selectedTemplate?.slug === tpl.slug;
+                        return (
+                          <button
+                            key={tpl.slug}
+                            type="button"
+                            onClick={() => {
+                              setSelectedTemplateSlug(tpl.slug);
+                              setTemplateParamValues({});
+                            }}
+                            className={`w-full text-left p-2 rounded border transition-colors cursor-pointer ${
+                              isSelected
+                                ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-400 dark:border-indigo-700 text-indigo-950 dark:text-indigo-100'
+                                : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-indigo-300'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="font-semibold text-[12px] text-[#0645ad] dark:text-[#6ba4ff]">
+                                {`{{${tpl.name}}}`}
+                              </span>
+                              <span className="text-[9px] px-1.5 py-0.2 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-mono">
+                                {tpl.isBuiltIn ? 'Padrão' : 'Comunidade'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-gray-600 dark:text-gray-400 line-clamp-2 mt-0.5 leading-snug">
+                              {tpl.summary}
+                            </p>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewTemplateName('');
+                      setNewTemplateSummary('');
+                      setTemplateFeedback(null);
+                      setTemplateModalTab('create');
+                    }}
+                    className="w-full py-1.5 px-2.5 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 rounded font-medium text-[11px] flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Criar Nova Predefinição</span>
+                  </button>
+                </div>
+
+                {/* Right Column: Parameters & Live Expansion Preview */}
+                <div className="md:col-span-3 p-4 space-y-3 overflow-y-auto max-h-[62vh]">
+                  {selectedTemplate ? (
+                    <>
+                      <div className="flex flex-wrap items-start justify-between gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
+                        <div>
+                          <h4 className="font-serif font-bold text-sm text-gray-900 dark:text-gray-100">
+                            {selectedTemplate.title}
+                          </h4>
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                            {selectedTemplate.summary}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {!currentUser.isAnonymous && (
+                            <button
+                              type="button"
+                              onClick={() => handleEditSelectedTemplateInModal(selectedTemplate)}
+                              className="text-[11px] px-2 py-0.5 rounded border border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 cursor-pointer"
+                            >
+                              Editar modelo
+                            </button>
+                          )}
+                          {isBureaucrat && !selectedTemplate.isBuiltIn && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCustomTemplate(selectedTemplate)}
+                              className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded cursor-pointer"
+                              title="Excluir predefinição do Firestore (Somente Burocratas)"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowTemplateModal(false);
+                              navigateToPage(selectedTemplate.slug, 'view');
+                            }}
+                            className="text-[11px] text-[#0645ad] dark:text-[#6ba4ff] hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>Abrir página</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {selectedTemplate.params.length === 0 ? (
+                        <div className="p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded text-[11px] text-gray-600 dark:text-gray-400">
+                          Esta predefinição não exige parâmetros. Basta clicar em <strong>Inserir Predefinição</strong> abaixo.
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                            Parâmetros da Predefinição ({selectedTemplate.params.length})
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            {selectedTemplate.params.map(param => (
+                              <div
+                                key={param.name}
+                                className={param.name === 'texto' || param.name === '1' ? 'sm:col-span-2' : ''}
+                              >
+                                <label className="block text-[11px] font-semibold mb-1 text-gray-700 dark:text-gray-300">
+                                  {param.isPositional ? `Parâmetro ${param.name} ` : `${param.name} `}
+                                  <code className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400">
+                                    {`{{{${param.name}}}}`}
+                                  </code>
+                                </label>
+                                <input
+                                  type="text"
+                                  value={templateParamValues[param.name] || ''}
+                                  onChange={e =>
+                                    setTemplateParamValues(prev => ({
+                                      ...prev,
+                                      [param.name]: e.target.value,
+                                    }))
+                                  }
+                                  placeholder={
+                                    param.defaultValue
+                                      ? `Padrão: ${param.defaultValue}`
+                                      : `Valor para ${param.name}...`
+                                  }
+                                  className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="pt-2 border-t border-gray-200 dark:border-gray-800 space-y-2">
+                        <label className="inline-flex items-center gap-2 cursor-pointer text-[11px] text-gray-700 dark:text-gray-300">
+                          <input
+                            type="checkbox"
+                            checked={templateUseSubst}
+                            onChange={e => setTemplateUseSubst(e.target.checked)}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span>
+                            Substituir código ao publicar (<code>subst:</code>) — expande o wikitexto fixo na gravação
+                          </span>
+                        </label>
+
+                        <div className="p-2.5 bg-gray-100 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800">
+                          <div className="text-[10px] font-semibold uppercase text-gray-500 mb-1">
+                            Chamada wikitexto gerada:
+                          </div>
+                          <pre className="text-[11px] text-[#0645ad] dark:text-[#6ba4ff] font-mono whitespace-pre-wrap break-all">
+                            {buildTemplateCallSyntax()}
+                          </pre>
+                        </div>
+
+                        {renderedTemplateCallPreview && (
+                          <div className="p-2.5 bg-white dark:bg-gray-950 rounded border border-gray-200 dark:border-gray-800">
+                            <div className="text-[10px] font-semibold uppercase text-gray-500 mb-1">
+                              Pré-visualização renderizada no ArticleViewer:
+                            </div>
+                            <div
+                              className="mw-body-content text-xs"
+                              dangerouslySetInnerHTML={{ __html: renderedTemplateCallPreview }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="p-6 text-center text-gray-500">
+                      Selecione uma predefinição na lista à esquerda.
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Tab 2: Create or Edit Template directly in Firestore */
+              <form onSubmit={handleSaveCustomTemplate} className="p-4 space-y-3 max-h-[62vh] overflow-y-auto text-xs">
+                {currentUser.isAnonymous && (
+                  <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded text-amber-900 dark:text-amber-200">
+                    Faça login com sua conta Google para criar ou modificar predefinições no Firebase Firestore.
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">
+                      Nome da Predefinição (sem prefixo)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newTemplateName}
+                      onChange={e => setNewTemplateName(e.target.value)}
+                      placeholder="Ex: Caixa_Alerta ou Destaque"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                    />
+                    {newTemplateName.trim() && (
+                      <div className="text-[10px] text-gray-500 mt-0.5 font-mono">
+                        Será salva como: {formatTemplateSlug(newTemplateName)}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold mb-1">
+                      Descrição curta / Finalidade
+                    </label>
+                    <input
+                      type="text"
+                      value={newTemplateSummary}
+                      onChange={e => setNewTemplateSummary(e.target.value)}
+                      placeholder="Ex: Caixa colorida reutilizável para notas técnicas"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <label className="text-[11px] font-semibold">
+                      Código Wikitexto do Modelo (use <code>{'{{{1}}}'}</code>, <code>{'{{{param|padrão}}}'}</code> e <code>&lt;includeonly&gt;</code>)
+                    </label>
+                    <div className="flex flex-wrap gap-1">
+                      {[
+                        { label: '+{{{1|Texto}}}', val: '{{{1|Texto}}}' },
+                        { label: '+{{{título|}}}', val: '{{{título|}}}' },
+                        { label: '+{{#if:}}', val: '{{#if:{{{1|}}}|Sim|Não}}' },
+                      ].map(chip => (
+                        <button
+                          key={chip.label}
+                          type="button"
+                          onClick={() => setNewTemplateBody(prev => prev + chip.val)}
+                          className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-[10px] font-mono border border-gray-300 dark:border-gray-700 cursor-pointer"
+                        >
+                          {chip.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <textarea
+                    rows={8}
+                    required
+                    value={newTemplateBody}
+                    onChange={e => setNewTemplateBody(e.target.value)}
+                    className="w-full p-2.5 font-mono text-xs border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100"
+                    placeholder="<includeonly>...</includeonly><noinclude>Documentação</noinclude>"
+                  />
+                </div>
+
+                {newTemplateValidation && (newTemplateName.trim() || newTemplateBody.trim()) && (
+                  <div className="space-y-1.5 text-[11px]">
+                    {newTemplateValidation.errors.length > 0 && newTemplateName.trim() && (
+                      <div className="p-2 rounded bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800 text-red-800 dark:text-red-200 space-y-0.5">
+                        {newTemplateValidation.errors.map((errMsg, idx) => (
+                          <div key={idx}>• {errMsg}</div>
+                        ))}
+                      </div>
+                    )}
+                    {newTemplateValidation.warnings.length > 0 && (
+                      <div className="p-2 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-200 space-y-0.5">
+                        {newTemplateValidation.warnings.map((warnMsg, idx) => (
+                          <div key={idx}>• {warnMsg}</div>
+                        ))}
+                      </div>
+                    )}
+                    {newTemplateValidation.detectedParams.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1 text-gray-600 dark:text-gray-400">
+                        <span>Parâmetros validados:</span>
+                        {newTemplateValidation.detectedParams.map(p => (
+                          <code
+                            key={p.name}
+                            className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 font-mono text-[10px]"
+                          >
+                            {`{{{${p.name}${p.defaultValue !== undefined ? `|${p.defaultValue}` : ''}}}}`}
+                          </code>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-200 dark:border-gray-800">
+                  <button
+                    type="button"
+                    onClick={() => setTemplateModalTab('use')}
+                    className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer text-xs"
+                  >
+                    Voltar ao catálogo
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={
+                      isSavingTemplate ||
+                      currentUser.isAnonymous ||
+                      !newTemplateName.trim() ||
+                      (newTemplateValidation ? !newTemplateValidation.valid : false)
+                    }
+                    className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded font-medium shadow-xs flex items-center gap-1.5 cursor-pointer text-xs"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{isSavingTemplate ? 'Salvando no Firestore...' : 'Salvar Predefinição no Firestore'}</span>
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Modal Footer */}
+            {templateModalTab === 'use' && (
+              <div className="p-4 bg-gray-50 dark:bg-gray-850 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowTemplateModal(false)}
+                    className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer text-xs"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTemplateModal(false);
+                      navigateToPage('Ajuda:Predefinições');
+                    }}
+                    className="text-xs text-[#0645ad] dark:text-[#6ba4ff] hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    <span>Guia: Ajuda:Predefinições</span>
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  disabled={!selectedTemplate}
+                  onClick={handleInsertTemplate}
+                  className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded font-medium shadow-xs flex items-center gap-1.5 cursor-pointer text-xs"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Inserir Predefinição no Artigo</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

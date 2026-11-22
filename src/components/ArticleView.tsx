@@ -20,10 +20,18 @@ import {
   ShieldAlert,
   Download,
   Image as ImageIcon,
+  Braces,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { WikiPage } from '../types/wiki';
-import { parseWikitext } from '../core/parser';
+import {
+  subscribeToTemplates,
+  expandWikitextTemplates,
+  extractTemplateParameters,
+  formatTemplateDisplayName,
+} from '../services/templateService';
 import { canUserEditPage, getEffectiveProtectionLevel } from '../services/wikiService';
 import { getFileDoc } from '../services/extensionService';
 import { WikiFileDoc } from '../extensions/types';
@@ -50,6 +58,33 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
   const [isWatched, setIsWatched] = useState(false);
   const [showProtectionModal, setShowProtectionModal] = useState(false);
   const [fileDoc, setFileDoc] = useState<WikiFileDoc | null>(null);
+  const [copiedSnippet, setCopiedSnippet] = useState(false);
+  const [templatesVersion, setTemplatesVersion] = useState(0);
+
+  // Keep live templates synchronized from Firestore so {{NomeDaPredefinição|parâmetro}} always reflects latest edits
+  useEffect(() => {
+    const unsub = subscribeToTemplates(() => {
+      setTemplatesVersion(v => v + 1);
+    });
+    return () => unsub();
+  }, []);
+
+  const isTemplatePage = Boolean(
+    page?.namespace === 'Template' ||
+      /^(?:Predefinição|Predefinicao|Template):/i.test(page?.slug || slug)
+  );
+
+  const templateMeta = useMemo(() => {
+    if (!page || !isTemplatePage) return null;
+    const bareName = formatTemplateDisplayName(page.title || page.slug).replace(/\s+/g, '_');
+    const params = extractTemplateParameters(page.content);
+    const paramSnippet = params
+      .slice(0, 4)
+      .map(p => (p.isPositional ? p.defaultValue || `valor${p.name}` : `${p.name}=`))
+      .join('|');
+    const snippet = paramSnippet ? `{{${bareName}|${paramSnippet}}}` : `{{${bareName}}}`;
+    return { bareName, params, snippet };
+  }, [page, isTemplatePage]);
 
   useEffect(() => {
     const isFile = slug.startsWith('Ficheiro:') || slug.startsWith('File:') || page?.namespace === 'File';
@@ -67,11 +102,16 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
     ? canUserEditPage(page, currentUser)
     : { allowed: !currentUser.isAnonymous, isProtected: false, level: 'unprotected' as const };
 
-  // Parse wikitext whenever page content changes
+  // Expand templates and parse wikitext whenever page content or Firestore templates change
   const parseResult = useMemo(() => {
     if (!page) return { html: '', toc: [], categories: [], references: [] };
-    return parseWikitext(page.content, existingPageSlugs);
-  }, [page, existingPageSlugs]);
+    return expandWikitextTemplates(page.content, existingPageSlugs, {
+      pageTitle: page.title,
+      pageSlug: page.slug,
+      namespace: page.namespace,
+      totalPages: existingPageSlugs.size,
+    });
+  }, [page, existingPageSlugs, templatesVersion]);
 
   // Handle clicks on internal wiki links inside the parsed HTML
   useEffect(() => {
@@ -188,7 +228,21 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
                 : 'bg-[#f8f9fa] dark:bg-gray-800/60 border-transparent text-[#0645ad] dark:text-[#6ba4ff] hover:text-blue-800'
             }`}
           >
-            {page.namespace === 'Help' ? 'Ajuda' : page.namespace === 'Manual' ? 'Manual' : 'Artigo'}
+            {isTemplatePage
+              ? 'Predefinição'
+              : page.namespace === 'Help'
+              ? 'Ajuda'
+              : page.namespace === 'Manual'
+              ? 'Manual'
+              : page.namespace === 'User'
+              ? 'Usuário'
+              : page.namespace === 'File'
+              ? 'Ficheiro'
+              : page.namespace === 'Category'
+              ? 'Categoria'
+              : page.namespace === 'Wiki'
+              ? 'Wiki'
+              : 'Artigo'}
           </button>
           <button
             type="button"
@@ -395,6 +449,56 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
               <span>Baixar ficheiro em resolução original</span>
             </a>
           </div>
+        </div>
+      )}
+
+      {/* MediaWiki Template Namespace Usage Banner */}
+      {isTemplatePage && templateMeta && (
+        <div className="print:hidden my-4 p-3.5 bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded text-xs space-y-2 shadow-2xs">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 font-semibold text-indigo-950 dark:text-indigo-200">
+              <Braces className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <span>Predefinição Reutilizável (MediaWiki Transclusion)</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigateToPage('Ajuda:Predefinições')}
+              className="text-[11px] text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer font-medium"
+            >
+              Ajuda:Predefinições →
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-gray-600 dark:text-gray-400">Para incluir em qualquer artigo, use:</span>
+            <code className="px-2 py-0.5 rounded bg-white dark:bg-gray-900 border border-indigo-200 dark:border-indigo-800 font-mono text-[11px] text-indigo-700 dark:text-indigo-300">
+              {templateMeta.snippet}
+            </code>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(templateMeta.snippet);
+                setCopiedSnippet(true);
+                setTimeout(() => setCopiedSnippet(false), 1800);
+              }}
+              className="inline-flex items-center gap-1 px-2 py-0.5 bg-white dark:bg-gray-900 border border-indigo-300 dark:border-indigo-700 rounded text-[11px] text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 cursor-pointer"
+            >
+              {copiedSnippet ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+              <span>{copiedSnippet ? 'Copiado!' : 'Copiar'}</span>
+            </button>
+          </div>
+          {templateMeta.params.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-400">
+              <span>Parâmetros detectados:</span>
+              {templateMeta.params.map(p => (
+                <code
+                  key={p.name}
+                  className="px-1.5 py-0.2 rounded bg-white/80 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 font-mono text-[10px] text-gray-800 dark:text-gray-200"
+                >
+                  {`{{{${p.name}${p.defaultValue !== undefined ? `|${p.defaultValue}` : ''}}}}`}
+                </code>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

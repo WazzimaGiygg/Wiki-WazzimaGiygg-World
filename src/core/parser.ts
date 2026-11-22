@@ -1,6 +1,12 @@
-import { TOCItem } from '../types/wiki';
+import { PageNamespace, TOCItem } from '../types/wiki';
 import { getCachedFileUrl } from '../services/extensionService';
 import { WIKI_SITE_VERSION, WIKI_SITE_NAME } from './version';
+import {
+  resolveTranscludedPage,
+  extractTransclusionBody,
+  stripTemplateViewingTags,
+  stripTemplateNamespacePrefix,
+} from './templateRegistry';
 
 export interface ParseResult {
   html: string;
@@ -9,9 +15,52 @@ export interface ParseResult {
   references: string[];
 }
 
+export interface ParseWikitextOptions {
+  pageTitle?: string;
+  pageSlug?: string;
+  namespace?: PageNamespace;
+  totalPages?: number;
+}
+
+const NAMESPACE_LABELS: Record<PageNamespace, string> = {
+  Main: '',
+  Talk: 'Discussão',
+  Special: 'Especial',
+  Help: 'Ajuda',
+  Manual: 'Manual',
+  Template: 'Predefinição',
+  Category: 'Categoria',
+  User: 'Usuário',
+  File: 'Ficheiro',
+  Wiki: 'Wiki',
+};
+
+function getPageContext(options?: ParseWikitextOptions) {
+  const fullTitle =
+    options?.pageTitle ||
+    (options?.pageSlug ? options.pageSlug.replace(/_/g, ' ') : 'Página_principal');
+  const fullSlug = options?.pageSlug || slugify(fullTitle);
+  const colonIdx = fullTitle.indexOf(':');
+  const inferredNs =
+    options?.namespace && options.namespace !== 'Main'
+      ? NAMESPACE_LABELS[options.namespace] || ''
+      : colonIdx > 0
+      ? fullTitle.slice(0, colonIdx).trim()
+      : '';
+  const pagename = colonIdx > 0 ? fullTitle.slice(colonIdx + 1).trim() : fullTitle;
+  return {
+    fullTitle,
+    fullSlug,
+    pagename,
+    pagenamee: slugify(pagename),
+    namespace: inferredNs,
+  };
+}
+
 export function parseWikitext(
   wikitext: string,
-  existingPages: Set<string> = new Set()
+  existingPages: Set<string> = new Set(),
+  options?: ParseWikitextOptions
 ): ParseResult {
   if (!wikitext) {
     return { html: '', toc: [], categories: [], references: [] };
@@ -22,58 +71,101 @@ export function parseWikitext(
   const references: string[] = [];
   const toc: TOCItem[] = [];
 
-  // 1. Extract Categories [[Categoria:...]] or [[Category:...]]
-  text = text.replace(/\[\[(?:Categoria|Category):([^\]]+)\]\]/gi, (_, catName) => {
-    const trimmed = catName.trim();
-    if (!categories.includes(trimmed)) {
-      categories.push(trimmed);
-    }
-    return ''; // remove from body text
+  const codeBlocks: string[] = [];
+  const nowikiBlocks: string[] = [];
+  const inlineCodeBlocks: string[] = [];
+
+  const protectLiteralSyntaxes = (raw: string): string => {
+    let out = raw;
+
+    // Protect <syntaxhighlight> blocks
+    out = out.replace(
+      /<syntaxhighlight(?:\s+lang="([^"]*)")?\s*>([\s\S]*?)<\/syntaxhighlight>/gi,
+      (_, lang, code) => {
+        const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+        const escaped = escapeHtml(code.trim());
+        codeBlocks.push(
+          `<div class="my-4 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-x-auto text-xs font-mono">
+        ${lang ? `<div class="px-3 py-1 bg-gray-200 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-sans font-semibold">${escapeHtml(lang)}</div>` : ''}
+        <pre class="p-3 leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre"><code>${escaped}</code></pre>
+      </div>`
+        );
+        return placeholder;
+      }
+    );
+
+    // Protect <pre> blocks
+    out = out.replace(/<pre(?:\s+[^>]*)?>([\s\S]*?)<\/pre>/gi, (_, code) => {
+      const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+      codeBlocks.push(
+        `<div class="my-4 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-x-auto text-xs font-mono"><pre class="p-3 leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre"><code>${escapeHtml(code.trim())}</code></pre></div>`
+      );
+      return placeholder;
+    });
+
+    // Protect <nowiki>...</nowiki> literal spans
+    out = out.replace(/<nowiki>([\s\S]*?)<\/nowiki>/gi, (_, literal) => {
+      const placeholder = `__NOWIKI_BLOCK_${nowikiBlocks.length}__`;
+      nowikiBlocks.push(escapeHtml(literal));
+      return placeholder;
+    });
+
+    // Protect inline `...` literals before template/magic-word expansion
+    out = out.replace(/`([^`\n]+)`/g, (_, codeLiteral) => {
+      const placeholder = `__INLINE_CODE_${inlineCodeBlocks.length}__`;
+      inlineCodeBlocks.push(
+        `<code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 font-mono text-xs">${escapeHtml(codeLiteral)}</code>`
+      );
+      return placeholder;
+    });
+
+    return out;
+  };
+
+  // 1. Protect code & nowiki literals first so template examples inside docs aren't executed
+  text = protectLiteralSyntaxes(text);
+
+  // 2. If viewing a Template (Predefinição:...) page directly, strip <includeonly> and unwrap <noinclude>/<onlyinclude>
+  const isTemplatePage =
+    options?.namespace === 'Template' ||
+    /^(?:Predefinição|Predefinicao|Template):/i.test(
+      options?.pageSlug || options?.pageTitle || ''
+    );
+  if (isTemplatePage) {
+    text = stripTemplateViewingTags(text);
+  }
+
+  // 3. Expand MediaWiki Templates ({{Predefinição}}), Magic Words ({{PAGENAME}}), and ParserFunctions ({{#if:}})
+  text = expandTemplatesAndFunctions(text, {
+    existingPages,
+    options,
+    protectFn: protectLiteralSyntaxes,
+    visitedStack: new Set<string>(),
+    depth: 0,
   });
 
-  // 2. Extract Footnotes / References <ref>...</ref>
-  text = text.replace(/<ref>(.*?)<\/ref>/gis, (_, refContent) => {
+  // 4. Extract Categories [[Categoria:...]] or [[Category:...]] (including ones emitted by templates!)
+  text = text.replace(/\[\[(?:Categoria|Category):([^\]]+)\]\]/gi, (_, catName) => {
+    const trimmed = catName.trim();
+    if (trimmed && !categories.includes(trimmed)) {
+      categories.push(trimmed);
+    }
+    return '';
+  });
+
+  // 5. Extract Footnotes / References <ref>...</ref>
+  text = text.replace(/<ref(?:\s+[^>]*)?>([\s\S]*?)<\/ref>/gi, (_, refContent) => {
     references.push(refContent.trim());
     const refIndex = references.length;
     return `__REF_${refIndex}__`;
   });
 
-  // 3. Process Code blocks: <syntaxhighlight> and <pre>
-  const codeBlocks: string[] = [];
-  text = text.replace(/<syntaxhighlight(?: lang="([^"]*)")?>(.*?)<\/syntaxhighlight>/gis, (_, lang, code) => {
-    const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
-    const escaped = escapeHtml(code.trim());
-    codeBlocks.push(
-      `<div class="my-4 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-x-auto text-xs font-mono">
-        ${lang ? `<div class="px-3 py-1 bg-gray-200 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-sans font-semibold">${escapeHtml(lang)}</div>` : ''}
-        <pre class="p-3 leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre"><code>${escaped}</code></pre>
-      </div>`
-    );
-    return placeholder;
-  });
-
-  // 3.5. Process Wiki-Site Magic Words (preserving inline backtick examples)
-  text = text.replace(
-    /(`[^`]+`)|\{\{(CURRENTVERSION|VERSÃO|VERSAO|WIKIVERSION|SITENAME)\}\}/gi,
-    (fullMatch, codeLiteral, magicWord) => {
-      if (codeLiteral) return fullMatch;
-      const upper = (magicWord || '').toUpperCase();
-      if (upper === 'SITENAME') return WIKI_SITE_NAME;
-      return WIKI_SITE_VERSION;
-    }
-  );
-
-  // 4. Process Wikitables: {| ... |}
-  text = text.replace(/\{\|([\s\S]*?)\|\}/g, (_, tableContent) => {
-    return parseWikitable(tableContent);
-  });
-
-  // 5. Process Infoboxes: {{Infobox ... | key = val }}
+  // 6. Process Infoboxes: {{Infobox ... | key = val }}
   text = text.replace(/\{\{Infobox([\s\S]*?)\}\}/gi, (_, boxContent) => {
     return parseInfobox(boxContent);
   });
 
-  // 6. Process Notices / Alerts: {{Aviso|...}} or {{Notice|...}}
+  // 7. Process Fallback Built-in Notices if {{Aviso|...}} wasn't overridden by Predefinição:Aviso
   text = text.replace(/\{\{(?:Aviso|Notice)\|([\s\S]*?)\}\}/gi, (_, noticeContent) => {
     return `<div class="my-3 p-3 bg-amber-50 dark:bg-amber-950/40 border-l-4 border-amber-500 rounded text-sm text-amber-900 dark:text-amber-200 flex items-start gap-2 shadow-xs">
       <span class="text-amber-600 dark:text-amber-400 font-bold">ℹ</span>
@@ -81,8 +173,13 @@ export function parseWikitext(
     </div>`;
   });
 
-  // 7. Parse Headings & collect TOC: == Heading ==, === Sub ===
-  let headingCounters = [0, 0, 0, 0];
+  // 8. Process Wikitables: {| ... |}
+  text = text.replace(/\{\|([\s\S]*?)\|\}/g, (_, tableContent) => {
+    return parseWikitable(tableContent);
+  });
+
+  // 9. Parse Headings & collect TOC: == Heading ==, === Sub ===
+  const headingCounters = [0, 0, 0, 0];
   let sectionIndex = 0;
 
   text = text.replace(/^(={1,4})\s*(.*?)\s*\1$/gm, (_, levelStr, title) => {
@@ -90,7 +187,6 @@ export function parseWikitext(
     const cleanTitle = title.trim();
     const id = slugify(cleanTitle);
 
-    // Update numbering
     if (level === 2) {
       headingCounters[0]++;
       headingCounters[1] = 0;
@@ -102,10 +198,14 @@ export function parseWikitext(
       headingCounters[2]++;
     }
 
-    const numberStr = level === 1 ? '' :
-      level === 2 ? `${headingCounters[0]}` :
-      level === 3 ? `${headingCounters[0]}.${headingCounters[1]}` :
-      `${headingCounters[0]}.${headingCounters[1]}.${headingCounters[2]}`;
+    const numberStr =
+      level === 1
+        ? ''
+        : level === 2
+        ? `${headingCounters[0]}`
+        : level === 3
+        ? `${headingCounters[0]}.${headingCounters[1]}`
+        : `${headingCounters[0]}.${headingCounters[1]}.${headingCounters[2]}`;
 
     if (level >= 2) {
       toc.push({
@@ -119,7 +219,8 @@ export function parseWikitext(
     sectionIndex++;
     const currentSection = sectionIndex;
 
-    const baseClass = "group font-serif font-medium text-gray-900 dark:text-gray-100 flex items-baseline justify-between";
+    const baseClass =
+      'group font-serif font-medium text-gray-900 dark:text-gray-100 flex items-baseline justify-between';
     if (level === 1) {
       return `<h1 id="${id}" class="${baseClass} text-2xl pb-1 mb-3 border-b border-gray-300 dark:border-gray-700">
         <span>${escapeHtml(cleanTitle)}</span>
@@ -142,62 +243,73 @@ export function parseWikitext(
     }
   });
 
-  // 8. Process Lists (* and #)
+  // 10. Process Lists (* and #)
   text = parseLists(text);
 
-  // 9. Process Paragraphs
+  // 11. Process Paragraphs
   const rawParagraphs = text.split(/\n\s*\n/);
   const formattedParagraphs = rawParagraphs.map(p => {
     const trimmed = p.trim();
     if (!trimmed) return '';
-    // If it's already an HTML block or code placeholder, don't wrap in <p>
     if (
-      trimmed.startsWith('<h') ||
-      trimmed.startsWith('<div') ||
-      trimmed.startsWith('<table') ||
-      trimmed.startsWith('<ul') ||
-      trimmed.startsWith('<ol') ||
+      /^<(?:h[1-6]|div|\/div|blockquote|hr|table|ul|ol|figure|p|section|aside)\b/i.test(trimmed) ||
       trimmed.startsWith('__CODE_BLOCK_')
     ) {
       return trimmed;
     }
     return `<p class="my-3 leading-relaxed text-[14.5px] text-gray-800 dark:text-gray-200">${trimmed}</p>`;
   });
-  text = formattedParagraphs.join('\n\n');
+  text = formattedParagraphs.filter(Boolean).join('\n\n');
 
-  // 10. Process Inline Wikitext (bold, italic, links, etc.)
+  // 12. Process Inline Wikitext (bold, italic, links, etc.)
   text = parseInlineWikitext(text, existingPages);
 
-  // 11. Restore Code Blocks
+  // 13. Restore Inline Code, Nowiki, and Code Blocks
+  inlineCodeBlocks.forEach((codeHtml, index) => {
+    text = text.replaceAll(`__INLINE_CODE_${index}__`, codeHtml);
+  });
+  nowikiBlocks.forEach((literalHtml, index) => {
+    text = text.replaceAll(`__NOWIKI_BLOCK_${index}__`, literalHtml);
+  });
   codeBlocks.forEach((blockHtml, index) => {
     text = text.replaceAll(`__CODE_BLOCK_${index}__`, blockHtml);
   });
 
-  // 12. References Placeholder Replacement
+  // 14. References Placeholder Replacement
   text = text.replace(/__REF_(\d+)__/g, (_, refNum) => {
     return `<sup class="reference" id="cite_ref-${refNum}"><a href="#cite_note-${refNum}" class="text-blue-600 dark:text-blue-400 hover:underline font-mono text-[11px] font-medium">[${refNum}]</a></sup>`;
   });
 
-  // 13. Handle <references /> tag
-  const referencesHtml = references.length > 0 ? `
+  // 15. Handle <references /> and {{reflist}}
+  const referencesHtml =
+    references.length > 0
+      ? `
     <div class="mw-references-wrap my-4 pt-2 border-t border-gray-200 dark:border-gray-800 text-xs">
       <h3 class="font-serif font-medium text-base mb-2 text-gray-800 dark:text-gray-200">Referências</h3>
       <ol class="list-decimal pl-6 space-y-1 text-gray-600 dark:text-gray-400">
-        ${references.map((ref, idx) => `
+        ${references
+          .map(
+            (ref, idx) => `
           <li id="cite_note-${idx + 1}" class="leading-normal">
             <span class="mr-1 text-blue-600 dark:text-blue-400"><a href="#cite_ref-${idx + 1}">↑</a></span>
             ${parseInlineWikitext(ref, existingPages)}
           </li>
-        `).join('')}
+        `
+          )
+          .join('')}
       </ol>
     </div>
-  ` : '';
+  `
+      : '';
 
-  if (text.includes('<references />') || text.includes('{{reflist}}')) {
+  if (text.includes('<references') || /\{\{reflist\}\}/i.test(text)) {
     text = text.replace(/<references\s*\/?>|\{\{reflist\}\}/gi, referencesHtml);
   } else if (references.length > 0 && !text.includes('cite_note-')) {
     text += referencesHtml;
   }
+
+  // 16. Sanitize resulting HTML against XSS while keeping MediaWiki template styling intact
+  text = sanitizeWikiHtml(text);
 
   return {
     html: text,
@@ -205,6 +317,711 @@ export function parseWikitext(
     categories,
     references,
   };
+}
+
+// ============================================================================
+// MEDIAWIKI TEMPLATE TRANSCUSION, MAGIC WORDS & PARSER FUNCTIONS ENGINE
+// ============================================================================
+
+interface ExpansionContext {
+  existingPages: Set<string>;
+  options?: ParseWikitextOptions;
+  protectFn: (raw: string) => string;
+  visitedStack: Set<string>;
+  depth: number;
+}
+
+const MAX_TEMPLATE_DEPTH = 10;
+
+function splitTopLevel(input: string, separator = '|'): string[] {
+  const parts: string[] = [];
+  let braceDepth = 0;
+  let bracketDepth = 0;
+  let current = '';
+
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+    if (ch === '{') {
+      braceDepth++;
+    } else if (ch === '}') {
+      if (braceDepth > 0) braceDepth--;
+    } else if (ch === '[') {
+      bracketDepth++;
+    } else if (ch === ']') {
+      if (bracketDepth > 0) bracketDepth--;
+    }
+
+    if (ch === separator && braceDepth === 0 && bracketDepth === 0) {
+      parts.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+
+  parts.push(current);
+  return parts;
+}
+
+function splitFirstTopLevelEquals(arg: string): [string, string] | null {
+  let braceDepth = 0;
+  let bracketDepth = 0;
+  let angleDepth = 0;
+
+  for (let i = 0; i < arg.length; i++) {
+    const ch = arg[i];
+    if (ch === '{') braceDepth++;
+    else if (ch === '}' && braceDepth > 0) braceDepth--;
+    else if (ch === '[') bracketDepth++;
+    else if (ch === ']' && bracketDepth > 0) bracketDepth--;
+    else if (ch === '<' && /^<\/?[a-zA-Z]/.test(arg.slice(i))) angleDepth++;
+    else if (ch === '>' && angleDepth > 0) angleDepth--;
+    else if (ch === '=' && braceDepth === 0 && bracketDepth === 0 && angleDepth === 0) {
+      const lhs = arg.slice(0, i);
+      // Do not treat newline or markup as parameter name
+      if (!lhs.includes('\n') && !lhs.includes('<')) {
+        return [lhs.trim(), arg.slice(i + 1).trim()];
+      }
+    }
+  }
+  return null;
+}
+
+function buildArgsMap(rawArgs: string[]): Map<string, string> {
+  const map = new Map<string, string>();
+  let positionalIndex = 1;
+
+  for (const rawArg of rawArgs) {
+    const eq = splitFirstTopLevelEquals(rawArg);
+    if (eq && eq[0]) {
+      map.set(eq[0], eq[1]);
+    } else {
+      map.set(String(positionalIndex), rawArg.trim());
+      positionalIndex++;
+    }
+  }
+  return map;
+}
+
+function substituteParameters(body: string, argsMap: Map<string, string>): string {
+  let out = '';
+  let i = 0;
+
+  while (i < body.length) {
+    if (body[i] === '{' && body[i + 1] === '{' && body[i + 2] === '{') {
+      // Find balanced closing }}}
+      let depth = 3;
+      let j = i + 3;
+      while (j < body.length && depth > 0) {
+        if (body[j] === '{') depth++;
+        else if (body[j] === '}') depth--;
+        j++;
+      }
+
+      if (depth === 0) {
+        const inner = body.slice(i + 3, j - 3);
+        const parts = splitTopLevel(inner, '|');
+        const paramName = (parts[0] || '').trim();
+        const hasDefault = parts.length > 1;
+        const defaultRaw = hasDefault ? parts.slice(1).join('|') : '';
+
+        if (argsMap.has(paramName)) {
+          out += argsMap.get(paramName)!;
+        } else if (hasDefault) {
+          out += substituteParameters(defaultRaw, argsMap);
+        } else {
+          out += `{{{${paramName}}}}`;
+        }
+        i = j;
+        continue;
+      }
+    }
+
+    out += body[i];
+    i++;
+  }
+
+  return out;
+}
+
+function resolveMagicWord(name: string, ctx: ExpansionContext): string | null {
+  const upper = name.trim().toUpperCase();
+  const pageCtx = getPageContext(ctx.options);
+  const now = new Date();
+
+  switch (upper) {
+    case '!':
+      return '|';
+    case 'SITENAME':
+      return WIKI_SITE_NAME;
+    case 'CURRENTVERSION':
+    case 'VERSÃO':
+    case 'VERSAO':
+    case 'WIKIVERSION':
+      return WIKI_SITE_VERSION;
+    case 'PAGENAME':
+      return pageCtx.pagename;
+    case 'PAGENAMEE':
+      return pageCtx.pagenamee;
+    case 'FULLPAGENAME':
+      return pageCtx.fullTitle;
+    case 'FULLPAGENAMEE':
+      return pageCtx.fullSlug;
+    case 'NAMESPACE':
+      return pageCtx.namespace;
+    case 'CURRENTYEAR':
+      return String(now.getFullYear());
+    case 'CURRENTMONTH':
+      return String(now.getMonth() + 1).padStart(2, '0');
+    case 'CURRENTDAY':
+      return String(now.getDate()).padStart(2, '0');
+    case 'CURRENTDATE':
+      return now.toLocaleDateString('pt-BR');
+    case 'NUMBEROFPAGES':
+      return String(ctx.options?.totalPages || ctx.existingPages.size || 15);
+    default:
+      return null;
+  }
+}
+
+function evaluateParserFunction(
+  funcName: string,
+  firstArgRaw: string,
+  restArgs: string[],
+  ctx: ExpansionContext
+): string | null {
+  const lower = funcName.trim().toLowerCase();
+  const expand = (val: string) => expandTemplatesAndFunctions(val, ctx);
+
+  if (lower === '#if') {
+    const cond = expand(firstArgRaw).trim();
+    const thenBranch = restArgs[0] ?? '';
+    const elseBranch = restArgs[1] ?? '';
+    return cond !== '' ? expand(thenBranch) : expand(elseBranch);
+  }
+
+  if (lower === '#ifeq') {
+    const left = expand(firstArgRaw).trim();
+    const right = expand(restArgs[0] ?? '').trim();
+    const thenBranch = restArgs[1] ?? '';
+    const elseBranch = restArgs[2] ?? '';
+    const numLeft = left !== '' ? Number(left) : NaN;
+    const numRight = right !== '' ? Number(right) : NaN;
+    const isEqual =
+      left === right ||
+      (!Number.isNaN(numLeft) && !Number.isNaN(numRight) && numLeft === numRight);
+    return isEqual ? expand(thenBranch) : expand(elseBranch);
+  }
+
+  if (lower === '#switch') {
+    const switchVal = expand(firstArgRaw).trim();
+    const cases = restArgs;
+    let defaultBranch = '';
+    let matchedFallthrough = false;
+
+    for (let idx = 0; idx < cases.length; idx++) {
+      const part = cases[idx];
+      const eq = splitFirstTopLevelEquals(part);
+      if (eq) {
+        const [caseKeyRaw, caseResult] = eq;
+        const caseKey = expand(caseKeyRaw).trim();
+        if (caseKey.toLowerCase() === '#default') {
+          defaultBranch = caseResult;
+          if (matchedFallthrough) {
+            return expand(caseResult);
+          }
+        } else if (matchedFallthrough || caseKey === switchVal) {
+          return expand(caseResult);
+        }
+      } else {
+        const bareKey = expand(part).trim();
+        // Last bare item without '=' acts as #default fallback if not matched yet
+        if (idx === cases.length - 1 && !matchedFallthrough) {
+          return bareKey;
+        }
+        if (bareKey === switchVal) {
+          matchedFallthrough = true;
+        } else if (bareKey.toLowerCase() === '#default') {
+          matchedFallthrough = true;
+        }
+      }
+    }
+    return defaultBranch ? expand(defaultBranch) : '';
+  }
+
+  if (lower === '#expr') {
+    const exprText = expand(firstArgRaw).trim();
+    return evaluateMathExpression(exprText);
+  }
+
+  if (lower === 'lc') {
+    return expand(firstArgRaw).toLowerCase();
+  }
+  if (lower === 'uc') {
+    return expand(firstArgRaw).toUpperCase();
+  }
+  if (lower === 'lcfirst') {
+    const v = expand(firstArgRaw);
+    return v ? v.charAt(0).toLowerCase() + v.slice(1) : '';
+  }
+  if (lower === 'ucfirst') {
+    const v = expand(firstArgRaw);
+    return v ? v.charAt(0).toUpperCase() + v.slice(1) : '';
+  }
+
+  return null;
+}
+
+// Safe recursive-descent arithmetic evaluator for {{#expr:...}} (no eval/Function)
+function evaluateMathExpression(expr: string): string {
+  if (!expr) return '';
+  const tokens: Array<{ type: 'num' | 'op' | 'id'; val: string }> = [];
+  let i = 0;
+  while (i < expr.length) {
+    const ch = expr[i];
+    if (/\s/.test(ch)) {
+      i++;
+      continue;
+    }
+    if (/\d|\./.test(ch)) {
+      let numStr = '';
+      while (i < expr.length && /[\d.]/.test(expr[i])) {
+        numStr += expr[i++];
+      }
+      tokens.push({ type: 'num', val: numStr });
+      continue;
+    }
+    if (/[a-zA-Z]/.test(ch)) {
+      let id = '';
+      while (i < expr.length && /[a-zA-Z]/.test(expr[i])) {
+        id += expr[i++];
+      }
+      tokens.push({ type: 'id', val: id.toLowerCase() });
+      continue;
+    }
+    const twoChar = expr.slice(i, i + 2);
+    if (twoChar === '!=' || twoChar === '<=' || twoChar === '>=' || twoChar === '<>') {
+      tokens.push({ type: 'op', val: twoChar });
+      i += 2;
+      continue;
+    }
+    if ('+-*/%^()=<>'.includes(ch)) {
+      tokens.push({ type: 'op', val: ch });
+      i++;
+      continue;
+    }
+    return '<span class="text-red-600 dark:text-red-400 font-mono text-xs">[Erro de expressão]</span>';
+  }
+
+  let pos = 0;
+  const peek = () => tokens[pos];
+  const consume = () => tokens[pos++];
+
+  const parseOr = (): number => {
+    let left = parseAnd();
+    while (peek()?.type === 'id' && peek()?.val === 'or') {
+      consume();
+      const right = parseAnd();
+      left = left !== 0 || right !== 0 ? 1 : 0;
+    }
+    return left;
+  };
+
+  const parseAnd = (): number => {
+    let left = parseCmp();
+    while (peek()?.type === 'id' && peek()?.val === 'and') {
+      consume();
+      const right = parseCmp();
+      left = left !== 0 && right !== 0 ? 1 : 0;
+    }
+    return left;
+  };
+
+  const parseCmp = (): number => {
+    let left = parseAddSub();
+    const tok = peek();
+    if (tok?.type === 'op' && ['=', '!=', '<>', '<', '>', '<=', '>='].includes(tok.val)) {
+      consume();
+      const right = parseAddSub();
+      switch (tok.val) {
+        case '=':
+          return left === right ? 1 : 0;
+        case '!=':
+        case '<>':
+          return left !== right ? 1 : 0;
+        case '<':
+          return left < right ? 1 : 0;
+        case '>':
+          return left > right ? 1 : 0;
+        case '<=':
+          return left <= right ? 1 : 0;
+        case '>=':
+          return left >= right ? 1 : 0;
+      }
+    }
+    return left;
+  };
+
+  const parseAddSub = (): number => {
+    let left = parseMulDiv();
+    while (peek()?.type === 'op' && (peek()?.val === '+' || peek()?.val === '-')) {
+      const op = consume().val;
+      const right = parseMulDiv();
+      left = op === '+' ? left + right : left - right;
+    }
+    return left;
+  };
+
+  const parseMulDiv = (): number => {
+    let left = parsePow();
+    while (
+      (peek()?.type === 'op' && (peek()?.val === '*' || peek()?.val === '/' || peek()?.val === '%')) ||
+      (peek()?.type === 'id' && (peek()?.val === 'mod' || peek()?.val === 'div'))
+    ) {
+      const op = consume().val;
+      const right = parsePow();
+      if (op === '*') left *= right;
+      else if (op === '/' || op === 'div') {
+        if (right === 0) throw new Error('Divisão por zero');
+        left /= right;
+      } else {
+        if (right === 0) throw new Error('Divisão por zero');
+        left %= right;
+      }
+    }
+    return left;
+  };
+
+  const parsePow = (): number => {
+    const base = parseUnary();
+    if (peek()?.type === 'op' && peek()?.val === '^') {
+      consume();
+      return Math.pow(base, parsePow());
+    }
+    return base;
+  };
+
+  const parseUnary = (): number => {
+    const tok = peek();
+    if (tok?.type === 'op' && tok.val === '+') {
+      consume();
+      return parseUnary();
+    }
+    if (tok?.type === 'op' && tok.val === '-') {
+      consume();
+      return -parseUnary();
+    }
+    if (tok?.type === 'id' && tok.val === 'not') {
+      consume();
+      return parseUnary() === 0 ? 1 : 0;
+    }
+    if (tok?.type === 'id' && ['round', 'floor', 'ceil', 'abs', 'trunc'].includes(tok.val)) {
+      const fn = consume().val;
+      const arg = parseUnary();
+      if (fn === 'round') return Math.round(arg);
+      if (fn === 'floor') return Math.floor(arg);
+      if (fn === 'ceil') return Math.ceil(arg);
+      if (fn === 'abs') return Math.abs(arg);
+      return Math.trunc(arg);
+    }
+    return parsePrimary();
+  };
+
+  const parsePrimary = (): number => {
+    const tok = peek();
+    if (!tok) throw new Error('Fim inesperado');
+    if (tok.type === 'num') {
+      consume();
+      const n = Number(tok.val);
+      if (Number.isNaN(n)) throw new Error('Número inválido');
+      return n;
+    }
+    if (tok.type === 'id') {
+      consume();
+      if (tok.val === 'pi') return Math.PI;
+      if (tok.val === 'e') return Math.E;
+      throw new Error('Identificador desconhecido');
+    }
+    if (tok.type === 'op' && tok.val === '(') {
+      consume();
+      const val = parseOr();
+      if (peek()?.val !== ')') throw new Error('Parêntese não fechado');
+      consume();
+      return val;
+    }
+    throw new Error('Token inesperado');
+  };
+
+  try {
+    const result = parseOr();
+    if (pos < tokens.length || !Number.isFinite(result)) {
+      return '<span class="text-red-600 dark:text-red-400 font-mono text-xs">[Erro de expressão]</span>';
+    }
+    return Number.isInteger(result)
+      ? String(result)
+      : String(Number(result.toFixed(6)));
+  } catch {
+    return '<span class="text-red-600 dark:text-red-400 font-mono text-xs">[Erro de expressão]</span>';
+  }
+}
+
+function expandTemplatesAndFunctions(input: string, ctx: ExpansionContext): string {
+  if (!input || ctx.depth >= MAX_TEMPLATE_DEPTH) return input;
+
+  let out = '';
+  let i = 0;
+
+  while (i < input.length) {
+    // Skip triple-brace parameter syntax {{{...}}} so we never misparse its inner {{
+    if (input[i] === '{' && input[i + 1] === '{' && input[i + 2] === '{') {
+      let depth = 3;
+      let j = i + 3;
+      while (j < input.length && depth > 0) {
+        if (input[j] === '{') depth++;
+        else if (input[j] === '}') depth--;
+        j++;
+      }
+      out += input.slice(i, j);
+      i = j;
+      continue;
+    }
+
+    // Match {{...}} template / parser function / magic word call
+    if (input[i] === '{' && input[i + 1] === '{') {
+      let depth = 2;
+      let j = i + 2;
+      while (j < input.length && depth > 0) {
+        if (input[j] === '{') depth++;
+        else if (input[j] === '}') depth--;
+        j++;
+      }
+
+      if (depth === 0) {
+        const inner = input.slice(i + 2, j - 2);
+        const trimmedInner = inner.trim();
+
+        // Keep Infobox and reflist intact for their dedicated post-steps, expanding inner templates inside Infobox
+        if (/^infobox\b/i.test(trimmedInner)) {
+          const expandedInfoboxInner = expandTemplatesAndFunctions(inner, {
+            ...ctx,
+            depth: ctx.depth + 1,
+          });
+          out += `{{${expandedInfoboxInner}}}`;
+          i = j;
+          continue;
+        }
+        if (/^reflist$/i.test(trimmedInner)) {
+          out += '{{reflist}}';
+          i = j;
+          continue;
+        }
+
+        const parts = splitTopLevel(inner, '|');
+        const headRaw = parts[0] || '';
+        const headTrimmed = headRaw.trim();
+        const restParts = parts.slice(1);
+
+        // 1. Check ParserFunctions with colon syntax: {{#if:...}}, {{#ifeq:...}}, {{#switch:...}}, {{#expr:...}}, {{lc:...}}, {{uc:...}}
+        const colonIdx = headTrimmed.indexOf(':');
+        if (colonIdx > 0) {
+          const maybeFunc = headTrimmed.slice(0, colonIdx).trim();
+          const lowerFunc = maybeFunc.toLowerCase();
+          if (
+            ['#if', '#ifeq', '#switch', '#expr', 'lc', 'uc', 'lcfirst', 'ucfirst'].includes(
+              lowerFunc
+            )
+          ) {
+            const firstArg = headTrimmed.slice(colonIdx + 1);
+            const evaluated = evaluateParserFunction(maybeFunc, firstArg, restParts, {
+              ...ctx,
+              depth: ctx.depth + 1,
+            });
+            if (evaluated !== null) {
+              out += evaluated;
+              i = j;
+              continue;
+            }
+          }
+        }
+
+        // 2. Check Magic Words (no args)
+        if (restParts.length === 0) {
+          const magicVal = resolveMagicWord(headTrimmed, ctx);
+          if (magicVal !== null) {
+            out += magicVal;
+            i = j;
+            continue;
+          }
+        }
+
+        // 3. Resolve Transcluded Template / Article from live cache
+        const expandedHead = expandTemplatesAndFunctions(headTrimmed, {
+          ...ctx,
+          depth: ctx.depth + 1,
+        }).trim();
+
+        const targetPage = resolveTranscludedPage(expandedHead);
+        if (targetPage) {
+          const loopKey = targetPage.slug.toLowerCase();
+          if (ctx.visitedStack.has(loopKey)) {
+            out += `<span class="text-red-600 dark:text-red-400 font-mono text-xs">[Ciclo de predefinição detectado: ${escapeHtml(targetPage.title)}]</span>`;
+            i = j;
+            continue;
+          }
+
+          // Expand each argument before substituting so nested {{...}} inside arguments resolve cleanly
+          const expandedArgs = restParts.map(arg =>
+            expandTemplatesAndFunctions(arg, { ...ctx, depth: ctx.depth + 1 })
+          );
+          const argsMap = buildArgsMap(expandedArgs);
+
+          let transcludedBody = extractTransclusionBody(targetPage.content);
+          transcludedBody = ctx.protectFn(transcludedBody);
+          transcludedBody = substituteParameters(transcludedBody, argsMap);
+
+          const nextVisited = new Set(ctx.visitedStack);
+          nextVisited.add(loopKey);
+
+          out += expandTemplatesAndFunctions(transcludedBody, {
+            ...ctx,
+            visitedStack: nextVisited,
+            depth: ctx.depth + 1,
+          });
+          i = j;
+          continue;
+        }
+
+        // 4. Built-in fallback for {{Aviso|...}} / {{Notice|...}} if Predefinição:Aviso was not seeded
+        if (/^(?:Aviso|Notice)$/i.test(expandedHead) && restParts.length > 0) {
+          const expandedRest = restParts
+            .map(arg => expandTemplatesAndFunctions(arg, { ...ctx, depth: ctx.depth + 1 }))
+            .join('|');
+          out += `{{Aviso|${expandedRest}}}`;
+          i = j;
+          continue;
+        }
+
+        // 5. Missing template -> authentic MediaWiki red link [[Predefinição:Nome]]
+        if (expandedHead) {
+          const isMainNsTransclusion = expandedHead.startsWith(':');
+          const missingTarget = isMainNsTransclusion
+            ? expandedHead.slice(1).trim()
+            : `Predefinição:${stripTemplateNamespacePrefix(expandedHead)}`;
+          out += `[[${missingTarget}]]`;
+        }
+        i = j;
+        continue;
+      }
+    }
+
+    out += input[i];
+    i++;
+  }
+
+  return out;
+}
+
+/**
+ * Expands MediaWiki {{subst:Predefinição|...}} calls directly into wikitext upon saving.
+ */
+export function expandSubstTemplates(wikitext: string, pageTitle?: string): string {
+  if (!wikitext || !/\{\{\s*subst:/i.test(wikitext)) {
+    return wikitext;
+  }
+
+  // Temporarily protect <syntaxhighlight>, <pre>, <nowiki>, and inline backticks
+  const literals: string[] = [];
+  let protectedText = wikitext
+    .replace(/<syntaxhighlight[\s\S]*?<\/syntaxhighlight>/gi, m => {
+      const k = `__SUBST_LIT_${literals.length}__`;
+      literals.push(m);
+      return k;
+    })
+    .replace(/<pre[\s\S]*?<\/pre>/gi, m => {
+      const k = `__SUBST_LIT_${literals.length}__`;
+      literals.push(m);
+      return k;
+    })
+    .replace(/<nowiki>[\s\S]*?<\/nowiki>/gi, m => {
+      const k = `__SUBST_LIT_${literals.length}__`;
+      literals.push(m);
+      return k;
+    })
+    .replace(/`[^`\n]+`/g, m => {
+      const k = `__SUBST_LIT_${literals.length}__`;
+      literals.push(m);
+      return k;
+    });
+
+  const dummyCtx: ExpansionContext = {
+    existingPages: new Set(),
+    options: { pageTitle },
+    protectFn: raw => raw,
+    visitedStack: new Set(),
+    depth: 0,
+  };
+
+  let out = '';
+  let i = 0;
+  while (i < protectedText.length) {
+    if (protectedText[i] === '{' && protectedText[i + 1] === '{' && protectedText[i + 2] !== '{') {
+      let depth = 2;
+      let j = i + 2;
+      while (j < protectedText.length && depth > 0) {
+        if (protectedText[j] === '{') depth++;
+        else if (protectedText[j] === '}') depth--;
+        j++;
+      }
+
+      if (depth === 0) {
+        const inner = protectedText.slice(i + 2, j - 2);
+        const parts = splitTopLevel(inner, '|');
+        const head = (parts[0] || '').trim();
+        const substMatch = head.match(/^subst:\s*([\s\S]+)$/i);
+
+        if (substMatch) {
+          const targetName = substMatch[1].trim();
+          const restParts = parts.slice(1);
+
+          if (restParts.length === 0) {
+            const magicVal = resolveMagicWord(targetName, dummyCtx);
+            if (magicVal !== null) {
+              out += magicVal;
+              i = j;
+              continue;
+            }
+          }
+
+          const targetPage = resolveTranscludedPage(targetName);
+          if (targetPage) {
+            const argsMap = buildArgsMap(restParts);
+            const body = extractTransclusionBody(targetPage.content);
+            out += substituteParameters(body, argsMap).trim();
+            i = j;
+            continue;
+          }
+        }
+      }
+    }
+
+    out += protectedText[i];
+    i++;
+  }
+
+  literals.forEach((orig, idx) => {
+    out = out.replaceAll(`__SUBST_LIT_${idx}__`, orig);
+  });
+
+  return out;
+}
+
+// Lightweight HTML sanitizer permitting safe MediaWiki layout tags while blocking XSS vectors
+function sanitizeWikiHtml(html: string): string {
+  return html
+    .replace(/<\s*(script|iframe|object|embed|form|input|button[^>]*\bon|meta|link|base)\b[^>]*>[\s\S]*?<\/\s*\1\s*>/gi, '')
+    .replace(/<\s*(script|iframe|object|embed|input|meta|link|base)\b[^>]*\/?>/gi, '')
+    .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/(href|src)\s*=\s*(["'])\s*(?:javascript|vbscript):[\s\S]*?\2/gi, '$1=$2#$2');
 }
 
 function parseInlineWikitext(input: string, existingPages: Set<string>): string {
@@ -256,7 +1073,6 @@ function parseInlineWikitext(input: string, existingPages: Set<string>): string 
         }
       });
 
-      // Resolve image source: cached data URL, http URL, assets path, or fallback
       let imgSrc = getCachedFileUrl(cleanFileName) || getCachedFileUrl(fileTargetSlug) || '';
       if (!imgSrc) {
         if (/^(https?:|\/\/|data:)/.test(fileName)) {
@@ -290,13 +1106,11 @@ function parseInlineWikitext(input: string, existingPages: Set<string>): string 
     const cleanTarget = rawTarget.replace(/\s+/g, '_');
     const label = rawParams ? rawParams.trim() : rawTarget;
 
-    // Check if target page exists (or default page)
     const pageExists = existingPages.has(cleanTarget) || existingPages.has(rawTarget);
 
     if (pageExists) {
       return `<a href="#/wiki/${encodeURIComponent(cleanTarget)}" class="mw-wiki-link text-[#0645ad] dark:text-[#6ba4ff] hover:underline" data-target="${escapeHtml(cleanTarget)}">${escapeHtml(label)}</a>`;
     } else {
-      // Red link for uncreated pages! MediaWiki's trademark feature
       return `<a href="#/wiki/${encodeURIComponent(cleanTarget)}?action=edit" class="mw-new-link text-[#ba0000] dark:text-[#ff7878] hover:underline cursor-pointer" title="${escapeHtml(rawTarget)} (página ainda não criada)" data-target="${escapeHtml(cleanTarget)}">${escapeHtml(label)}</a>`;
     }
   });
@@ -308,8 +1122,11 @@ function parseInlineWikitext(input: string, existingPages: Set<string>): string 
     return `<a href="${escapeHtml(url)}" ${isMailto ? '' : 'target="_blank" rel="noopener noreferrer" '}class="mw-external-link text-[#3366cc] dark:text-[#729fcf] hover:underline inline-flex items-center gap-0.5"><span>${escapeHtml(textLabel)}</span>${isMailto ? '' : '<span class="text-[10px] opacity-70">↗</span>'}</a>`;
   });
 
-  // Inline code `code`
-  text = text.replace(/`([^`]+)`/g, '<code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 font-mono text-xs">$1</code>');
+  // Inline code `code` (fallback for any generated dynamically)
+  text = text.replace(
+    /`([^`]+)`/g,
+    '<code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 font-mono text-xs">$1</code>'
+  );
 
   return text;
 }
@@ -329,7 +1146,9 @@ function parseLists(text: string): string {
         inOl = false;
       }
       if (!inUl) {
-        result.push('<ul class="list-disc pl-6 my-2 space-y-1 text-gray-800 dark:text-gray-200 text-[14px]">');
+        result.push(
+          '<ul class="list-disc pl-6 my-2 space-y-1 text-gray-800 dark:text-gray-200 text-[14px]">'
+        );
         inUl = true;
       }
       const itemContent = line.replace(/^\*+\s*/, '');
@@ -340,7 +1159,9 @@ function parseLists(text: string): string {
         inUl = false;
       }
       if (!inOl) {
-        result.push('<ol class="list-decimal pl-6 my-2 space-y-1 text-gray-800 dark:text-gray-200 text-[14px]">');
+        result.push(
+          '<ol class="list-decimal pl-6 my-2 space-y-1 text-gray-800 dark:text-gray-200 text-[14px]">'
+        );
         inOl = true;
       }
       const itemContent = line.replace(/^#+\s*/, '');
@@ -366,7 +1187,8 @@ function parseLists(text: string): string {
 
 function parseWikitable(content: string): string {
   const lines = content.split('\n');
-  let html = '<div class="overflow-x-auto my-4"><table class="wikitable w-full text-left text-xs md:text-sm border-collapse border border-[#a2a9b1] dark:border-gray-700 bg-[#f8f9fa] dark:bg-gray-900">';
+  let html =
+    '<div class="overflow-x-auto my-4"><table class="wikitable w-full text-left text-xs md:text-sm border-collapse border border-[#a2a9b1] dark:border-gray-700 bg-[#f8f9fa] dark:bg-gray-900">';
   let inRow = false;
 
   for (const rawLine of lines) {
@@ -459,6 +1281,9 @@ function formatInfoboxValue(value: string): string {
     const safeEmail = escapeHtml(trimmed);
     return `<a href="mailto:${safeEmail}" class="text-[#3366cc] dark:text-[#729fcf] hover:underline break-all">${safeEmail}</a>`;
   }
+  if (/^\[\[/.test(trimmed) || /__INLINE_CODE_\d+__/.test(trimmed)) {
+    return trimmed;
+  }
   return escapeHtml(trimmed);
 }
 
@@ -513,8 +1338,7 @@ function parseInfobox(content: string): string {
           imageCaption = value;
         } else {
           const displayKey =
-            INFOBOX_LABEL_MAP[lowerKey] ||
-            key.charAt(0).toUpperCase() + key.slice(1);
+            INFOBOX_LABEL_MAP[lowerKey] || key.charAt(0).toUpperCase() + key.slice(1);
           fields.push({ key: displayKey, value });
         }
       }

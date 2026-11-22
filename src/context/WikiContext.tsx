@@ -19,6 +19,8 @@ import {
 } from '../services/extensionService';
 import { WikiExtensionDoc } from '../extensions';
 import { slugify } from '../core/parser';
+import { INITIAL_PAGES } from '../core/defaultPages';
+import { setCachedTemplates } from '../core/templateRegistry';
 import { LEGAL_COMPLIANCE_INFO, hasPreferenceStorageConsent } from '../core/compliance';
 
 interface WikiContextType {
@@ -172,9 +174,16 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
 
   // REAL-TIME: Listen to all pages, settings, and extensions collections
   useEffect(() => {
+    setCachedTemplates(Object.values(INITIAL_PAGES), true);
 
     const unsubPages = subscribeToAllPages(pages => {
+      setCachedTemplates(pages);
       const slugSet = new Set<string>();
+      Object.values(INITIAL_PAGES).forEach(p => {
+        slugSet.add(p.slug);
+        slugSet.add(p.title);
+        slugSet.add(slugify(p.title));
+      });
       pages.forEach(p => {
         slugSet.add(p.slug);
         slugSet.add(p.title);
