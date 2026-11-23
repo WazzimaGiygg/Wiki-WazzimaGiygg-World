@@ -15,6 +15,7 @@ import {
   Share2,
   Upload,
   Braces,
+  Smartphone,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { getRandomPageSlug } from '../utils/randomPage';
@@ -75,6 +76,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
       : []),
     { label: 'Versão do Software', slug: 'Especial:Versão', icon: Info },
     { label: 'Extensões do Wiki', slug: 'Especial:Extensões', icon: Blocks },
+    ...(isExtensionActive('pwa-app')
+      ? [{ label: 'Aplicativo (PC / Celular)', slug: 'Especial:Aplicativo', icon: Smartphone }]
+      : []),
     ...(isExtensionActive('lgpd-privacy-suite')
       ? [{ label: 'Privacidade e LGPD', slug: 'Especial:Privacidade', icon: ShieldCheck }]
       : []),

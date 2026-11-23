@@ -21,6 +21,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSettings }) => {
   const extSkinTimeless = isExtensionActive('skin-timeless');
   const extSkinDark = isExtensionActive('mobile-frontend');
   const extFooterBadges = isExtensionActive('footer-badges');
+  const extPwaApp = isExtensionActive('pwa-app');
 
   const dpoContact = settings.lgpdDpoContact || LEGAL_COMPLIANCE_INFO.defaultDpoContact;
   const repoUrl = settings.repositoryUrl || 'https://github.com/WazzimaGiygg/WikiWazzimaGiygg';
@@ -41,6 +42,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSettings }) => {
     { label: 'Sobre a Wiki', slug: 'Página_principal' },
     { label: `Versão (${WIKI_SITE_VERSION})`, slug: 'Especial:Versão' },
     { label: 'Extensões', slug: 'Especial:Extensões' },
+    ...(extPwaApp ? [{ label: 'Aplicativo (PC/Celular)', slug: 'Especial:Aplicativo' }] : []),
     ...(extRecentChanges
       ? [{ label: 'Mudanças recentes', slug: 'Especial:Mudanças_recentes' }]
       : []),

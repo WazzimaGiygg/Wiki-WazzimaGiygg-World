@@ -25,6 +25,7 @@ import { subscribeToSearchPageTitles, subscribeToRecentPages, searchWikiPages } 
 import { queryGoogleSearchGrounding, SearchGroundingResult } from '../services/groundingService';
 import { WikiPage } from '../types/wiki';
 import { WIKI_SITE_VERSION } from '../core/version';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface HeaderProps {
   onOpenSettings: () => void;
@@ -50,6 +51,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   const extSkinTimeless = isExtensionActive('skin-timeless');
   const extSkinDark = isExtensionActive('mobile-frontend');
   const extRecentChanges = isExtensionActive('recent-changes');
+  const extPwaApp = isExtensionActive('pwa-app');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<WikiPage[]>([]);
@@ -603,6 +605,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
               )}
             </div>
           )}
+
+          {extPwaApp && <PWAInstallButton />}
 
           {/* Quick LocalSettings config button (Bureaucrats only) */}
           {isBureaucrat && (

@@ -19,7 +19,9 @@ import { SpecialBureaucratAdmin } from './components/SpecialBureaucratAdmin';
 import { SpecialExtensions } from './components/SpecialExtensions';
 import { SpecialUpload } from './components/SpecialUpload';
 import { SpecialPrivacy } from './components/SpecialPrivacy';
+import { SpecialApp } from './components/SpecialApp';
 import { ConsentBanner } from './components/ConsentBanner';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { Footer } from './components/Footer';
 import { LocalSettingsModal } from './components/LocalSettingsModal';
 import { subscribeToPage } from './services/wikiService';
@@ -256,6 +258,16 @@ function WikiMain() {
         ? <SpecialPrivacy />
         : renderDisabledExtensionNotice('Central de Privacidade (LGPD & Marco Civil)', 'lgpd-privacy-suite');
     }
+    if (
+      currentSlug === 'Especial:Aplicativo' ||
+      currentSlug === 'Especial:App' ||
+      currentSlug === 'Especial:PWA' ||
+      currentSlug === 'Special:App'
+    ) {
+      return isExtensionActive('pwa-app')
+        ? <SpecialApp />
+        : renderDisabledExtensionNotice('Aplicativo Desktop & Smartphone (PWA)', 'pwa-app');
+    }
 
     // Standard wiki page tabs
     if (activeTab === 'edit') {
@@ -372,6 +384,7 @@ function WikiMain() {
       <Footer onOpenSettings={() => setSettingsOpen(true)} />
       <LocalSettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
       {isExtensionActive('lgpd-privacy-suite') && <ConsentBanner />}
+      {isExtensionActive('pwa-app') && <OfflineIndicator />}
     </div>
   );
 }

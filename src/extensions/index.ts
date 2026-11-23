@@ -40,6 +40,7 @@ import {
   arbcomUcocGovernanceExtension,
   githubSyncExtension,
   seoManagerExtension,
+  pwaAppExtension,
 } from './featureExtensions';
 
 /**
@@ -87,6 +88,7 @@ export const CODEBASE_EXTENSIONS: ExtensionDefinition[] = [
   mobileFrontendExtension,
   footerBadgesExtension,
   printableVersionExtension,
+  pwaAppExtension,
 
   // APIs, Busca e Conectividade
   actionApiExtension,

@@ -207,3 +207,20 @@ export const seoManagerExtension: ExtensionDefinition = {
   defaultActive: true,
   installedVia: 'code',
 };
+
+export const pwaAppExtension: ExtensionDefinition = {
+  id: 'pwa-app',
+  name: 'Aplicativo Desktop & Smartphone (PWA)',
+  category: 'skin',
+  version: '1.0.0-ts',
+  authors: ['Equipe WikiWazzimaGiygg'],
+  description: 'Transforma o Wiki-site em aplicativo instalável para Android, iOS, Windows, macOS e Linux com cache offline e botão de instalação.',
+  url: 'https://developer.mozilla.org/docs/Web/Progressive_web_apps',
+  gitTag: 'REL1_42-ts',
+  license: 'MIT',
+  hooks: ['BeforePageDisplay', 'SpecialPage_initList'],
+  exampleWikitext: 'Instale o WikiWazzimaGiygg no celular ou computador acessando Especial:Aplicativo.',
+  defaultActive: true,
+  installedVia: 'code',
+};
+
