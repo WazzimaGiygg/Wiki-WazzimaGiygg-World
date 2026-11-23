@@ -41,6 +41,7 @@ import {
   githubSyncExtension,
   seoManagerExtension,
   pwaAppExtension,
+  pushNotificationsExtension,
 } from './featureExtensions';
 
 /**
@@ -81,6 +82,7 @@ export const CODEBASE_EXTENSIONS: ExtensionDefinition[] = [
   pageProtectionExtension,
   lgpdPrivacySuiteExtension,
   arbcomUcocGovernanceExtension,
+  pushNotificationsExtension,
 
   // Temas e Skins
   vectorModernSkinExtension,

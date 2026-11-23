@@ -292,6 +292,19 @@
         "timestamp": { "type": "string" }
       },
       "required": ["action", "target", "details", "performedBy", "performedByUid", "timestamp"]
+    },
+    "UserWatchlist": {
+      "title": "UserWatchlist",
+      "description": "Per-user list of monitored wiki pages and push notification preferences",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "slugs": { "type": "array" },
+        "notifyEnabled": { "type": "boolean" },
+        "notifyOwnEdits": { "type": "boolean" },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["userId", "slugs", "notifyEnabled", "notifyOwnEdits", "updatedAt"]
     }
   },
   "firestore": {
@@ -350,6 +363,10 @@
     "/admin_audit_logs/{logId}": {
       "schema": { "$ref": "#/entities/AdminAuditLog" },
       "description": "Immutable append-only audit trail for Firebase database administration actions"
+    },
+    "/user_watchlists/{userId}": {
+      "schema": { "$ref": "#/entities/UserWatchlist" },
+      "description": "Owner-only watchlist of monitored wiki pages and push notification settings"
     }
   }
 }

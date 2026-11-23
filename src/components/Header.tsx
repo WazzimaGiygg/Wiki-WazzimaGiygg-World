@@ -19,6 +19,7 @@ import {
   FileText,
   ArrowRight,
   Globe,
+  Bell,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { subscribeToSearchPageTitles, subscribeToRecentPages, searchWikiPages } from '../services/wikiService';
@@ -43,6 +44,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
     setSidebarOpen,
     isBureaucrat,
     isExtensionActive,
+    unreadAlertsCount,
+    notificationPermission,
   } = useWiki();
 
   const extGlobalSearch = isExtensionActive('global-search');
@@ -52,6 +55,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   const extSkinDark = isExtensionActive('mobile-frontend');
   const extRecentChanges = isExtensionActive('recent-changes');
   const extPwaApp = isExtensionActive('pwa-app');
+  const extPushNotifications = isExtensionActive('push-notifications');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<WikiPage[]>([]);
@@ -607,6 +611,33 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
           )}
 
           {extPwaApp && <PWAInstallButton />}
+
+          {extPushNotifications && extPwaApp && (
+            <button
+              type="button"
+              onClick={() => navigateToPage('Especial:Aplicativo')}
+              className="relative p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded cursor-pointer"
+              title={
+                notificationPermission === 'granted'
+                  ? 'Notificações Push ativas (Gerenciar em Especial:Aplicativo)'
+                  : 'Gerenciar Notificações Push em Especial:Aplicativo'
+              }
+              aria-label="Notificações Push de Páginas Monitoradas"
+            >
+              <Bell
+                className={`w-4 h-4 ${
+                  notificationPermission === 'granted'
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : ''
+                }`}
+              />
+              {unreadAlertsCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-600 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                  {unreadAlertsCount > 9 ? '9+' : unreadAlertsCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* Quick LocalSettings config button (Bureaucrats only) */}
           {isBureaucrat && (

@@ -224,3 +224,19 @@ export const pwaAppExtension: ExtensionDefinition = {
   installedVia: 'code',
 };
 
+export const pushNotificationsExtension: ExtensionDefinition = {
+  id: 'push-notifications',
+  name: 'Notificações Push (Páginas Monitoradas)',
+  category: 'admin',
+  version: '1.0.0-ts',
+  authors: ['Equipe WikiWazzimaGiygg'],
+  description: 'Envia notificações push em tempo real no navegador quando páginas monitoradas recebem novas edições, com gerenciamento em Especial:Aplicativo.',
+  url: 'https://developer.mozilla.org/docs/Web/API/Notifications_API',
+  gitTag: 'REL1_42-ts',
+  license: 'MIT',
+  hooks: ['RecentChange_save', 'WatchArticle'],
+  exampleWikitext: 'Vigie uma página pela estrela e ative as notificações push em Especial:Aplicativo.',
+  defaultActive: true,
+  installedVia: 'code',
+};
+

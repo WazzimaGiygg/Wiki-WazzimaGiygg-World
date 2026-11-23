@@ -23,6 +23,9 @@ import {
   Braces,
   Copy,
   Check,
+  Bell,
+  BellRing,
+  X,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { WikiPage } from '../types/wiki';
@@ -62,22 +65,41 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
     loginWithGoogle,
     isExtensionActive,
     disabledExtensionIds,
+    isPageWatched,
+    toggleWatchPage,
+    notificationPermission,
+    notificationPrefs,
+    requestNotificationPermission,
   } = useWiki();
 
   const extTalkPages = isExtensionActive('talk-pages');
   const extRevisionHistory = isExtensionActive('revision-history');
   const extPageProtection = isExtensionActive('page-protection');
   const extPageWatchlist = isExtensionActive('page-watchlist');
+  const extPushNotifications = isExtensionActive('push-notifications');
+  const extPwaApp = isExtensionActive('pwa-app');
   const extAutoToc = isExtensionActive('auto-toc');
   const extCategories = isExtensionActive('dynamic-page-list');
   const extTemplates = isExtensionActive('templates-transclusion');
   const extLgpd = isExtensionActive('lgpd-privacy-suite');
   const [showTOC, setShowTOC] = useState(true);
-  const [isWatched, setIsWatched] = useState(false);
+  const [watchBanner, setWatchBanner] = useState<'watched' | 'unwatched' | null>(null);
   const [showProtectionModal, setShowProtectionModal] = useState(false);
   const [fileDoc, setFileDoc] = useState<WikiFileDoc | null>(null);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
   const [templatesVersion, setTemplatesVersion] = useState(0);
+
+  const isWatched = page ? isPageWatched(page.slug) : false;
+
+  useEffect(() => {
+    setWatchBanner(null);
+  }, [slug]);
+
+  const handleToggleWatch = async () => {
+    if (!page) return;
+    const nowWatched = await toggleWatchPage(page.slug);
+    setWatchBanner(nowWatched ? 'watched' : 'unwatched');
+  };
 
   // Keep live templates synchronized from Firestore so {{NomeDaPredefinição|parâmetro}} always reflects latest edits
   useEffect(() => {
@@ -353,17 +375,93 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
           {extPageWatchlist && (
             <button
               type="button"
-              onClick={() => setIsWatched(prev => !prev)}
-              className={`p-1.5 rounded-t text-gray-500 hover:text-amber-500 cursor-pointer ${
+              onClick={handleToggleWatch}
+              className={`p-1.5 rounded-t text-gray-500 hover:text-amber-500 cursor-pointer transition-colors ${
                 isWatched ? 'text-amber-500' : ''
               }`}
-              title={isWatched ? 'Desvigiar esta página' : 'Vigiar esta página'}
+              title={
+                isWatched
+                  ? 'Desvigiar esta página (notificações push ativas se autorizadas)'
+                  : 'Vigiar esta página e receber alertas de novas edições'
+              }
             >
               <Star className={`w-3.5 h-3.5 ${isWatched ? 'fill-current' : ''}`} />
             </button>
           )}
         </div>
       </div>
+
+      {/* Inline Watchlist + Push Notification Feedback Banner */}
+      {watchBanner && extPageWatchlist && (
+        <div
+          className={`print:hidden mb-3 px-3.5 py-2.5 rounded border text-xs flex flex-wrap items-center justify-between gap-2 ${
+            watchBanner === 'watched'
+              ? 'bg-amber-50/90 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-100'
+              : 'bg-gray-50 dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {watchBanner === 'watched' ? (
+              <BellRing className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            ) : (
+              <Bell className="w-4 h-4 text-gray-500 shrink-0" />
+            )}
+            <span>
+              {watchBanner === 'watched' ? (
+                <>
+                  <strong>{page.title}</strong> adicionada às suas páginas monitoradas.
+                  {extPushNotifications && notificationPermission === 'granted' && notificationPrefs.notifyEnabled && (
+                    <span className="ml-1 text-emerald-700 dark:text-emerald-400 font-medium">
+                      Notificações push em tempo real ativas!
+                    </span>
+                  )}
+                  {extPushNotifications && notificationPermission === 'default' && (
+                    <span className="ml-1">Ative as notificações do navegador para ser alertado sobre novas edições.</span>
+                  )}
+                  {extPushNotifications && notificationPermission === 'denied' && (
+                    <span className="ml-1 text-red-700 dark:text-red-300">
+                      Notificações bloqueadas nas permissões do navegador.
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <strong>{page.title}</strong> removida da sua lista de páginas monitoradas.
+                </>
+              )}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {watchBanner === 'watched' && extPushNotifications && notificationPermission === 'default' && (
+              <button
+                type="button"
+                onClick={() => requestNotificationPermission()}
+                className="px-2.5 py-1 rounded bg-[#3366cc] hover:bg-[#254b99] text-white font-medium text-[11px] cursor-pointer"
+              >
+                Permitir Notificações Push
+              </button>
+            )}
+            {extPwaApp && extPushNotifications && (
+              <button
+                type="button"
+                onClick={() => navigateToPage('Especial:Aplicativo')}
+                className="text-[11px] text-[#0645ad] dark:text-[#6ba4ff] hover:underline font-medium cursor-pointer"
+              >
+                Gerenciar em Especial:Aplicativo
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setWatchBanner(null)}
+              className="p-0.5 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer"
+              aria-label="Fechar aviso"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Title (firstHeading) */}
       <div className="mb-4">

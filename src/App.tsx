@@ -26,7 +26,7 @@ import { Footer } from './components/Footer';
 import { LocalSettingsModal } from './components/LocalSettingsModal';
 import { subscribeToPage } from './services/wikiService';
 import { WikiPage } from './types/wiki';
-import { Loader2, Blocks, Lock } from 'lucide-react';
+import { Loader2, Blocks, Lock, BellRing, X } from 'lucide-react';
 import { updateDocumentSEO } from './utils/seo';
 
 function WikiMain() {
@@ -40,6 +40,8 @@ function WikiMain() {
     settings,
     isExtensionActive,
     navigateToPage,
+    latestToastAlert,
+    dismissToastAlert,
   } = useWiki();
 
   const [currentPage, setCurrentPage] = useState<WikiPage | null>(null);
@@ -385,6 +387,45 @@ function WikiMain() {
       <LocalSettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
       {isExtensionActive('lgpd-privacy-suite') && <ConsentBanner />}
       {isExtensionActive('pwa-app') && <OfflineIndicator />}
+
+      {latestToastAlert && isExtensionActive('push-notifications') && (
+        <div className="print:hidden fixed bottom-4 right-4 z-50 max-w-sm w-[calc(100%-2rem)] bg-white dark:bg-gray-900 border border-[#3366cc] dark:border-blue-700 rounded-lg shadow-xl p-3.5 text-xs space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-gray-100">
+              <BellRing className="w-4 h-4 text-[#0645ad] dark:text-[#6ba4ff] shrink-0" />
+              <span className="truncate">
+                {latestToastAlert.isTest
+                  ? `Teste Push • ${latestToastAlert.pageTitle}`
+                  : `Nova edição em ${latestToastAlert.pageTitle}`}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={dismissToastAlert}
+              className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer"
+              aria-label="Fechar notificação"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="text-gray-600 dark:text-gray-300 leading-snug">
+            <strong className="text-gray-800 dark:text-gray-200">{latestToastAlert.author}:</strong>{' '}
+            {latestToastAlert.summary}
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                navigateToPage(latestToastAlert.pageSlug);
+                dismissToastAlert();
+              }}
+              className="px-2.5 py-1 rounded bg-[#3366cc] hover:bg-[#254b99] text-white font-medium cursor-pointer"
+            >
+              Abrir página
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

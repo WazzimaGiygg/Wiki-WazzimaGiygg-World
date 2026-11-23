@@ -258,6 +258,38 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    function isValidUserWatchlistId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUserWatchlist(data, userId) {
+      return data.keys().hasAll(['userId', 'slugs', 'notifyEnabled', 'notifyOwnEdits', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'slugs', 'notifyEnabled', 'notifyOwnEdits', 'updatedAt'])
+        && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 && data.userId == userId
+        && data.slugs is list && data.slugs.size() <= 200
+        && (data.slugs.size() == 0 || (data.slugs[0] is string && data.slugs[0].size() > 0 && data.slugs[0].size() <= 200))
+        && data.notifyEnabled is bool
+        && data.notifyOwnEdits is bool
+        && data.updatedAt is string && data.updatedAt.size() > 0 && data.updatedAt.size() <= 64;
+    }
+
+    // Per-user monitored pages watchlist and push notification preferences (strict owner isolation)
+    match /user_watchlists/{userId} {
+      allow get: if isSignedIn() && isValidUserWatchlistId(userId) && request.auth.uid == userId;
+      allow list: if false;
+      allow create: if isSignedIn()
+        && isValidUserWatchlistId(userId)
+        && request.auth.uid == userId
+        && isValidUserWatchlist(request.resource.data, userId);
+      allow update: if isSignedIn()
+        && isValidUserWatchlistId(userId)
+        && request.auth.uid == userId
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['slugs', 'notifyEnabled', 'notifyOwnEdits', 'updatedAt'])
+        && isValidUserWatchlist(request.resource.data, userId);
+      allow delete: if isSignedIn() && isValidUserWatchlistId(userId) && request.auth.uid == userId;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

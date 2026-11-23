@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Smartphone,
   Monitor,
@@ -14,17 +14,69 @@ import {
   TabletSmartphone,
   Info,
   ArrowLeft,
+  Bell,
+  BellRing,
+  BellOff,
+  Star,
+  Plus,
+  Trash2,
+  Send,
+  AlertTriangle,
+  Check,
+  Clock,
+  ExternalLink,
+  Blocks,
 } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useWiki } from '../context/WikiContext';
 import { WIKI_SITE_VERSION } from '../core/version';
+import { slugify } from '../core/parser';
 
 export const SpecialApp: React.FC = () => {
   const { isInstallable, isInstalled, isIOS, platform, install } = usePWAInstall();
   const isOnline = useOnlineStatus();
-  const { navigateToPage, settings } = useWiki();
+  const {
+    navigateToPage,
+    settings,
+    currentUser,
+    isExtensionActive,
+    existingPageSlugs,
+    watchedSlugs,
+    watchPage,
+    unwatchPage,
+    notificationPrefs,
+    updateNotificationPrefs,
+    notificationPermission,
+    requestNotificationPermission,
+    pushAlertHistory,
+    unreadAlertsCount,
+    markAllAlertsRead,
+    clearPushAlertHistory,
+    sendTestPushNotification,
+  } = useWiki();
+
+  const extPushNotifications = isExtensionActive('push-notifications');
+  const extPageWatchlist = isExtensionActive('page-watchlist');
+
   const [installFeedback, setInstallFeedback] = useState<string | null>(null);
+  const [newWatchSlug, setNewWatchSlug] = useState('');
+  const [pushFeedback, setPushFeedback] = useState<{ ok: boolean; text: string } | null>(null);
+  const [isSendingTest, setIsSendingTest] = useState(false);
+
+  // Mark alerts as read when user visits the alert history section
+  useEffect(() => {
+    if (unreadAlertsCount > 0) {
+      markAllAlertsRead();
+    }
+  }, [unreadAlertsCount, markAllAlertsRead]);
+
+  const suggestedSlugs = useMemo(() => {
+    const arr = Array.from(existingPageSlugs)
+      .filter(s => s && !s.startsWith('Especial:') && !s.startsWith('Special:'))
+      .sort((a, b) => a.localeCompare(b));
+    return Array.from(new Set(arr)).slice(0, 60);
+  }, [existingPageSlugs]);
 
   const handleInstallClick = async () => {
     const accepted = await install();
@@ -35,6 +87,50 @@ export const SpecialApp: React.FC = () => {
     }
   };
 
+  const handleRequestPermission = async () => {
+    const result = await requestNotificationPermission();
+    if (result === 'granted') {
+      setPushFeedback({
+        ok: true,
+        text: 'Permissão concedida! Você receberá alertas push no navegador sempre que suas páginas monitoradas forem editadas.',
+      });
+    } else if (result === 'denied') {
+      setPushFeedback({
+        ok: false,
+        text: 'Permissão negada no navegador. Para reativar, clique no ícone de cadeado/configurações ao lado do endereço do site.',
+      });
+    } else if (result === 'unsupported') {
+      setPushFeedback({
+        ok: false,
+        text: 'Este navegador ou modo de navegação não oferece suporte à API de Notificações.',
+      });
+    } else {
+      setPushFeedback({
+        ok: false,
+        text: 'Solicitação fechada sem escolha. Clique novamente quando quiser autorizar.',
+      });
+    }
+  };
+
+  const handleSendTest = async () => {
+    setIsSendingTest(true);
+    setPushFeedback(null);
+    try {
+      const res = await sendTestPushNotification();
+      setPushFeedback({ ok: res.ok, text: res.message });
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
+
+  const handleAddWatchPage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newWatchSlug.trim();
+    if (!trimmed) return;
+    await watchPage(slugify(trimmed));
+    setNewWatchSlug('');
+  };
+
   const platformLabel: Record<string, string> = {
     android: 'Smartphone / Tablet Android',
     ios: 'iPhone / iPad (iOS / iPadOS)',
@@ -42,6 +138,39 @@ export const SpecialApp: React.FC = () => {
     macos: 'Computador macOS',
     linux: 'Computador Linux',
     other: 'Navegador Web',
+  };
+
+  const permissionBadge = () => {
+    if (notificationPermission === 'granted') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800 text-xs font-semibold">
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span>Permitidas no navegador</span>
+        </span>
+      );
+    }
+    if (notificationPermission === 'denied') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-200 border border-red-300 dark:border-red-800 text-xs font-semibold">
+          <BellOff className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+          <span>Bloqueadas pelo navegador</span>
+        </span>
+      );
+    }
+    if (notificationPermission === 'unsupported') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 text-xs font-semibold">
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+          <span>Navegador incompatível</span>
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-800 text-xs font-semibold">
+        <Bell className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+        <span>Aguardando autorização</span>
+      </span>
+    );
   };
 
   return (
@@ -63,7 +192,7 @@ export const SpecialApp: React.FC = () => {
           </button>
         </div>
         <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-          Especial:Aplicativo • Instale a enciclopédia como aplicativo independente (PWA) no Android, iPhone, iPad, Windows, macOS e Linux.
+          Especial:Aplicativo • Instale a enciclopédia como aplicativo independente (PWA) e gerencie notificações push de páginas monitoradas.
         </p>
       </div>
 
@@ -125,6 +254,281 @@ export const SpecialApp: React.FC = () => {
           <span>{installFeedback}</span>
         </div>
       )}
+
+      {/* ======================================================================== */}
+      {/* PUSH NOTIFICATIONS & MONITORED PAGES MANAGEMENT PANEL                    */}
+      {/* ======================================================================== */}
+      <section
+        id="notificacoes-push"
+        className="p-5 bg-white dark:bg-gray-900 border border-[#a2a9b1] dark:border-gray-700 rounded shadow-2xs space-y-5"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-gray-200 dark:border-gray-800">
+          <div className="flex items-start gap-2.5">
+            <BellRing className="w-5 h-5 text-[#0645ad] dark:text-[#6ba4ff] mt-0.5 shrink-0" />
+            <div>
+              <h2 className="text-lg font-serif font-bold text-gray-900 dark:text-gray-100">
+                Notificações Push de Páginas Monitoradas
+              </h2>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                Receba alertas em tempo real no navegador ou aplicativo PWA sempre que qualquer página da sua lista de vigiadas receber uma nova edição.
+              </p>
+            </div>
+          </div>
+          {permissionBadge()}
+        </div>
+
+        {!extPushNotifications || !extPageWatchlist ? (
+          <div className="p-4 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 text-xs text-amber-950 dark:text-amber-200 flex flex-wrap items-center justify-between gap-3">
+            <span>
+              As extensões <code>push-notifications</code> ou <code>page-watchlist</code> estão desativadas no momento.
+            </span>
+            <button
+              type="button"
+              onClick={() => navigateToPage('Especial:Extensões')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#3366cc] hover:bg-[#254b99] text-white font-medium cursor-pointer"
+            >
+              <Blocks className="w-3.5 h-3.5" />
+              <span>Ativar em Especial:Extensões</span>
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Permission Actions & Toggles */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs">
+              {/* Browser Permission Control */}
+              <div className="p-4 rounded bg-[#f8f9fa] dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 space-y-3">
+                <div className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                  <Bell className="w-4 h-4 text-[#0645ad] dark:text-[#6ba4ff]" />
+                  <span>Permissão de Notificações do Navegador</span>
+                </div>
+
+                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                  {notificationPermission === 'granted'
+                    ? 'Seu navegador já está autorizado a exibir notificações push via Service Worker mesmo em outras abas.'
+                    : notificationPermission === 'denied'
+                    ? 'As notificações foram bloqueadas para este site nas configurações do navegador. Clique no ícone de cadeado na barra de endereços, defina "Notificações" como "Permitir" e recarregue.'
+                    : notificationPermission === 'unsupported'
+                    ? 'O navegador atual não disponibiliza a API Notification (ou você está em um contexto sem suporte). Em iOS/iPadOS, instale o app na Tela de Início pelo Safari.'
+                    : 'Autorize as notificações para receber avisos instantâneos quando páginas vigiadas forem modificadas.'}
+                </p>
+
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {notificationPermission !== 'granted' && notificationPermission !== 'unsupported' && (
+                    <button
+                      type="button"
+                      onClick={handleRequestPermission}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-[#3366cc] hover:bg-[#254b99] text-white font-semibold shadow-2xs cursor-pointer transition-colors"
+                    >
+                      <BellRing className="w-3.5 h-3.5" />
+                      <span>
+                        {notificationPermission === 'denied'
+                          ? 'Verificar Permissão Novamente'
+                          : 'Permitir Notificações no Navegador'}
+                      </span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    disabled={isSendingTest || notificationPermission === 'unsupported'}
+                    onClick={handleSendTest}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-[#a2a9b1] dark:border-gray-600 text-gray-800 dark:text-gray-200 font-semibold cursor-pointer disabled:opacity-50 transition-colors"
+                  >
+                    <Send className="w-3.5 h-3.5 text-[#0645ad] dark:text-[#6ba4ff]" />
+                    <span>{isSendingTest ? 'Enviando...' : 'Enviar Notificação de Teste'}</span>
+                  </button>
+                </div>
+
+                {pushFeedback && (
+                  <div
+                    className={`p-2.5 rounded border text-[11px] flex items-start gap-2 ${
+                      pushFeedback.ok
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+                        : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200'
+                    }`}
+                  >
+                    {pushFeedback.ok ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                    )}
+                    <span>{pushFeedback.text}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Alert Preferences */}
+              <div className="p-4 rounded bg-[#f8f9fa] dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 space-y-3">
+                <div className="font-bold text-gray-900 dark:text-gray-100 flex items-center justify-between gap-2">
+                  <span>Preferências de Monitoramento</span>
+                  <span className="text-[10px] font-normal px-2 py-0.5 rounded bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">
+                    {currentUser.isAnonymous ? 'Armazenamento local' : 'Sincronizado no Firestore'}
+                  </span>
+                </div>
+
+                <label className="flex items-start justify-between gap-3 p-2.5 rounded bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 cursor-pointer">
+                  <div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">
+                      Alertas push em tempo real
+                    </div>
+                    <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                      Dispara notificações instantâneas quando páginas monitoradas recebem novas revisões no Firestore.
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.notifyEnabled}
+                    onChange={e => updateNotificationPrefs({ notifyEnabled: e.target.checked })}
+                    className="mt-1 h-4 w-4 accent-[#3366cc] cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-start justify-between gap-3 p-2.5 rounded bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 cursor-pointer">
+                  <div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">
+                      Notificar também minhas próprias edições
+                    </div>
+                    <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                      Útil para validar alertas ao editar uma página monitorada na mesma conta.
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.notifyOwnEdits}
+                    onChange={e => updateNotificationPrefs({ notifyOwnEdits: e.target.checked })}
+                    className="mt-1 h-4 w-4 accent-[#3366cc] cursor-pointer"
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Watched Pages List + Recent Alerts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs">
+              {/* Monitored Pages List */}
+              <div className="p-4 rounded bg-[#f8f9fa] dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                    <Star className="w-4 h-4 text-amber-500 fill-current" />
+                    <span>Páginas Monitoradas ({watchedSlugs.length})</span>
+                  </div>
+                  {watchedSlugs.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => watchPage('Página_principal')}
+                      className="text-[11px] text-[#0645ad] dark:text-[#6ba4ff] hover:underline font-medium cursor-pointer"
+                    >
+                      + Monitorar Página Principal
+                    </button>
+                  )}
+                </div>
+
+                <form onSubmit={handleAddWatchPage} className="flex gap-2">
+                  <input
+                    type="text"
+                    list="wiki-watch-suggestions"
+                    value={newWatchSlug}
+                    onChange={e => setNewWatchSlug(e.target.value)}
+                    placeholder="Adicionar artigo (ex: Página_principal)"
+                    className="flex-1 min-w-0 px-2.5 py-1.5 rounded bg-white dark:bg-gray-900 border border-[#a2a9b1] dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:border-[#3366cc]"
+                  />
+                  <datalist id="wiki-watch-suggestions">
+                    {suggestedSlugs.map(s => (
+                      <option key={s} value={s} />
+                    ))}
+                  </datalist>
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-[#3366cc] hover:bg-[#254b99] text-white font-medium cursor-pointer shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Monitorar</span>
+                  </button>
+                </form>
+
+                {watchedSlugs.length === 0 ? (
+                  <div className="p-3 rounded bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-center">
+                    Nenhuma página monitorada ainda. Clique na estrela (<Star className="w-3 h-3 inline text-amber-500" />) no topo de qualquer artigo ou adicione acima.
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded max-h-60 overflow-y-auto">
+                    {watchedSlugs.map(slugItem => (
+                      <li key={slugItem} className="px-3 py-2 flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => navigateToPage(slugItem)}
+                          className="text-left font-medium text-[#0645ad] dark:text-[#6ba4ff] hover:underline truncate flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Star className="w-3.5 h-3.5 text-amber-500 fill-current shrink-0" />
+                          <span className="truncate">{slugItem.replace(/_/g, ' ')}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => unwatchPage(slugItem)}
+                          className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded cursor-pointer shrink-0"
+                          title="Parar de monitorar esta página"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Recent Push Alert History */}
+              <div className="p-4 rounded bg-[#f8f9fa] dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-[#0645ad] dark:text-[#6ba4ff]" />
+                    <span>Alertas Recentes ({pushAlertHistory.length})</span>
+                  </div>
+                  {pushAlertHistory.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={clearPushAlertHistory}
+                      className="text-[11px] text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:underline cursor-pointer"
+                    >
+                      Limpar histórico
+                    </button>
+                  )}
+                </div>
+
+                {pushAlertHistory.length === 0 ? (
+                  <div className="p-4 rounded bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-center">
+                    Nenhum alerta disparado nesta sessão. Quando uma página monitorada for editada, o registro aparecerá aqui.
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded max-h-60 overflow-y-auto">
+                    {pushAlertHistory.map(alert => (
+                      <li key={alert.id} className="p-2.5 space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => navigateToPage(alert.pageSlug)}
+                            className="font-semibold text-[#0645ad] dark:text-[#6ba4ff] hover:underline flex items-center gap-1 truncate cursor-pointer"
+                          >
+                            <span className="truncate">{alert.pageTitle}</span>
+                            <ExternalLink className="w-3 h-3 shrink-0" />
+                          </button>
+                          <span className="text-[10px] text-gray-400 shrink-0 font-mono">
+                            {new Date(alert.timestamp).toLocaleTimeString('pt-BR', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-gray-600 dark:text-gray-300">
+                          <span className="font-medium">{alert.author}</span>: {alert.summary}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </section>
 
       {/* Platform Instructions Grid: Smartphone & Desktop */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
