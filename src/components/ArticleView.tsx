@@ -53,7 +53,25 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
   onViewHistory,
   onViewTalk,
 }) => {
-  const { existingPageSlugs, navigateToPage, activeTab, setActiveTab, currentUser, loginWithGoogle } = useWiki();
+  const {
+    existingPageSlugs,
+    navigateToPage,
+    activeTab,
+    setActiveTab,
+    currentUser,
+    loginWithGoogle,
+    isExtensionActive,
+    disabledExtensionIds,
+  } = useWiki();
+
+  const extTalkPages = isExtensionActive('talk-pages');
+  const extRevisionHistory = isExtensionActive('revision-history');
+  const extPageProtection = isExtensionActive('page-protection');
+  const extPageWatchlist = isExtensionActive('page-watchlist');
+  const extAutoToc = isExtensionActive('auto-toc');
+  const extCategories = isExtensionActive('dynamic-page-list');
+  const extTemplates = isExtensionActive('templates-transclusion');
+  const extLgpd = isExtensionActive('lgpd-privacy-suite');
   const [showTOC, setShowTOC] = useState(true);
   const [isWatched, setIsWatched] = useState(false);
   const [showProtectionModal, setShowProtectionModal] = useState(false);
@@ -110,8 +128,9 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
       pageSlug: page.slug,
       namespace: page.namespace,
       totalPages: existingPageSlugs.size,
+      disabledExtensions: disabledExtensionIds,
     });
-  }, [page, existingPageSlugs, templatesVersion]);
+  }, [page, existingPageSlugs, templatesVersion, disabledExtensionIds]);
 
   // Handle clicks on internal wiki links inside the parsed HTML
   useEffect(() => {
@@ -244,18 +263,20 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
               ? 'Wiki'
               : 'Artigo'}
           </button>
-          <button
-            type="button"
-            onClick={onViewTalk}
-            className={`px-3.5 py-1.5 border-t border-r border-l rounded-t transition-colors font-medium flex items-center gap-1 ${
-              activeTab === 'talk'
-                ? 'bg-white dark:bg-[#1a1f2c] border-[#a2a9b1] dark:border-gray-700 text-gray-900 dark:text-gray-100 border-b-transparent'
-                : 'bg-[#f8f9fa] dark:bg-gray-800/60 border-transparent text-[#0645ad] dark:text-[#6ba4ff] hover:text-blue-800'
-            }`}
-          >
-            <MessageSquare className="w-3 h-3" />
-            <span>Discussão</span>
-          </button>
+          {extTalkPages && (
+            <button
+              type="button"
+              onClick={onViewTalk}
+              className={`px-3.5 py-1.5 border-t border-r border-l rounded-t transition-colors font-medium flex items-center gap-1 ${
+                activeTab === 'talk'
+                  ? 'bg-white dark:bg-[#1a1f2c] border-[#a2a9b1] dark:border-gray-700 text-gray-900 dark:text-gray-100 border-b-transparent'
+                  : 'bg-[#f8f9fa] dark:bg-gray-800/60 border-transparent text-[#0645ad] dark:text-[#6ba4ff] hover:text-blue-800'
+              }`}
+            >
+              <MessageSquare className="w-3 h-3" />
+              <span>Discussão</span>
+            </button>
+          )}
         </div>
 
         {/* Right Tabs (Read / Edit / History / Star) */}
@@ -294,16 +315,18 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={onViewHistory}
-            className="px-3 py-1.5 border-t border-r border-l border-transparent rounded-t font-medium text-[#0645ad] dark:text-[#6ba4ff] hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-1 cursor-pointer"
-          >
-            <History className="w-3 h-3" />
-            <span>Ver histórico</span>
-          </button>
+          {extRevisionHistory && (
+            <button
+              type="button"
+              onClick={onViewHistory}
+              className="px-3 py-1.5 border-t border-r border-l border-transparent rounded-t font-medium text-[#0645ad] dark:text-[#6ba4ff] hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-1 cursor-pointer"
+            >
+              <History className="w-3 h-3" />
+              <span>Ver histórico</span>
+            </button>
+          )}
 
-          {(currentUser.isBureaucrat || currentUser.isAdmin) && (
+          {extPageProtection && (currentUser.isBureaucrat || currentUser.isAdmin) && (
             <button
               type="button"
               onClick={() => setShowProtectionModal(true)}
@@ -327,16 +350,18 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={() => setIsWatched(prev => !prev)}
-            className={`p-1.5 rounded-t text-gray-500 hover:text-amber-500 cursor-pointer ${
-              isWatched ? 'text-amber-500' : ''
-            }`}
-            title={isWatched ? 'Desvigiar esta página' : 'Vigiar esta página'}
-          >
-            <Star className={`w-3.5 h-3.5 ${isWatched ? 'fill-current' : ''}`} />
-          </button>
+          {extPageWatchlist && (
+            <button
+              type="button"
+              onClick={() => setIsWatched(prev => !prev)}
+              className={`p-1.5 rounded-t text-gray-500 hover:text-amber-500 cursor-pointer ${
+                isWatched ? 'text-amber-500' : ''
+              }`}
+              title={isWatched ? 'Desvigiar esta página' : 'Vigiar esta página'}
+            >
+              <Star className={`w-3.5 h-3.5 ${isWatched ? 'fill-current' : ''}`} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -383,7 +408,7 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
       </div>
 
       {/* Table of Contents (TOC) */}
-      {parseResult.toc.length >= 2 && (
+      {extAutoToc && parseResult.toc.length >= 2 && (
         <div className="toc my-4 p-3 max-w-sm rounded border border-[#a2a9b1] dark:border-gray-700 bg-[#f8f9fa] dark:bg-gray-900 text-xs shadow-2xs">
           <div className="flex items-center justify-between pb-1.5 border-b border-gray-200 dark:border-gray-800">
             <span className="font-bold text-gray-800 dark:text-gray-200">Índice</span>
@@ -453,7 +478,7 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
       )}
 
       {/* MediaWiki Template Namespace Usage Banner */}
-      {isTemplatePage && templateMeta && (
+      {extTemplates && isTemplatePage && templateMeta && (
         <div className="print:hidden my-4 p-3.5 bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded text-xs space-y-2 shadow-2xs">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 font-semibold text-indigo-950 dark:text-indigo-200">
@@ -510,7 +535,7 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
       />
 
       {/* Categories Box (mw-catlinks) */}
-      {parseResult.categories.length > 0 && (
+      {extCategories && parseResult.categories.length > 0 && (
         <div
           id="catlinks"
           className="my-6 p-2 bg-[#f8f9fa] dark:bg-gray-900 border border-[#a2a9b1] dark:border-gray-700 rounded text-xs flex flex-wrap items-center gap-1.5 text-gray-700 dark:text-gray-300"
@@ -574,31 +599,33 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
             </button>
           </div>
         </div>
-        <div className="print:hidden pt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
-          <button
-            type="button"
-            onClick={() => navigateToPage('Wiki:Política_de_Privacidade')}
-            className="text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer"
-          >
-            Política de Privacidade (LGPD)
-          </button>
-          <span className="text-gray-300 dark:text-gray-700">·</span>
-          <button
-            type="button"
-            onClick={() => navigateToPage('Wiki:Termos_de_Uso')}
-            className="text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer"
-          >
-            Termos de Uso (Marco Civil da Internet)
-          </button>
-          <span className="text-gray-300 dark:text-gray-700">·</span>
-          <button
-            type="button"
-            onClick={() => navigateToPage('Especial:Privacidade')}
-            className="text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer"
-          >
-            Central de Privacidade e Direitos do Titular
-          </button>
-        </div>
+        {extLgpd && (
+          <div className="print:hidden pt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+            <button
+              type="button"
+              onClick={() => navigateToPage('Wiki:Política_de_Privacidade')}
+              className="text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer"
+            >
+              Política de Privacidade (LGPD)
+            </button>
+            <span className="text-gray-300 dark:text-gray-700">·</span>
+            <button
+              type="button"
+              onClick={() => navigateToPage('Wiki:Termos_de_Uso')}
+              className="text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer"
+            >
+              Termos de Uso (Marco Civil da Internet)
+            </button>
+            <span className="text-gray-300 dark:text-gray-700">·</span>
+            <button
+              type="button"
+              onClick={() => navigateToPage('Especial:Privacidade')}
+              className="text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer"
+            >
+              Central de Privacidade e Direitos do Titular
+            </button>
+          </div>
+        )}
       </footer>
 
       {/* Page Protection Modal */}

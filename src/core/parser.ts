@@ -20,6 +20,7 @@ export interface ParseWikitextOptions {
   pageSlug?: string;
   namespace?: PageNamespace;
   totalPages?: number;
+  disabledExtensions?: string[] | Set<string>;
 }
 
 const NAMESPACE_LABELS: Record<PageNamespace, string> = {
@@ -66,6 +67,11 @@ export function parseWikitext(
     return { html: '', toc: [], categories: [], references: [] };
   }
 
+  const disabledSet = options?.disabledExtensions
+    ? new Set(options.disabledExtensions)
+    : new Set<string>();
+  const isExtActive = (id: string) => !disabledSet.has(id);
+
   let text = wikitext;
   const categories: string[] = [];
   const references: string[] = [];
@@ -78,30 +84,42 @@ export function parseWikitext(
   const protectLiteralSyntaxes = (raw: string): string => {
     let out = raw;
 
-    // Protect <syntaxhighlight> blocks
-    out = out.replace(
-      /<syntaxhighlight(?:\s+lang="([^"]*)")?\s*>([\s\S]*?)<\/syntaxhighlight>/gi,
-      (_, lang, code) => {
-        const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
-        const escaped = escapeHtml(code.trim());
-        codeBlocks.push(
-          `<div class="my-4 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-x-auto text-xs font-mono">
+    if (isExtActive('syntax-highlight')) {
+      // Protect <syntaxhighlight> blocks
+      out = out.replace(
+        /<syntaxhighlight(?:\s+lang="([^"]*)")?\s*>([\s\S]*?)<\/syntaxhighlight>/gi,
+        (_, lang, code) => {
+          const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+          const escaped = escapeHtml(code.trim());
+          codeBlocks.push(
+            `<div class="my-4 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-x-auto text-xs font-mono">
         ${lang ? `<div class="px-3 py-1 bg-gray-200 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-sans font-semibold">${escapeHtml(lang)}</div>` : ''}
         <pre class="p-3 leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre"><code>${escaped}</code></pre>
       </div>`
+          );
+          return placeholder;
+        }
+      );
+
+      // Protect <pre> blocks
+      out = out.replace(/<pre(?:\s+[^>]*)?>([\s\S]*?)<\/pre>/gi, (_, code) => {
+        const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+        codeBlocks.push(
+          `<div class="my-4 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-x-auto text-xs font-mono"><pre class="p-3 leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre"><code>${escapeHtml(code.trim())}</code></pre></div>`
         );
         return placeholder;
-      }
-    );
+      });
+    }
 
-    // Protect <pre> blocks
-    out = out.replace(/<pre(?:\s+[^>]*)?>([\s\S]*?)<\/pre>/gi, (_, code) => {
-      const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
-      codeBlocks.push(
-        `<div class="my-4 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-x-auto text-xs font-mono"><pre class="p-3 leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre"><code>${escapeHtml(code.trim())}</code></pre></div>`
-      );
-      return placeholder;
-    });
+    if (isExtActive('math')) {
+      out = out.replace(/<math>([\s\S]*?)<\/math>/gi, (_, formula) => {
+        const placeholder = `__INLINE_CODE_${inlineCodeBlocks.length}__`;
+        inlineCodeBlocks.push(
+          `<span class="inline-block px-2 py-0.5 mx-0.5 rounded bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800 font-serif italic text-gray-900 dark:text-blue-100 text-sm" title="Expressão Matemática (TeX)">${escapeHtml(formula.trim())}</span>`
+        );
+        return placeholder;
+      });
+    }
 
     // Protect <nowiki>...</nowiki> literal spans
     out = out.replace(/<nowiki>([\s\S]*?)<\/nowiki>/gi, (_, literal) => {
@@ -110,14 +128,16 @@ export function parseWikitext(
       return placeholder;
     });
 
-    // Protect inline `...` literals before template/magic-word expansion
-    out = out.replace(/`([^`\n]+)`/g, (_, codeLiteral) => {
-      const placeholder = `__INLINE_CODE_${inlineCodeBlocks.length}__`;
-      inlineCodeBlocks.push(
-        `<code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 font-mono text-xs">${escapeHtml(codeLiteral)}</code>`
-      );
-      return placeholder;
-    });
+    if (isExtActive('syntax-highlight')) {
+      // Protect inline `...` literals before template/magic-word expansion
+      out = out.replace(/`([^`\n]+)`/g, (_, codeLiteral) => {
+        const placeholder = `__INLINE_CODE_${inlineCodeBlocks.length}__`;
+        inlineCodeBlocks.push(
+          `<code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 font-mono text-xs">${escapeHtml(codeLiteral)}</code>`
+        );
+        return placeholder;
+      });
+    }
 
     return out;
   };
@@ -131,52 +151,66 @@ export function parseWikitext(
     /^(?:Predefinição|Predefinicao|Template):/i.test(
       options?.pageSlug || options?.pageTitle || ''
     );
-  if (isTemplatePage) {
+  if (isTemplatePage && isExtActive('templates-transclusion')) {
     text = stripTemplateViewingTags(text);
   }
 
   // 3. Expand MediaWiki Templates ({{Predefinição}}), Magic Words ({{PAGENAME}}), and ParserFunctions ({{#if:}})
-  text = expandTemplatesAndFunctions(text, {
-    existingPages,
-    options,
-    protectFn: protectLiteralSyntaxes,
-    visitedStack: new Set<string>(),
-    depth: 0,
-  });
+  if (isExtActive('templates-transclusion') || isExtActive('parser-functions')) {
+    text = expandTemplatesAndFunctions(text, {
+      existingPages,
+      options,
+      protectFn: protectLiteralSyntaxes,
+      visitedStack: new Set<string>(),
+      depth: 0,
+      enableTemplates: isExtActive('templates-transclusion'),
+      enableParserFunctions: isExtActive('parser-functions'),
+    });
+  }
 
   // 4. Extract Categories [[Categoria:...]] or [[Category:...]] (including ones emitted by templates!)
-  text = text.replace(/\[\[(?:Categoria|Category):([^\]]+)\]\]/gi, (_, catName) => {
-    const trimmed = catName.trim();
-    if (trimmed && !categories.includes(trimmed)) {
-      categories.push(trimmed);
-    }
-    return '';
-  });
+  if (isExtActive('dynamic-page-list')) {
+    text = text.replace(/\[\[(?:Categoria|Category):([^\]]+)\]\]/gi, (_, catName) => {
+      const trimmed = catName.trim();
+      if (trimmed && !categories.includes(trimmed)) {
+        categories.push(trimmed);
+      }
+      return '';
+    });
+  }
 
   // 5. Extract Footnotes / References <ref>...</ref>
-  text = text.replace(/<ref(?:\s+[^>]*)?>([\s\S]*?)<\/ref>/gi, (_, refContent) => {
-    references.push(refContent.trim());
-    const refIndex = references.length;
-    return `__REF_${refIndex}__`;
-  });
+  if (isExtActive('cite')) {
+    text = text.replace(/<ref(?:\s+[^>]*)?>([\s\S]*?)<\/ref>/gi, (_, refContent) => {
+      references.push(refContent.trim());
+      const refIndex = references.length;
+      return `__REF_${refIndex}__`;
+    });
+  }
 
   // 6. Process Infoboxes: {{Infobox ... | key = val }}
-  text = text.replace(/\{\{Infobox([\s\S]*?)\}\}/gi, (_, boxContent) => {
-    return parseInfobox(boxContent);
-  });
+  if (isExtActive('scribunto')) {
+    text = text.replace(/\{\{Infobox([\s\S]*?)\}\}/gi, (_, boxContent) => {
+      return parseInfobox(boxContent);
+    });
+  }
 
   // 7. Process Fallback Built-in Notices if {{Aviso|...}} wasn't overridden by Predefinição:Aviso
-  text = text.replace(/\{\{(?:Aviso|Notice)\|([\s\S]*?)\}\}/gi, (_, noticeContent) => {
-    return `<div class="my-3 p-3 bg-amber-50 dark:bg-amber-950/40 border-l-4 border-amber-500 rounded text-sm text-amber-900 dark:text-amber-200 flex items-start gap-2 shadow-xs">
+  if (isExtActive('templates-transclusion')) {
+    text = text.replace(/\{\{(?:Aviso|Notice)\|([\s\S]*?)\}\}/gi, (_, noticeContent) => {
+      return `<div class="my-3 p-3 bg-amber-50 dark:bg-amber-950/40 border-l-4 border-amber-500 rounded text-sm text-amber-900 dark:text-amber-200 flex items-start gap-2 shadow-xs">
       <span class="text-amber-600 dark:text-amber-400 font-bold">ℹ</span>
       <div>${parseInlineWikitext(noticeContent.trim(), existingPages)}</div>
     </div>`;
-  });
+    });
+  }
 
   // 8. Process Wikitables: {| ... |}
-  text = text.replace(/\{\|([\s\S]*?)\|\}/g, (_, tableContent) => {
-    return parseWikitable(tableContent);
-  });
+  if (isExtActive('wikitable-parser')) {
+    text = text.replace(/\{\|([\s\S]*?)\|\}/g, (_, tableContent) => {
+      return parseWikitable(tableContent);
+    });
+  }
 
   // 9. Parse Headings & collect TOC: == Heading ==, === Sub ===
   const headingCounters = [0, 0, 0, 0];
@@ -281,9 +315,10 @@ export function parseWikitext(
   });
 
   // 15. Handle <references /> and {{reflist}}
-  const referencesHtml =
-    references.length > 0
-      ? `
+  if (isExtActive('cite')) {
+    const referencesHtml =
+      references.length > 0
+        ? `
     <div class="mw-references-wrap my-4 pt-2 border-t border-gray-200 dark:border-gray-800 text-xs">
       <h3 class="font-serif font-medium text-base mb-2 text-gray-800 dark:text-gray-200">Referências</h3>
       <ol class="list-decimal pl-6 space-y-1 text-gray-600 dark:text-gray-400">
@@ -300,12 +335,13 @@ export function parseWikitext(
       </ol>
     </div>
   `
-      : '';
+        : '';
 
-  if (text.includes('<references') || /\{\{reflist\}\}/i.test(text)) {
-    text = text.replace(/<references\s*\/?>|\{\{reflist\}\}/gi, referencesHtml);
-  } else if (references.length > 0 && !text.includes('cite_note-')) {
-    text += referencesHtml;
+    if (text.includes('<references') || /\{\{reflist\}\}/i.test(text)) {
+      text = text.replace(/<references\s*\/?>|\{\{reflist\}\}/gi, referencesHtml);
+    } else if (references.length > 0 && !text.includes('cite_note-')) {
+      text += referencesHtml;
+    }
   }
 
   // 16. Sanitize resulting HTML against XSS while keeping MediaWiki template styling intact
@@ -313,9 +349,9 @@ export function parseWikitext(
 
   return {
     html: text,
-    toc,
-    categories,
-    references,
+    toc: isExtActive('auto-toc') ? toc : [],
+    categories: isExtActive('dynamic-page-list') ? categories : [],
+    references: isExtActive('cite') ? references : [],
   };
 }
 
@@ -329,6 +365,8 @@ interface ExpansionContext {
   protectFn: (raw: string) => string;
   visitedStack: Set<string>;
   depth: number;
+  enableTemplates?: boolean;
+  enableParserFunctions?: boolean;
 }
 
 const MAX_TEMPLATE_DEPTH = 10;
@@ -823,7 +861,7 @@ function expandTemplatesAndFunctions(input: string, ctx: ExpansionContext): stri
 
         // 1. Check ParserFunctions with colon syntax: {{#if:...}}, {{#ifeq:...}}, {{#switch:...}}, {{#expr:...}}, {{lc:...}}, {{uc:...}}
         const colonIdx = headTrimmed.indexOf(':');
-        if (colonIdx > 0) {
+        if (colonIdx > 0 && ctx.enableParserFunctions !== false) {
           const maybeFunc = headTrimmed.slice(0, colonIdx).trim();
           const lowerFunc = maybeFunc.toLowerCase();
           if (
@@ -845,7 +883,7 @@ function expandTemplatesAndFunctions(input: string, ctx: ExpansionContext): stri
         }
 
         // 2. Check Magic Words (no args)
-        if (restParts.length === 0) {
+        if (restParts.length === 0 && ctx.enableParserFunctions !== false) {
           const magicVal = resolveMagicWord(headTrimmed, ctx);
           if (magicVal !== null) {
             out += magicVal;
@@ -854,61 +892,68 @@ function expandTemplatesAndFunctions(input: string, ctx: ExpansionContext): stri
           }
         }
 
-        // 3. Resolve Transcluded Template / Article from live cache
-        const expandedHead = expandTemplatesAndFunctions(headTrimmed, {
-          ...ctx,
-          depth: ctx.depth + 1,
-        }).trim();
+        // 3. Resolve Transcluded Template / Article from live cache (only when templates-transclusion is active)
+        if (ctx.enableTemplates !== false) {
+          const expandedHead = expandTemplatesAndFunctions(headTrimmed, {
+            ...ctx,
+            depth: ctx.depth + 1,
+          }).trim();
 
-        const targetPage = resolveTranscludedPage(expandedHead);
-        if (targetPage) {
-          const loopKey = targetPage.slug.toLowerCase();
-          if (ctx.visitedStack.has(loopKey)) {
-            out += `<span class="text-red-600 dark:text-red-400 font-mono text-xs">[Ciclo de predefinição detectado: ${escapeHtml(targetPage.title)}]</span>`;
+          const targetPage = resolveTranscludedPage(expandedHead);
+          if (targetPage) {
+            const loopKey = targetPage.slug.toLowerCase();
+            if (ctx.visitedStack.has(loopKey)) {
+              out += `<span class="text-red-600 dark:text-red-400 font-mono text-xs">[Ciclo de predefinição detectado: ${escapeHtml(targetPage.title)}]</span>`;
+              i = j;
+              continue;
+            }
+
+            // Expand each argument before substituting so nested {{...}} inside arguments resolve cleanly
+            const expandedArgs = restParts.map(arg =>
+              expandTemplatesAndFunctions(arg, { ...ctx, depth: ctx.depth + 1 })
+            );
+            const argsMap = buildArgsMap(expandedArgs);
+
+            let transcludedBody = extractTransclusionBody(targetPage.content);
+            transcludedBody = ctx.protectFn(transcludedBody);
+            transcludedBody = substituteParameters(transcludedBody, argsMap);
+
+            const nextVisited = new Set(ctx.visitedStack);
+            nextVisited.add(loopKey);
+
+            out += expandTemplatesAndFunctions(transcludedBody, {
+              ...ctx,
+              visitedStack: nextVisited,
+              depth: ctx.depth + 1,
+            });
             i = j;
             continue;
           }
 
-          // Expand each argument before substituting so nested {{...}} inside arguments resolve cleanly
-          const expandedArgs = restParts.map(arg =>
-            expandTemplatesAndFunctions(arg, { ...ctx, depth: ctx.depth + 1 })
-          );
-          const argsMap = buildArgsMap(expandedArgs);
+          // 4. Built-in fallback for {{Aviso|...}} / {{Notice|...}} if Predefinição:Aviso was not seeded
+          if (/^(?:Aviso|Notice)$/i.test(expandedHead) && restParts.length > 0) {
+            const expandedRest = restParts
+              .map(arg => expandTemplatesAndFunctions(arg, { ...ctx, depth: ctx.depth + 1 }))
+              .join('|');
+            out += `{{Aviso|${expandedRest}}}`;
+            i = j;
+            continue;
+          }
 
-          let transcludedBody = extractTransclusionBody(targetPage.content);
-          transcludedBody = ctx.protectFn(transcludedBody);
-          transcludedBody = substituteParameters(transcludedBody, argsMap);
-
-          const nextVisited = new Set(ctx.visitedStack);
-          nextVisited.add(loopKey);
-
-          out += expandTemplatesAndFunctions(transcludedBody, {
-            ...ctx,
-            visitedStack: nextVisited,
-            depth: ctx.depth + 1,
-          });
+          // 5. Missing template -> authentic MediaWiki red link [[Predefinição:Nome]]
+          if (expandedHead) {
+            const isMainNsTransclusion = expandedHead.startsWith(':');
+            const missingTarget = isMainNsTransclusion
+              ? expandedHead.slice(1).trim()
+              : `Predefinição:${stripTemplateNamespacePrefix(expandedHead)}`;
+            out += `[[${missingTarget}]]`;
+          }
           i = j;
           continue;
         }
 
-        // 4. Built-in fallback for {{Aviso|...}} / {{Notice|...}} if Predefinição:Aviso was not seeded
-        if (/^(?:Aviso|Notice)$/i.test(expandedHead) && restParts.length > 0) {
-          const expandedRest = restParts
-            .map(arg => expandTemplatesAndFunctions(arg, { ...ctx, depth: ctx.depth + 1 }))
-            .join('|');
-          out += `{{Aviso|${expandedRest}}}`;
-          i = j;
-          continue;
-        }
-
-        // 5. Missing template -> authentic MediaWiki red link [[Predefinição:Nome]]
-        if (expandedHead) {
-          const isMainNsTransclusion = expandedHead.startsWith(':');
-          const missingTarget = isMainNsTransclusion
-            ? expandedHead.slice(1).trim()
-            : `Predefinição:${stripTemplateNamespacePrefix(expandedHead)}`;
-          out += `[[${missingTarget}]]`;
-        }
+        // Templates disabled: leave template call untouched
+        out += `{{${inner}}}`;
         i = j;
         continue;
       }

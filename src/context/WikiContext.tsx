@@ -16,6 +16,9 @@ import {
   subscribeToExtensions,
   updateExtensionConfigInFirestore,
   isBlazePlanActiveInExtensions,
+  mergeExtensionsWithCodebase,
+  isExtensionEnabled,
+  getDisabledExtensionIds,
 } from '../services/extensionService';
 import { WikiExtensionDoc } from '../extensions';
 import { slugify } from '../core/parser';
@@ -47,6 +50,9 @@ interface WikiContextType {
   isBlazePlanActive: boolean;
   uploadWizardExtension: WikiExtensionDoc | null;
   toggleBlazePlan: (active: boolean) => Promise<void>;
+  extensions: WikiExtensionDoc[];
+  disabledExtensionIds: string[];
+  isExtensionActive: (extensionId: string) => boolean;
 }
 
 const DEFAULT_SETTINGS: WikiSettings = {
@@ -147,7 +153,6 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
 
         try {
           await seedInitialPagesIfNeeded();
-          await syncCodebaseExtensionsToFirestore();
           const res = await ensureUserPagesExist({
             uid: user.uid,
             displayName: user.displayName,
@@ -223,8 +228,23 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
 
   const [extensionsList, setExtensionsList] = useState<WikiExtensionDoc[]>([]);
 
-  const isBlazePlanActive = isBlazePlanActiveInExtensions(extensionsList);
-  const uploadWizardExtension = extensionsList.find(e => e.id === 'upload-wizard') || null;
+  const mergedExtensions = React.useMemo(
+    () => mergeExtensionsWithCodebase(extensionsList),
+    [extensionsList]
+  );
+
+  const disabledExtensionIds = React.useMemo(
+    () => getDisabledExtensionIds(mergedExtensions),
+    [mergedExtensions]
+  );
+
+  const isExtensionActive = React.useCallback(
+    (extensionId: string) => isExtensionEnabled(mergedExtensions, extensionId),
+    [mergedExtensions]
+  );
+
+  const isBlazePlanActive = isBlazePlanActiveInExtensions(mergedExtensions);
+  const uploadWizardExtension = mergedExtensions.find(e => e.id === 'upload-wizard') || null;
 
   const toggleBlazePlan = async (active: boolean) => {
     const currentConfig = uploadWizardExtension?.config || {};
@@ -319,6 +339,25 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
   const isAdmin = isBureaucrat || assignedGroups.includes('administrador');
   const isBlocked = assignedGroups.includes('bloqueado');
 
+  // Auto-sync codebase extensions to Firestore whenever a Bureaucrat session becomes active
+  useEffect(() => {
+    if (isBureaucrat && firebaseUser && !firebaseUser.isAnonymous) {
+      syncCodebaseExtensionsToFirestore(true).catch(() => {});
+    }
+  }, [isBureaucrat, firebaseUser]);
+
+  // Fallback active skin if the current skin extension was deactivated by a Bureaucrat
+  useEffect(() => {
+    if (skin === 'vector-legacy' && !isExtensionActive('skin-timeless')) {
+      setSkin(isExtensionActive('skin-vector-2022') ? 'vector-modern' : 'dark-mode');
+    } else if (skin === 'dark-mode' && !isExtensionActive('mobile-frontend')) {
+      setSkin(isExtensionActive('skin-vector-2022') ? 'vector-modern' : 'vector-legacy');
+    } else if (skin === 'vector-modern' && !isExtensionActive('skin-vector-2022')) {
+      if (isExtensionActive('skin-timeless')) setSkin('vector-legacy');
+      else if (isExtensionActive('mobile-frontend')) setSkin('dark-mode');
+    }
+  }, [skin, isExtensionActive]);
+
   const currentUser: WikiUser = firebaseUser
     ? {
         uid: firebaseUser.uid,
@@ -375,6 +414,9 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
         isBlazePlanActive,
         uploadWizardExtension,
         toggleBlazePlan,
+        extensions: mergedExtensions,
+        disabledExtensionIds,
+        isExtensionActive,
       }}
     >
       {children}

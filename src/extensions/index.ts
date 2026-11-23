@@ -6,26 +6,48 @@ import {
   syntaxHighlightExtension,
   scribuntoExtension,
   dynamicPageListExtension,
+  templatesTransclusionExtension,
+  wikitableParserExtension,
+  autoTocExtension,
+  wikiSignaturesExtension,
 } from './parserExtensions';
-import { visualEditorExtension, wikiEditorExtension, uploadWizardExtension } from './mediaExtensions';
+import {
+  visualEditorExtension,
+  wikiEditorExtension,
+  uploadWizardExtension,
+  liveDiffExtension,
+  googleSearchGroundingExtension,
+} from './mediaExtensions';
 import { echoExtension, checkUserExtension, abuseFilterExtension } from './adminExtensions';
 import {
   vectorModernSkinExtension,
   timelessSkinExtension,
   mobileFrontendExtension,
+  footerBadgesExtension,
 } from './skinExtensions';
 import { actionApiExtension, graphQlApiExtension } from './apiExtensions';
+import {
+  talkPagesExtension,
+  revisionHistoryExtension,
+  recentChangesExtension,
+  allPagesIndexExtension,
+  pageWatchlistExtension,
+  pageProtectionExtension,
+  randomPageExtension,
+  globalSearchExtension,
+  printableVersionExtension,
+  lgpdPrivacySuiteExtension,
+  arbcomUcocGovernanceExtension,
+  githubSyncExtension,
+  seoManagerExtension,
+} from './featureExtensions';
 
 /**
  * ========================================================================
  * REGISTRO CENTRAL DE EXTENSÕES DO CÓDIGO (src/extensions)
  * ========================================================================
- * Qualquer extensão adicionada neste diretório ou exportada aqui é
- * automaticamente detectada pelo sincronizador e espelhada no Firebase Firestore.
- * 
- * Se você criar um novo arquivo `src/extensions/minhaExtensao.ts`, basta
- * adicioná-la a esta lista `CODEBASE_EXTENSIONS`. No próximo carregamento,
- * a extensão será registrada no Firebase automaticamente!
+ * Todos os recursos da Wiki são registráveis e alternáveis como extensões,
+ * vindo ativados por padrão (defaultActive: true).
  */
 export const CODEBASE_EXTENSIONS: ExtensionDefinition[] = [
   // Analisadores / Parsers
@@ -35,25 +57,45 @@ export const CODEBASE_EXTENSIONS: ExtensionDefinition[] = [
   syntaxHighlightExtension,
   scribuntoExtension,
   dynamicPageListExtension,
+  templatesTransclusionExtension,
+  wikitableParserExtension,
+  autoTocExtension,
+  wikiSignaturesExtension,
 
   // Mídia e Edição
   visualEditorExtension,
   wikiEditorExtension,
   uploadWizardExtension,
+  liveDiffExtension,
+  googleSearchGroundingExtension,
 
-  // Administração e Segurança
+  // Administração, Colaboração e Segurança
   echoExtension,
   checkUserExtension,
   abuseFilterExtension,
+  talkPagesExtension,
+  revisionHistoryExtension,
+  recentChangesExtension,
+  pageWatchlistExtension,
+  pageProtectionExtension,
+  lgpdPrivacySuiteExtension,
+  arbcomUcocGovernanceExtension,
 
   // Temas e Skins
   vectorModernSkinExtension,
   timelessSkinExtension,
   mobileFrontendExtension,
+  footerBadgesExtension,
+  printableVersionExtension,
 
-  // APIs e Conectividade
+  // APIs, Busca e Conectividade
   actionApiExtension,
   graphQlApiExtension,
+  allPagesIndexExtension,
+  randomPageExtension,
+  globalSearchExtension,
+  githubSyncExtension,
+  seoManagerExtension,
 ];
 
 export function getCodebaseExtensions(): ExtensionDefinition[] {
@@ -61,3 +103,4 @@ export function getCodebaseExtensions(): ExtensionDefinition[] {
 }
 
 export * from './types';
+

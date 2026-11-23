@@ -41,7 +41,15 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
     settings,
     setSidebarOpen,
     isBureaucrat,
+    isExtensionActive,
   } = useWiki();
+
+  const extGlobalSearch = isExtensionActive('global-search');
+  const extGoogleSearch = isExtensionActive('google-search-grounding');
+  const extSkinVectorModern = isExtensionActive('skin-vector-2022');
+  const extSkinTimeless = isExtensionActive('skin-timeless');
+  const extSkinDark = isExtensionActive('mobile-frontend');
+  const extRecentChanges = isExtensionActive('recent-changes');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<WikiPage[]>([]);
@@ -133,6 +141,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
 
   // Global keyboard shortcut to focus search: press '/' (when not in an input/textarea)
   useEffect(() => {
+    if (!extGlobalSearch) return;
     const handleGlobalKey = (e: KeyboardEvent) => {
       const tag = document.activeElement?.tagName;
       const isEditable = (document.activeElement as HTMLElement | null)?.isContentEditable;
@@ -145,7 +154,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
     };
     window.addEventListener('keydown', handleGlobalKey);
     return () => window.removeEventListener('keydown', handleGlobalKey);
-  }, []);
+  }, [extGlobalSearch]);
 
   // Click outside search
   useEffect(() => {
@@ -295,7 +304,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
         </div>
 
         {/* Center: Search Bar with real-time Firestore results */}
-        <div ref={searchRef} className="relative flex-1 max-w-lg mx-2">
+        {extGlobalSearch ? (
+          <div ref={searchRef} className="relative flex-1 max-w-lg mx-2">
           <form
             onSubmit={handleSearchSubmit}
             role="combobox"
@@ -483,7 +493,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
               )}
 
               {/* Google Search Grounding Bar inside dropdown */}
-              {searchQuery.trim() && (
+              {extGoogleSearch && searchQuery.trim() && (
                 <div className="p-2.5 bg-emerald-50/70 dark:bg-emerald-950/20 border-t border-gray-200 dark:border-gray-700 text-xs space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
@@ -540,48 +550,59 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
             </div>
           )}
         </div>
+        ) : (
+          <div className="flex-1" />
+        )}
 
         {/* Right: User personal tools & skin controls */}
         <div className="flex items-center gap-1 sm:gap-2">
           {/* Skin selector */}
-          <div className="hidden md:flex items-center border border-gray-300 dark:border-gray-700 rounded p-0.5 bg-gray-50 dark:bg-gray-900">
-            <button
-              type="button"
-              onClick={() => setSkin('vector-modern')}
-              className={`px-2 py-0.5 text-[11px] rounded transition-colors ${
-                skin === 'vector-modern'
-                  ? 'bg-white dark:bg-gray-800 shadow-2xs font-semibold text-blue-600 dark:text-blue-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
-              }`}
-              title="Vector Moderno (2022)"
-            >
-              Vector 2022
-            </button>
-            <button
-              type="button"
-              onClick={() => setSkin('vector-legacy')}
-              className={`px-2 py-0.5 text-[11px] rounded transition-colors ${
-                skin === 'vector-legacy'
-                  ? 'bg-white dark:bg-gray-800 shadow-2xs font-semibold text-blue-600 dark:text-blue-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
-              }`}
-              title="Vector Clássico (2010)"
-            >
-              Clássico
-            </button>
-            <button
-              type="button"
-              onClick={() => setSkin('dark-mode')}
-              className={`p-1 text-[11px] rounded transition-colors ${
-                skin === 'dark-mode'
-                  ? 'bg-white dark:bg-gray-800 shadow-2xs font-semibold text-amber-500'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
-              }`}
-              title="Modo Escuro"
-            >
-              <Moon className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          {(extSkinVectorModern || extSkinTimeless || extSkinDark) && (
+            <div className="hidden md:flex items-center border border-gray-300 dark:border-gray-700 rounded p-0.5 bg-gray-50 dark:bg-gray-900">
+              {extSkinVectorModern && (
+                <button
+                  type="button"
+                  onClick={() => setSkin('vector-modern')}
+                  className={`px-2 py-0.5 text-[11px] rounded transition-colors ${
+                    skin === 'vector-modern'
+                      ? 'bg-white dark:bg-gray-800 shadow-2xs font-semibold text-blue-600 dark:text-blue-400'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                  }`}
+                  title="Vector Moderno (2022)"
+                >
+                  Vector 2022
+                </button>
+              )}
+              {extSkinTimeless && (
+                <button
+                  type="button"
+                  onClick={() => setSkin('vector-legacy')}
+                  className={`px-2 py-0.5 text-[11px] rounded transition-colors ${
+                    skin === 'vector-legacy'
+                      ? 'bg-white dark:bg-gray-800 shadow-2xs font-semibold text-blue-600 dark:text-blue-400'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                  }`}
+                  title="Vector Clássico (2010)"
+                >
+                  Clássico
+                </button>
+              )}
+              {extSkinDark && (
+                <button
+                  type="button"
+                  onClick={() => setSkin('dark-mode')}
+                  className={`p-1 text-[11px] rounded transition-colors ${
+                    skin === 'dark-mode'
+                      ? 'bg-white dark:bg-gray-800 shadow-2xs font-semibold text-amber-500'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                  }`}
+                  title="Modo Escuro"
+                >
+                  <Moon className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Quick LocalSettings config button (Bureaucrats only) */}
           {isBureaucrat && (
@@ -730,16 +751,18 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
                       {currentUser.userTalkSlug ? 'Ativa' : 'Abrir'}
                     </span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigateToPage('Especial:Mudanças_recentes');
-                      setShowUserMenu(false);
-                    }}
-                    className="text-left py-1 text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    Suas contribuições
-                  </button>
+                  {extRecentChanges && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigateToPage('Especial:Mudanças_recentes');
+                        setShowUserMenu(false);
+                      }}
+                      className="text-left py-1 text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      Suas contribuições
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => {

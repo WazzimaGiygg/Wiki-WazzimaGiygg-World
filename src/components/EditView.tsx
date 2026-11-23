@@ -41,8 +41,11 @@ import {
   Tag,
   Terminal,
   ChevronDown,
+  Columns2,
+  Type,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
+import { wikitextToFormattedHtml, formattedHtmlToWikitext } from '../core/wikitextFormattedBridge';
 import { WikiPage } from '../types/wiki';
 import { savePage, canUserEditPage, getEffectiveProtectionLevel } from '../services/wikiService';
 import { saveUploadedFile, subscribeToUploadedFiles } from '../services/extensionService';
@@ -84,7 +87,21 @@ export const EditView: React.FC<EditViewProps> = ({
     toggleBlazePlan,
     navigateToPage,
     settings,
+    isExtensionActive,
+    disabledExtensionIds,
   } = useWiki();
+
+  const extWikiEditor = isExtensionActive('wiki-editor');
+  const extVisualEditor = isExtensionActive('visual-editor');
+  const extLiveDiff = isExtensionActive('live-diff');
+  const extTemplates = isExtensionActive('templates-transclusion');
+  const extWikitable = isExtensionActive('wikitable-parser');
+  const extCite = isExtensionActive('cite');
+  const extSyntaxHighlight = isExtensionActive('syntax-highlight');
+  const extSignatures = isExtensionActive('wiki-signatures');
+  const extScribunto = isExtensionActive('scribunto');
+  const extUploadWizard = isExtensionActive('upload-wizard');
+  const extGoogleSearch = isExtensionActive('google-search-grounding');
 
   // Image insertion modal state
   const [showImageModal, setShowImageModal] = useState(false);
@@ -424,7 +441,14 @@ export const EditView: React.FC<EditViewProps> = ({
   const [isMinor, setIsMinor] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [activePreview, setActivePreview] = useState<'none' | 'preview' | 'diff'>('none');
+  const [editorLayout, setEditorLayout] = useState<'code' | 'split' | 'formatted'>(() =>
+    isExtensionActive('visual-editor') ? 'split' : 'code'
+  );
+  const [formattedPaneMode, setFormattedPaneMode] = useState<'editable' | 'preview'>('editable');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Enforce visual-editor extension state
+  const effectiveEditorLayout = extVisualEditor ? editorLayout : 'code';
 
   // Google Search Grounding research state
   const [showResearchPanel, setShowResearchPanel] = useState(false);
@@ -453,6 +477,9 @@ export const EditView: React.FC<EditViewProps> = ({
   };
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const formattedEditorRef = useRef<HTMLDivElement>(null);
+  const syncSourceRef = useRef<'code' | 'formatted' | null>(null);
+  const lastFocusedPaneRef = useRef<'code' | 'formatted'>('code');
 
   const handleCopySource = () => {
     navigator.clipboard.writeText(content);
@@ -468,6 +495,66 @@ export const EditView: React.FC<EditViewProps> = ({
     return () => unsub();
   }, []);
 
+  // Synchronize code -> formatted contentEditable DOM whenever code edits or templates load
+  React.useEffect(() => {
+    if (effectiveEditorLayout === 'code' || formattedPaneMode !== 'editable') return;
+    const el = formattedEditorRef.current;
+    if (!el) return;
+    if (syncSourceRef.current === 'formatted') {
+      syncSourceRef.current = null;
+      return;
+    }
+    const nextHtml = wikitextToFormattedHtml(content, existingPageSlugs, {
+      pageTitle: page?.title || slug.replace(/_/g, ' '),
+      pageSlug: slug,
+      namespace: page?.namespace,
+      totalPages: existingPageSlugs.size,
+      disabledExtensions: disabledExtensionIds,
+    });
+    if (el.innerHTML !== nextHtml) {
+      el.innerHTML = nextHtml;
+    }
+  }, [
+    content,
+    effectiveEditorLayout,
+    formattedPaneMode,
+    existingPageSlugs,
+    page?.title,
+    page?.namespace,
+    slug,
+    liveTemplates,
+    disabledExtensionIds,
+  ]);
+
+  const handleFormattedPaneInput = () => {
+    const el = formattedEditorRef.current;
+    if (!el || !editPermission.allowed) return;
+    syncSourceRef.current = 'formatted';
+    const nextWikitext = formattedHtmlToWikitext(el);
+    setContent(nextWikitext);
+  };
+
+  const formattedPreviewResult = useMemo(() => {
+    if (effectiveEditorLayout === 'code' || formattedPaneMode !== 'preview') return null;
+    return expandWikitextTemplates(content, existingPageSlugs, {
+      pageTitle: page?.title || slug.replace(/_/g, ' '),
+      pageSlug: slug,
+      namespace: page?.namespace,
+      totalPages: existingPageSlugs.size,
+      disabledExtensions: disabledExtensionIds,
+    });
+  }, [
+    content,
+    effectiveEditorLayout,
+    formattedPaneMode,
+    existingPageSlugs,
+    page?.title,
+    page?.namespace,
+    slug,
+    liveTemplates,
+    disabledExtensionIds,
+  ]);
+
   // Computed live preview with templateService expansion
   const livePreview = useMemo(() => {
     if (activePreview !== 'preview') return null;
@@ -476,8 +563,18 @@ export const EditView: React.FC<EditViewProps> = ({
       pageSlug: slug,
       namespace: page?.namespace,
       totalPages: existingPageSlugs.size,
+      disabledExtensions: disabledExtensionIds,
     });
-  }, [content, activePreview, existingPageSlugs, page?.title, page?.namespace, slug, liveTemplates]);
+  }, [
+    content,
+    activePreview,
+    existingPageSlugs,
+    page?.title,
+    page?.namespace,
+    slug,
+    liveTemplates,
+    disabledExtensionIds,
+  ]);
 
   const filteredTemplates = useMemo(() => {
     const q = templateSearch.trim().toLowerCase();
@@ -596,10 +693,54 @@ export const EditView: React.FC<EditViewProps> = ({
     return computeRevisionDiff(originalText, content);
   }, [page?.content, content, activePreview]);
 
+  // Apply rich formatting when Formatted pane is active, or insert wikitext snippet in Code pane
+  const applyFormattedCommand = (command: string, value?: string): boolean => {
+    if (
+      effectiveEditorLayout === 'code' ||
+      formattedPaneMode !== 'editable' ||
+      (effectiveEditorLayout === 'split' && lastFocusedPaneRef.current !== 'formatted')
+    ) {
+      return false;
+    }
+    const el = formattedEditorRef.current;
+    if (!el) return false;
+    el.focus();
+    document.execCommand(command, false, value);
+    handleFormattedPaneInput();
+    return true;
+  };
+
   // Insert wikitext snippets
   const insertSyntax = (before: string, after: string = '', defaultPlaceholder = '') => {
+    if (
+      effectiveEditorLayout === 'formatted' ||
+      (effectiveEditorLayout === 'split' &&
+        formattedPaneMode === 'editable' &&
+        lastFocusedPaneRef.current === 'formatted')
+    ) {
+      if (before === "'''") {
+        if (applyFormattedCommand('bold')) return;
+      } else if (before === "''") {
+        if (applyFormattedCommand('italic')) return;
+      } else if (before === '<u>') {
+        if (applyFormattedCommand('underline')) return;
+      } else if (before === '<s>') {
+        if (applyFormattedCommand('strikeThrough')) return;
+      } else if (before.includes('== ')) {
+        const lvl = before.includes('===') ? 'H3' : 'H2';
+        if (applyFormattedCommand('formatBlock', lvl)) return;
+      } else if (before.includes('* ')) {
+        if (applyFormattedCommand('insertUnorderedList')) return;
+      } else if (before.includes('# ')) {
+        if (applyFormattedCommand('insertOrderedList')) return;
+      }
+    }
+
     const textarea = textareaRef.current;
-    if (!textarea) return;
+    if (!textarea) {
+      setContent(prev => prev + `${before}${defaultPlaceholder}${after}`);
+      return;
+    }
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
@@ -609,6 +750,7 @@ export const EditView: React.FC<EditViewProps> = ({
     const newContent =
       textarea.value.substring(0, start) + replacement + textarea.value.substring(end);
 
+    syncSourceRef.current = 'code';
     setContent(newContent);
 
     setTimeout(() => {
@@ -816,7 +958,69 @@ export const EditView: React.FC<EditViewProps> = ({
         </div>
       )}
 
-      {/* Visual Wikitext Editor Toolbar (2 clean rows for new & experienced editors) */}
+      {/* Editor Layout Mode Switcher (Code | Side-by-Side | Formatted) */}
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-2.5 py-1.5 bg-[#eaecf0] dark:bg-gray-800/90 border border-[#a2a9b1] dark:border-gray-700 rounded text-xs">
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 mr-1">
+            Modo de Edição:
+          </span>
+          <button
+            type="button"
+            onClick={() => setEditorLayout('code')}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium cursor-pointer transition-colors ${
+              effectiveEditorLayout === 'code'
+                ? 'bg-[#3366cc] text-white shadow-2xs'
+                : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            <FileCode className="w-3.5 h-3.5" />
+            <span>Código</span>
+          </button>
+
+          {extVisualEditor && (
+            <>
+              <button
+                type="button"
+                onClick={() => setEditorLayout('split')}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium cursor-pointer transition-colors ${
+                  effectiveEditorLayout === 'split'
+                    ? 'bg-[#3366cc] text-white shadow-2xs'
+                    : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+                title="Exibir código wikitexto à esquerda e edição formatada à direita simultaneamente"
+              >
+                <Columns2 className="w-3.5 h-3.5" />
+                <span>Lado a Lado (Código + Formatado)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setEditorLayout('formatted')}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium cursor-pointer transition-colors ${
+                  effectiveEditorLayout === 'formatted'
+                    ? 'bg-[#3366cc] text-white shadow-2xs'
+                    : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+                title="Editar diretamente no formato visual rico"
+              >
+                <Type className="w-3.5 h-3.5" />
+                <span>Formatado</span>
+              </button>
+            </>
+          )}
+        </div>
+
+        <span className="text-[10px] text-gray-500 dark:text-gray-400">
+          {effectiveEditorLayout === 'split'
+            ? 'Edite no código ou no texto formatado com sincronização instantânea'
+            : effectiveEditorLayout === 'formatted'
+            ? 'Edição visual formatada sincronizada com o wikitexto'
+            : 'Edição pura em código-fonte wikitexto'}
+        </span>
+      </div>
+
+      {/* Visual Wikitext Editor Toolbar (guarded by wiki-editor extension) */}
+      {extWikiEditor && (
       <div className="bg-[#f8f9fa] dark:bg-gray-800 border border-[#a2a9b1] dark:border-gray-700 rounded-t text-xs divide-y divide-gray-200 dark:divide-gray-700">
         {/* Row 1: Text Formatting & Document Structure */}
         <div className="flex flex-wrap items-center gap-1 px-2 py-1.5">
@@ -968,21 +1172,23 @@ export const EditView: React.FC<EditViewProps> = ({
             <ChevronDown className="w-3 h-3 opacity-70" />
           </button>
 
-          <button
-            type="button"
-            disabled={!editPermission.allowed}
-            onClick={() => setActiveToolbarDrawer(prev => (prev === 'table' ? 'none' : 'table'))}
-            className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium cursor-pointer disabled:opacity-40 transition-colors ${
-              activeToolbarDrawer === 'table'
-                ? 'bg-blue-100 dark:bg-blue-950/70 text-[#0645ad] dark:text-[#6ba4ff] border-blue-400 dark:border-blue-700'
-                : 'bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600'
-            }`}
-            title="Construtor visual de tabela wikitexto ({| class=&quot;wikitable&quot; |})"
-          >
-            <Table className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-            <span>Tabela</span>
-            <ChevronDown className="w-3 h-3 opacity-70" />
-          </button>
+          {extWikitable && (
+            <button
+              type="button"
+              disabled={!editPermission.allowed}
+              onClick={() => setActiveToolbarDrawer(prev => (prev === 'table' ? 'none' : 'table'))}
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium cursor-pointer disabled:opacity-40 transition-colors ${
+                activeToolbarDrawer === 'table'
+                  ? 'bg-blue-100 dark:bg-blue-950/70 text-[#0645ad] dark:text-[#6ba4ff] border-blue-400 dark:border-blue-700'
+                  : 'bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600'
+              }`}
+              title="Construtor visual de tabela wikitexto ({| class=&quot;wikitable&quot; |})"
+            >
+              <Table className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+              <span>Tabela</span>
+              <ChevronDown className="w-3 h-3 opacity-70" />
+            </button>
+          )}
 
           <button
             type="button"
@@ -995,38 +1201,44 @@ export const EditView: React.FC<EditViewProps> = ({
             <span className="hidden sm:inline">Categoria</span>
           </button>
 
-          <button
-            type="button"
-            disabled={!editPermission.allowed}
-            onClick={() => insertSyntax('<ref>', '</ref>', 'Referência bibliográfica ou link')}
-            className="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-serif font-bold text-xs disabled:opacity-40 cursor-pointer"
-            title="Inserir nota de rodapé (<ref>...</ref>)"
-          >
-            [ref]
-          </button>
+          {extCite && (
+            <>
+              <button
+                type="button"
+                disabled={!editPermission.allowed}
+                onClick={() => insertSyntax('<ref>', '</ref>', 'Referência bibliográfica ou link')}
+                className="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-serif font-bold text-xs disabled:opacity-40 cursor-pointer"
+                title="Inserir nota de rodapé (<ref>...</ref>)"
+              >
+                [ref]
+              </button>
 
-          <button
-            type="button"
-            disabled={!editPermission.allowed}
-            onClick={() => insertSyntax('\n== Referências ==\n<references />\n')}
-            className="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-mono text-[11px] disabled:opacity-40 cursor-pointer"
-            title="Inserir lista de referências (<references />)"
-          >
-            &lt;refs/&gt;
-          </button>
+              <button
+                type="button"
+                disabled={!editPermission.allowed}
+                onClick={() => insertSyntax('\n== Referências ==\n<references />\n')}
+                className="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-mono text-[11px] disabled:opacity-40 cursor-pointer"
+                title="Inserir lista de referências (<references />)"
+              >
+                &lt;refs/&gt;
+              </button>
+            </>
+          )}
 
-          <button
-            type="button"
-            disabled={!editPermission.allowed}
-            onClick={() =>
-              insertSyntax('<syntaxhighlight lang="typescript">\n', '\n</syntaxhighlight>', '// Código aqui')
-            }
-            className="inline-flex items-center gap-1 px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 cursor-pointer"
-            title="Bloco de código formatado (<syntaxhighlight>)"
-          >
-            <Code className="w-3.5 h-3.5" />
-            <span className="hidden lg:inline">Código</span>
-          </button>
+          {extSyntaxHighlight && (
+            <button
+              type="button"
+              disabled={!editPermission.allowed}
+              onClick={() =>
+                insertSyntax('<syntaxhighlight lang="typescript">\n', '\n</syntaxhighlight>', '// Código aqui')
+              }
+              className="inline-flex items-center gap-1 px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 cursor-pointer"
+              title="Bloco de código formatado (<syntaxhighlight>)"
+            >
+              <Code className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">Código</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -1038,85 +1250,95 @@ export const EditView: React.FC<EditViewProps> = ({
             &lt;nowiki&gt;
           </button>
 
-          <button
-            type="button"
-            disabled={!editPermission.allowed}
-            onClick={() => insertSyntax('--~~~~')}
-            className="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-mono text-[11px] disabled:opacity-40 cursor-pointer"
-            title="Assinatura com data (--~~~~)"
-          >
-            --~~~~
-          </button>
+          {extSignatures && (
+            <button
+              type="button"
+              disabled={!editPermission.allowed}
+              onClick={() => insertSyntax('--~~~~')}
+              className="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-mono text-[11px] disabled:opacity-40 cursor-pointer"
+              title="Assinatura com data (--~~~~)"
+            >
+              --~~~~
+            </button>
+          )}
 
           <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1" />
 
           {editPermission.allowed && (
             <>
-              <button
-                type="button"
-                onClick={() => setShowTemplateModal(true)}
-                className="px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1 font-medium text-xs cursor-pointer transition-colors"
-                title="Abrir Assistente Completo de Predefinições ({{Nome}})"
-              >
-                <Braces className="w-3.5 h-3.5" />
-                <span>Predefinições</span>
-              </button>
+              {extTemplates && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowTemplateModal(true)}
+                    className="px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1 font-medium text-xs cursor-pointer transition-colors"
+                    title="Abrir Assistente Completo de Predefinições ({{Nome}})"
+                  >
+                    <Braces className="w-3.5 h-3.5" />
+                    <span>Predefinições</span>
+                  </button>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setActiveToolbarDrawer(prev => (prev === 'templates' ? 'none' : 'templates'))
-                }
-                className={`px-2 py-1 rounded border text-xs font-medium flex items-center gap-1 cursor-pointer transition-colors ${
-                  activeToolbarDrawer === 'templates'
-                    ? 'bg-indigo-100 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-200 border-indigo-400'
-                    : 'bg-white dark:bg-gray-900 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
-                }`}
-                title="Barra de inserção rápida das predefinições mais usadas"
-              >
-                <Sparkles className="w-3 h-3" />
-                <span className="hidden sm:inline">Atalhos {'{{}}'}</span>
-              </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveToolbarDrawer(prev => (prev === 'templates' ? 'none' : 'templates'))
+                    }
+                    className={`px-2 py-1 rounded border text-xs font-medium flex items-center gap-1 cursor-pointer transition-colors ${
+                      activeToolbarDrawer === 'templates'
+                        ? 'bg-indigo-100 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-200 border-indigo-400'
+                        : 'bg-white dark:bg-gray-900 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
+                    }`}
+                    title="Barra de inserção rápida das predefinições mais usadas"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span className="hidden sm:inline">Atalhos {'{{}}'}</span>
+                  </button>
+                </>
+              )}
 
-              <button
-                type="button"
-                onClick={() => setShowInfoboxModal(true)}
-                className="px-2 py-1 rounded bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1 font-medium text-xs cursor-pointer transition-colors"
-                title="Inserir caixa {{Infobox software}} ou {{Infobox usuário}}"
-              >
-                <PanelRight className="w-3.5 h-3.5" />
-                <span>Infobox</span>
-              </button>
+              {extScribunto && (
+                <button
+                  type="button"
+                  onClick={() => setShowInfoboxModal(true)}
+                  className="px-2 py-1 rounded bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1 font-medium text-xs cursor-pointer transition-colors"
+                  title="Inserir caixa {{Infobox software}} ou {{Infobox usuário}}"
+                >
+                  <PanelRight className="w-3.5 h-3.5" />
+                  <span>Infobox</span>
+                </button>
+              )}
             </>
           )}
 
-          <button
-            type="button"
-            disabled={!editPermission.allowed}
-            onClick={() => setShowImageModal(true)}
-            className={`px-2 py-1 rounded flex items-center gap-1.5 cursor-pointer transition-colors text-xs font-medium disabled:opacity-40 ${
-              isBlazePlanActive
-                ? 'bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 text-[#0645ad] dark:text-[#6ba4ff] border border-blue-200 dark:border-blue-800'
-                : 'bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
-            }`}
-            title="Inserir ou carregar imagem no artigo"
-          >
-            <ImageIcon className="w-3.5 h-3.5" />
-            <span>Imagem</span>
-            {isBlazePlanActive ? (
-              <span className="hidden xl:flex items-center gap-0.5 text-[9px] px-1 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200 font-semibold">
-                <Flame className="w-2.5 h-2.5 text-emerald-600" />
-                Blaze ON
-              </span>
-            ) : (
-              <span className="hidden xl:flex items-center gap-0.5 text-[9px] px-1 py-0.2 rounded bg-amber-200 text-amber-900 dark:bg-amber-900/80 dark:text-amber-200 font-semibold">
-                <Flame className="w-2.5 h-2.5 text-amber-600" />
-                Blaze OFF
-              </span>
-            )}
-          </button>
+          {extUploadWizard && (
+            <button
+              type="button"
+              disabled={!editPermission.allowed}
+              onClick={() => setShowImageModal(true)}
+              className={`px-2 py-1 rounded flex items-center gap-1.5 cursor-pointer transition-colors text-xs font-medium disabled:opacity-40 ${
+                isBlazePlanActive
+                  ? 'bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 text-[#0645ad] dark:text-[#6ba4ff] border border-blue-200 dark:border-blue-800'
+                  : 'bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
+              }`}
+              title="Inserir ou carregar imagem no artigo"
+            >
+              <ImageIcon className="w-3.5 h-3.5" />
+              <span>Imagem</span>
+              {isBlazePlanActive ? (
+                <span className="hidden xl:flex items-center gap-0.5 text-[9px] px-1 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200 font-semibold">
+                  <Flame className="w-2.5 h-2.5 text-emerald-600" />
+                  Blaze ON
+                </span>
+              ) : (
+                <span className="hidden xl:flex items-center gap-0.5 text-[9px] px-1 py-0.2 rounded bg-amber-200 text-amber-900 dark:bg-amber-900/80 dark:text-amber-200 font-semibold">
+                  <Flame className="w-2.5 h-2.5 text-amber-600" />
+                  Blaze OFF
+                </span>
+              )}
+            </button>
+          )}
 
-          {editPermission.allowed && (
+          {editPermission.allowed && extGoogleSearch && (
             <button
               type="button"
               onClick={() => setShowResearchPanel(prev => !prev)}
@@ -1420,9 +1642,10 @@ export const EditView: React.FC<EditViewProps> = ({
           </div>
         )}
       </div>
+      )}
 
       {/* Google Search Grounding Research Drawer */}
-      {showResearchPanel && editPermission.allowed && (
+      {showResearchPanel && editPermission.allowed && extGoogleSearch && (
         <div className="p-3 bg-emerald-50/60 dark:bg-emerald-950/20 border-x border-b border-[#a2a9b1] dark:border-gray-700 text-xs space-y-2.5">
           <div className="flex items-center justify-between gap-2">
             <span className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
@@ -1504,21 +1727,120 @@ export const EditView: React.FC<EditViewProps> = ({
         </div>
       )}
 
-      {/* Main Wikitext Textarea */}
-      <textarea
-        ref={textareaRef}
-        value={content}
-        onChange={e => setContent(e.target.value)}
-        onKeyDown={handleTextareaKeyDown}
-        rows={18}
-        readOnly={!editPermission.allowed}
-        className={`w-full p-3 font-mono text-xs sm:text-sm border border-[#a2a9b1] dark:border-gray-700 border-t-0 resize-y leading-relaxed shadow-inner ${
-          !editPermission.allowed
-            ? 'bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-300 cursor-not-allowed select-text'
-            : 'bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:border-[#3366cc] focus:ring-1 focus:ring-[#3366cc]'
+      {/* Editor Workspace: Code Only, Side-by-Side (Code + Formatted), or Formatted Only */}
+      <div
+        className={`grid gap-0 border border-[#a2a9b1] dark:border-gray-700 ${
+          extWikiEditor ? 'border-t-0 rounded-b' : 'rounded'
+        } overflow-hidden ${
+          effectiveEditorLayout === 'split' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'
         }`}
-        placeholder="Digite o conteúdo do artigo em wikitexto..."
-      />
+      >
+        {/* Left / Source Wikitext Code Pane */}
+        {(effectiveEditorLayout === 'code' || effectiveEditorLayout === 'split') && (
+          <div
+            className={`flex flex-col ${
+              effectiveEditorLayout === 'split'
+                ? 'border-b lg:border-b-0 lg:border-r border-[#a2a9b1] dark:border-gray-700'
+                : ''
+            }`}
+          >
+            {effectiveEditorLayout === 'split' && (
+              <div className="px-3 py-1.5 bg-[#f8f9fa] dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between text-[11px]">
+                <span className="font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5">
+                  <FileCode className="w-3.5 h-3.5 text-[#0645ad] dark:text-[#6ba4ff]" />
+                  <span>Edição de Código (Wikitexto)</span>
+                </span>
+                <span className="text-[10px] font-mono text-gray-500">
+                  {content.length} caracteres
+                </span>
+              </div>
+            )}
+
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onFocus={() => {
+                lastFocusedPaneRef.current = 'code';
+              }}
+              onChange={e => {
+                syncSourceRef.current = 'code';
+                setContent(e.target.value);
+              }}
+              onKeyDown={handleTextareaKeyDown}
+              rows={effectiveEditorLayout === 'split' ? 22 : 18}
+              readOnly={!editPermission.allowed}
+              className={`w-full flex-1 min-h-[420px] p-3 font-mono text-xs sm:text-sm resize-y leading-relaxed shadow-inner ${
+                !editPermission.allowed
+                  ? 'bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-300 cursor-not-allowed select-text'
+                  : 'bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-1 focus:ring-inset focus:ring-[#3366cc]'
+              }`}
+              placeholder="Digite o conteúdo do artigo em wikitexto..."
+            />
+          </div>
+        )}
+
+        {/* Right / Formatted Rich Editing Pane */}
+        {(effectiveEditorLayout === 'formatted' || effectiveEditorLayout === 'split') && (
+          <div className="flex flex-col bg-white dark:bg-[#1a1f2c] min-h-[420px]">
+            <div className="px-3 py-1.5 bg-[#f8f9fa] dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+              <span className="font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5">
+                <Type className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Edição Formatada (Visual)</span>
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setFormattedPaneMode('editable')}
+                  className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer border ${
+                    formattedPaneMode === 'editable'
+                      ? 'bg-emerald-600 text-white border-emerald-700'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-700'
+                  }`}
+                >
+                  Interativa
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormattedPaneMode('preview')}
+                  className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer border ${
+                    formattedPaneMode === 'preview'
+                      ? 'bg-blue-600 text-white border-blue-700'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-700'
+                  }`}
+                >
+                  Leitura Final
+                </button>
+              </div>
+            </div>
+
+            {formattedPaneMode === 'editable' ? (
+              <div
+                ref={formattedEditorRef}
+                contentEditable={editPermission.allowed}
+                suppressContentEditableWarning
+                onFocus={() => {
+                  lastFocusedPaneRef.current = 'formatted';
+                }}
+                onInput={handleFormattedPaneInput}
+                onClick={e => {
+                  const target = (e.target as HTMLElement).closest('a');
+                  if (target) {
+                    e.preventDefault();
+                  }
+                }}
+                className={`mw-body-content mw-formatted-editor flex-1 p-4 overflow-y-auto max-h-[580px] text-sm leading-relaxed text-gray-800 dark:text-gray-200 focus:outline-hidden focus:ring-1 focus:ring-inset focus:ring-emerald-500 [&_h1]:text-2xl [&_h1]:font-serif [&_h1]:border-b [&_h1]:border-gray-300 [&_h1]:dark:border-gray-700 [&_h1]:pb-1 [&_h1]:mb-3 [&_h2]:text-xl [&_h2]:font-serif [&_h2]:border-b [&_h2]:border-gray-300 [&_h2]:dark:border-gray-700 [&_h2]:pb-1 [&_h2]:mt-4 [&_h2]:mb-2 [&_h3]:text-lg [&_h3]:font-serif [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_h4]:text-base [&_h4]:font-semibold [&_h4]:mt-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2 [&_p]:my-2.5 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:bg-gray-100 [&_code]:dark:bg-gray-800 [&_code]:text-pink-600 [&_code]:dark:text-pink-400 [&_code]:font-mono [&_code]:text-xs ${
+                  !editPermission.allowed ? 'bg-gray-50 dark:bg-gray-900 cursor-not-allowed' : ''
+                }`}
+              />
+            ) : (
+              <div
+                className="mw-body-content flex-1 p-4 overflow-y-auto max-h-[580px] leading-relaxed text-gray-800 dark:text-gray-200"
+                dangerouslySetInnerHTML={{ __html: formattedPreviewResult?.html || '' }}
+              />
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Edit Summary & Options Box */}
       <div className="mt-3 p-3 bg-[#f8f9fa] dark:bg-gray-900 border border-[#a2a9b1] dark:border-gray-700 rounded text-xs space-y-3">
@@ -1623,31 +1945,35 @@ export const EditView: React.FC<EditViewProps> = ({
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={() => setActivePreview(prev => (prev === 'preview' ? 'none' : 'preview'))}
-            className={`px-3 py-2 border rounded font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-              activePreview === 'preview'
-                ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 text-blue-700 dark:text-blue-300'
-                : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>{activePreview === 'preview' ? 'Ocultar previsão' : 'Mostrar previsão'}</span>
-          </button>
+          {extLiveDiff && (
+            <>
+              <button
+                type="button"
+                onClick={() => setActivePreview(prev => (prev === 'preview' ? 'none' : 'preview'))}
+                className={`px-3 py-2 border rounded font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  activePreview === 'preview'
+                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 text-blue-700 dark:text-blue-300'
+                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>{activePreview === 'preview' ? 'Ocultar previsão' : 'Mostrar previsão'}</span>
+              </button>
 
-          <button
-            type="button"
-            onClick={() => setActivePreview(prev => (prev === 'diff' ? 'none' : 'diff'))}
-            className={`px-3 py-2 border rounded font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-              activePreview === 'diff'
-                ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 text-blue-700 dark:text-blue-300'
-                : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-          >
-            <FileDiff className="w-3.5 h-3.5" />
-            <span>{activePreview === 'diff' ? 'Ocultar alterações' : 'Mostrar alterações (Diff)'}</span>
-          </button>
+              <button
+                type="button"
+                onClick={() => setActivePreview(prev => (prev === 'diff' ? 'none' : 'diff'))}
+                className={`px-3 py-2 border rounded font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  activePreview === 'diff'
+                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 text-blue-700 dark:text-blue-300'
+                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <FileDiff className="w-3.5 h-3.5" />
+                <span>{activePreview === 'diff' ? 'Ocultar alterações' : 'Mostrar alterações (Diff)'}</span>
+              </button>
+            </>
+          )}
 
           <button
             type="button"

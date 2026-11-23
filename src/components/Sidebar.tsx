@@ -25,7 +25,8 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
-  const { currentSlug, navigateToPage, sidebarOpen, setSidebarOpen, settings, isBureaucrat } = useWiki();
+  const { currentSlug, navigateToPage, sidebarOpen, setSidebarOpen, settings, isBureaucrat, isExtensionActive } =
+    useWiki();
 
   const handleRandomPage = async () => {
     const slug = await getRandomPageSlug();
@@ -34,14 +35,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
 
   const navLinks = [
     { label: 'Página principal', slug: 'Página_principal', icon: Home },
-    { label: 'Dossiê: Wikipédia vs. LGPD', slug: 'Investigação_LGPD_e_Marco_Civil_sobre_a_Wikipédia', icon: ShieldCheck },
-    { label: 'Mudanças recentes', slug: 'Especial:Mudanças_recentes', icon: Clock },
-    { label: 'Página aleatória', action: handleRandomPage, icon: Shuffle },
+    ...(isExtensionActive('lgpd-privacy-suite')
+      ? [{ label: 'Dossiê: Wikipédia vs. LGPD', slug: 'Investigação_LGPD_e_Marco_Civil_sobre_a_Wikipédia', icon: ShieldCheck }]
+      : []),
+    ...(isExtensionActive('recent-changes')
+      ? [{ label: 'Mudanças recentes', slug: 'Especial:Mudanças_recentes', icon: Clock }]
+      : []),
+    ...(isExtensionActive('random-page')
+      ? [{ label: 'Página aleatória', action: handleRandomPage, icon: Shuffle }]
+      : []),
     { label: 'Ajuda de wikitexto', slug: 'Ajuda:Wikitexto', icon: HelpCircle },
-    { label: 'Predefinições', slug: 'Ajuda:Predefinições', icon: Braces },
-    { label: 'Exemplo de Predefinições', slug: 'Exemplo_de_Uso_de_Predefinições', icon: FileText },
-    { label: 'Tutorial: Infobox', slug: 'Ajuda:Infobox', icon: FileText },
-    { label: 'Todas as páginas', slug: 'Especial:Todas_as_páginas', icon: List },
+    ...(isExtensionActive('templates-transclusion')
+      ? [
+          { label: 'Predefinições', slug: 'Ajuda:Predefinições', icon: Braces },
+          { label: 'Exemplo de Predefinições', slug: 'Exemplo_de_Uso_de_Predefinições', icon: FileText },
+        ]
+      : []),
+    ...(isExtensionActive('scribunto')
+      ? [{ label: 'Tutorial: Infobox', slug: 'Ajuda:Infobox', icon: FileText }]
+      : []),
+    ...(isExtensionActive('all-pages-index')
+      ? [{ label: 'Todas as páginas', slug: 'Especial:Todas_as_páginas', icon: List }]
+      : []),
   ];
 
   const archLinks = [
@@ -50,24 +65,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
     { label: 'Manual: LocalSettings.ts', slug: 'Manual:LocalSettings.ts', icon: Settings },
   ];
 
-  const repoLinks = [
-    { label: 'Updates do GitHub', slug: 'Especial:GitHubSync', icon: GitBranch },
-  ];
+  const repoLinks = isExtensionActive('github-sync')
+    ? [{ label: 'Updates do GitHub', slug: 'Especial:GitHubSync', icon: GitBranch }]
+    : [];
 
   const toolLinks = [
-    { label: 'Carregar arquivo', slug: 'Especial:Carregar_arquivo', icon: Upload },
+    ...(isExtensionActive('upload-wizard')
+      ? [{ label: 'Carregar arquivo', slug: 'Especial:Carregar_arquivo', icon: Upload }]
+      : []),
     { label: 'Versão do Software', slug: 'Especial:Versão', icon: Info },
     { label: 'Extensões do Wiki', slug: 'Especial:Extensões', icon: Blocks },
-    { label: 'Privacidade e LGPD', slug: 'Especial:Privacidade', icon: ShieldCheck },
+    ...(isExtensionActive('lgpd-privacy-suite')
+      ? [{ label: 'Privacidade e LGPD', slug: 'Especial:Privacidade', icon: ShieldCheck }]
+      : []),
     ...(isBureaucrat ? [{ label: 'Configurações ($wg)', action: onOpenSettings, icon: Settings }] : []),
-    {
-      label: 'Versão para impressão',
-      action: () => {
-        setSidebarOpen(false);
-        window.print();
-      },
-      icon: Share2,
-    },
+    ...(isExtensionActive('printable-version')
+      ? [
+          {
+            label: 'Versão para impressão',
+            action: () => {
+              setSidebarOpen(false);
+              window.print();
+            },
+            icon: Share2,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -160,33 +183,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
         </div>
 
         {/* Section 3: Sincronização */}
-        <div>
-          <h3 className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-[10px] mb-2 px-2">
-            Sincronização
-          </h3>
-          <ul className="space-y-0.5">
-            {repoLinks.map((item, idx) => {
-              const Icon = item.icon;
-              const isActive = currentSlug === item.slug;
-              return (
-                <li key={idx}>
-                  <button
-                    type="button"
-                    onClick={() => navigateToPage(item.slug)}
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded transition-colors text-left cursor-pointer ${
-                      isActive
-                        ? 'bg-[#3366cc]/10 text-[#0645ad] dark:text-[#6ba4ff] font-semibold border-l-3 border-[#3366cc]'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-800'
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 shrink-0" />
-                    <span>{item.label}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        {repoLinks.length > 0 && (
+          <div>
+            <h3 className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-[10px] mb-2 px-2">
+              Sincronização
+            </h3>
+            <ul className="space-y-0.5">
+              {repoLinks.map((item, idx) => {
+                const Icon = item.icon;
+                const isActive = currentSlug === item.slug;
+                return (
+                  <li key={idx}>
+                    <button
+                      type="button"
+                      onClick={() => navigateToPage(item.slug)}
+                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded transition-colors text-left cursor-pointer ${
+                        isActive
+                          ? 'bg-[#3366cc]/10 text-[#0645ad] dark:text-[#6ba4ff] font-semibold border-l-3 border-[#3366cc]'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 shrink-0" />
+                      <span>{item.label}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
         {/* Section 4: Administração */}
         <div>

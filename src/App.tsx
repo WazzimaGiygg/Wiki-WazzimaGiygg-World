@@ -24,11 +24,21 @@ import { Footer } from './components/Footer';
 import { LocalSettingsModal } from './components/LocalSettingsModal';
 import { subscribeToPage } from './services/wikiService';
 import { WikiPage } from './types/wiki';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Blocks, Lock } from 'lucide-react';
 import { updateDocumentSEO } from './utils/seo';
 
 function WikiMain() {
-  const { currentSlug, activeTab, setActiveTab, skin, sidebarOpen, setSidebarOpen, settings } = useWiki();
+  const {
+    currentSlug,
+    activeTab,
+    setActiveTab,
+    skin,
+    sidebarOpen,
+    setSidebarOpen,
+    settings,
+    isExtensionActive,
+    navigateToPage,
+  } = useWiki();
 
   const [currentPage, setCurrentPage] = useState<WikiPage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,11 +67,57 @@ function WikiMain() {
 
   // Dynamically update canonical URL, meta tags, and Schema.org JSON-LD for core.wazzimagiygg.com
   useEffect(() => {
+    if (!isExtensionActive('seo-manager')) return;
     const isSpecial = currentSlug.startsWith('Especial:') || currentSlug.startsWith('Special:');
     updateDocumentSEO(currentSlug, isSpecial ? null : currentPage);
-  }, [currentSlug, currentPage]);
+  }, [currentSlug, currentPage, isExtensionActive]);
 
   const isSpecialPage = currentSlug.startsWith('Especial:') || currentSlug.startsWith('Special:');
+
+  const renderDisabledExtensionNotice = (featureLabel: string, extensionId: string) => (
+    <div className="my-6 p-5 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 rounded text-sm text-amber-950 dark:text-amber-200 space-y-3">
+      <div className="flex items-start gap-3">
+        <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+        <div className="space-y-1.5">
+          <h2 className="font-serif font-bold text-base text-gray-900 dark:text-gray-100">
+            Recurso desativado pela gestão de extensões
+          </h2>
+          <p className="text-xs leading-relaxed">
+            O recurso <strong>{featureLabel}</strong> está vinculado à extensão{' '}
+            <code className="px-1.5 py-0.5 rounded bg-white/80 dark:bg-gray-900 border border-amber-200 dark:border-amber-800 font-mono text-[11px]">
+              {extensionId}
+            </code>
+            , que foi desativada por um Burocrata em{' '}
+            <button
+              type="button"
+              onClick={() => navigateToPage('Especial:Extensões')}
+              className="text-[#0645ad] dark:text-[#6ba4ff] hover:underline font-semibold cursor-pointer"
+            >
+              Especial:Extensões
+            </button>
+            .
+          </p>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 pt-1">
+        <button
+          type="button"
+          onClick={() => navigateToPage('Especial:Extensões')}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3366cc] hover:bg-[#254b99] text-white rounded text-xs font-medium cursor-pointer"
+        >
+          <Blocks className="w-3.5 h-3.5" />
+          <span>Gerenciar em Especial:Extensões</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => navigateToPage('Página_principal')}
+          className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+        >
+          Voltar à Página Principal
+        </button>
+      </div>
+    </div>
+  );
 
   const renderContent = () => {
     if (loading && !isSpecialPage) {
@@ -75,10 +131,14 @@ function WikiMain() {
 
     // Special pages routing
     if (currentSlug === 'Especial:Mudanças_recentes' || currentSlug === 'Special:RecentChanges') {
-      return <SpecialRecentChanges />;
+      return isExtensionActive('recent-changes')
+        ? <SpecialRecentChanges />
+        : renderDisabledExtensionNotice('Mudanças Recentes', 'recent-changes');
     }
     if (currentSlug === 'Especial:Todas_as_páginas' || currentSlug === 'Special:AllPages') {
-      return <SpecialAllPages />;
+      return isExtensionActive('all-pages-index')
+        ? <SpecialAllPages />
+        : renderDisabledExtensionNotice('Índice de Todas as Páginas', 'all-pages-index');
     }
     if (currentSlug === 'Especial:Versão' || currentSlug === 'Special:Version') {
       return <SpecialVersion />;
@@ -91,7 +151,9 @@ function WikiMain() {
       currentSlug === 'Especial:Updates' ||
       currentSlug === 'Special:Updates'
     ) {
-      return <SpecialGitHubSync />;
+      return isExtensionActive('github-sync')
+        ? <SpecialGitHubSync />
+        : renderDisabledExtensionNotice('Sincronização com GitHub', 'github-sync');
     }
     if (
       currentSlug === 'Especial:Permissões_de_usuário' ||
@@ -110,7 +172,9 @@ function WikiMain() {
       currentSlug === 'Especial:Fantoches' ||
       currentSlug === 'Special:CheckUser'
     ) {
-      return <SpecialBureaucratAdmin initialTab="checkuser" />;
+      return isExtensionActive('checkuser')
+        ? <SpecialBureaucratAdmin initialTab="checkuser" />
+        : renderDisabledExtensionNotice('CheckUser & Auditoria de IPs', 'checkuser');
     }
     if (
       currentSlug === 'Especial:Desbloqueio' ||
@@ -120,14 +184,18 @@ function WikiMain() {
       currentSlug === 'Especial:Discussao_de_bloqueio' ||
       currentSlug === 'Special:Unblock'
     ) {
-      return <SpecialBureaucratAdmin initialTab="unblock" />;
+      return isExtensionActive('arbcom-ucoc-governance')
+        ? <SpecialBureaucratAdmin initialTab="unblock" />
+        : renderDisabledExtensionNotice('Pedidos de Desbloqueio (ArbCom & UCoC)', 'arbcom-ucoc-governance');
     }
     if (
       currentSlug === 'Especial:ArbCom' ||
       currentSlug === 'Especial:Conselho_de_Arbitragem' ||
       currentSlug === 'Special:ArbCom'
     ) {
-      return <SpecialBureaucratAdmin initialTab="arbcom" />;
+      return isExtensionActive('arbcom-ucoc-governance')
+        ? <SpecialBureaucratAdmin initialTab="arbcom" />
+        : renderDisabledExtensionNotice('Conselho de Arbitragem (ArbCom)', 'arbcom-ucoc-governance');
     }
     if (
       currentSlug === 'Especial:UCOC' ||
@@ -136,17 +204,23 @@ function WikiMain() {
       currentSlug === 'Especial:Codigo_de_Conduta' ||
       currentSlug === 'Special:UCoC'
     ) {
-      return <SpecialBureaucratAdmin initialTab="ucoc" />;
+      return isExtensionActive('arbcom-ucoc-governance')
+        ? <SpecialBureaucratAdmin initialTab="ucoc" />
+        : renderDisabledExtensionNotice('Código Universal de Conduta (UCoC)', 'arbcom-ucoc-governance');
     }
     if (
       currentSlug === 'Especial:Páginas_protegidas' ||
       currentSlug === 'Especial:Paginas_protegidas' ||
       currentSlug === 'Special:ProtectedPages'
     ) {
-      return <SpecialBureaucratAdmin initialTab="protected_pages" />;
+      return isExtensionActive('page-protection')
+        ? <SpecialBureaucratAdmin initialTab="protected_pages" />
+        : renderDisabledExtensionNotice('Páginas Protegidas', 'page-protection');
     }
     if (currentSlug === 'Especial:SEO' || currentSlug === 'Special:SEO') {
-      return <SpecialBureaucratAdmin initialTab="seo" />;
+      return isExtensionActive('seo-manager')
+        ? <SpecialBureaucratAdmin initialTab="seo" />
+        : renderDisabledExtensionNotice('Gerenciador de SEO & Schema.org', 'seo-manager');
     }
     if (
       currentSlug === 'Especial:Banco_de_Dados' ||
@@ -168,7 +242,9 @@ function WikiMain() {
       currentSlug === 'Especial:Upload' ||
       currentSlug === 'Special:Upload'
     ) {
-      return <SpecialUpload />;
+      return isExtensionActive('upload-wizard')
+        ? <SpecialUpload />
+        : renderDisabledExtensionNotice('Assistente de Carregamento (UploadWizard)', 'upload-wizard');
     }
     if (
       currentSlug === 'Especial:Privacidade' ||
@@ -176,7 +252,9 @@ function WikiMain() {
       currentSlug === 'Especial:Marco_Civil' ||
       currentSlug === 'Special:Privacy'
     ) {
-      return <SpecialPrivacy />;
+      return isExtensionActive('lgpd-privacy-suite')
+        ? <SpecialPrivacy />
+        : renderDisabledExtensionNotice('Central de Privacidade (LGPD & Marco Civil)', 'lgpd-privacy-suite');
     }
 
     // Standard wiki page tabs
@@ -196,6 +274,9 @@ function WikiMain() {
     }
 
     if (activeTab === 'history') {
+      if (!isExtensionActive('revision-history')) {
+        return renderDisabledExtensionNotice('Histórico de Revisões e Diff', 'revision-history');
+      }
       return (
         <HistoryView
           page={currentPage}
@@ -206,6 +287,9 @@ function WikiMain() {
     }
 
     if (activeTab === 'talk') {
+      if (!isExtensionActive('talk-pages')) {
+        return renderDisabledExtensionNotice('Páginas de Discussão', 'talk-pages');
+      }
       return (
         <TalkView
           page={currentPage}
@@ -287,7 +371,7 @@ function WikiMain() {
 
       <Footer onOpenSettings={() => setSettingsOpen(true)} />
       <LocalSettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      <ConsentBanner />
+      {isExtensionActive('lgpd-privacy-suite') && <ConsentBanner />}
     </div>
   );
 }

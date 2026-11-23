@@ -96,11 +96,11 @@ export const scribuntoExtension: ExtensionDefinition = {
 
 export const dynamicPageListExtension: ExtensionDefinition = {
   id: 'dynamic-page-list',
-  name: 'DynamicPageList (DPL)',
+  name: 'DynamicPageList (DPL & Categorias)',
   category: 'parser',
   version: '3.3.0-ts',
   authors: ['Gero Scholz', 'MediaWiki Contributors'],
-  description: 'Permite aos editores listar e filtrar páginas dinamicamente com base em categorias, prefixos e datas de modificação.',
+  description: 'Extrai categorias [[Categoria:...]] dos artigos, exibe a barra inferior #catlinks e permite listar páginas dinamicamente.',
   url: 'https://www.mediawiki.org/wiki/Extension:DynamicPageList',
   gitTag: 'REL1_42-ts',
   license: 'GPL-2.0-or-later',
@@ -109,3 +109,68 @@ export const dynamicPageListExtension: ExtensionDefinition = {
   defaultActive: true,
   installedVia: 'code',
 };
+
+export const templatesTransclusionExtension: ExtensionDefinition = {
+  id: 'templates-transclusion',
+  name: 'Pré-definições & Transclusão ({{...}})',
+  category: 'parser',
+  version: '1.5.0-ts',
+  authors: ['MediaWiki Core', 'Equipe WikiWazzimaGiygg'],
+  description: 'Expande pré-definições {{Nome|parâmetros}}, suporta {{subst:}}, <includeonly>/<noinclude> e habilita o Assistente de Pré-definições no editor.',
+  url: 'https://www.mediawiki.org/wiki/Help:Templates',
+  gitTag: 'REL1_42-ts',
+  license: 'GPL-2.0-or-later',
+  hooks: ['ParserBeforeStrip', 'BeforePageDisplay'],
+  exampleWikitext: '{{Aviso|título=Exemplo|texto=Esta caixa foi expandida a partir de Predefinição:Aviso.}}',
+  defaultActive: true,
+  installedVia: 'code',
+};
+
+export const wikitableParserExtension: ExtensionDefinition = {
+  id: 'wikitable-parser',
+  name: 'Tabelas Wikitexto (Wikitable)',
+  category: 'parser',
+  version: '1.2.0-ts',
+  authors: ['MediaWiki Core', 'Equipe WikiWazzimaGiygg'],
+  description: 'Processa tabelas no formato {| class="wikitable" |} nos artigos e habilita o construtor visual de tabelas na barra do editor.',
+  url: 'https://www.mediawiki.org/wiki/Help:Tables',
+  gitTag: 'REL1_42-ts',
+  license: 'GPL-2.0-or-later',
+  hooks: ['ParserFirstCallInit'],
+  exampleWikitext: '{| class="wikitable"\n|+ Exemplo\n! Coluna 1 !! Coluna 2\n|-\n| Dado A || Dado B\n|}',
+  defaultActive: true,
+  installedVia: 'code',
+};
+
+export const autoTocExtension: ExtensionDefinition = {
+  id: 'auto-toc',
+  name: 'Índice Automático (TOC)',
+  category: 'parser',
+  version: '1.1.0-ts',
+  authors: ['MediaWiki Core', 'Equipe WikiWazzimaGiygg'],
+  description: 'Gera automaticamente o sumário navegável (Índice) nos artigos com duas ou mais seções.',
+  url: 'https://www.mediawiki.org/wiki/Help:Section',
+  gitTag: 'REL1_42-ts',
+  license: 'GPL-2.0-or-later',
+  hooks: ['OutputPageParserOutput'],
+  exampleWikitext: '== Seção 1 ==\nConteúdo.\n\n== Seção 2 ==\nMais conteúdo.',
+  defaultActive: true,
+  installedVia: 'code',
+};
+
+export const wikiSignaturesExtension: ExtensionDefinition = {
+  id: 'wiki-signatures',
+  name: 'Assinaturas Wiki (--~~~~)',
+  category: 'parser',
+  version: '1.0.0-ts',
+  authors: ['MediaWiki Core', 'Equipe WikiWazzimaGiygg'],
+  description: 'Habilita o botão de inserção rápida de assinatura com data (--~~~~) na barra de edição e em páginas de discussão.',
+  url: 'https://www.mediawiki.org/wiki/Help:Signatures',
+  gitTag: 'REL1_42-ts',
+  license: 'GPL-2.0-or-later',
+  hooks: ['ParserBeforePreSaveTransform'],
+  exampleWikitext: 'Concordo com a proposta editorial. --~~~~',
+  defaultActive: true,
+  installedVia: 'code',
+};
+

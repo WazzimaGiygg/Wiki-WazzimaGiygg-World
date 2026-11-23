@@ -28,11 +28,13 @@ let isSyncing = false;
  * inserida no Firestore. Se ela já existir no Firestore, o estado definido
  * pelo Burocrata (ativo/inativo) é respeitado e preservado!
  */
-export async function syncCodebaseExtensionsToFirestore(): Promise<{
+export async function syncCodebaseExtensionsToFirestore(
+  canWrite = true
+): Promise<{
   syncedCount: number;
   totalCodebase: number;
 }> {
-  if (isSyncing || !auth.currentUser || auth.currentUser.isAnonymous) {
+  if (isSyncing || !auth.currentUser || auth.currentUser.isAnonymous || !canWrite) {
     return { syncedCount: 0, totalCodebase: CODEBASE_EXTENSIONS.length };
   }
   isSyncing = true;
@@ -290,6 +292,91 @@ export function isBlazePlanActiveInExtensions(extensions: WikiExtensionDoc[]): b
     e => e.isActive && e.config && Boolean(e.config.blazePlanEnabled)
   );
   return Boolean(anyBlazeExt);
+}
+
+/**
+ * Mescla as extensões sincronizadas do Firestore com as definições locais de CODEBASE_EXTENSIONS
+ * garantindo que qualquer extensão recém-adicionada no código apareça imediatamente ativa por padrão.
+ */
+export function mergeExtensionsWithCodebase(remoteExtensions: WikiExtensionDoc[]): WikiExtensionDoc[] {
+  const map = new Map<string, WikiExtensionDoc>();
+  for (const ext of CODEBASE_EXTENSIONS) {
+    map.set(ext.id, {
+      id: ext.id,
+      name: ext.name,
+      category: ext.category,
+      version: ext.version,
+      authors: ext.authors,
+      description: ext.description,
+      url: ext.url,
+      gitTag: ext.gitTag,
+      license: ext.license,
+      hooks: ext.hooks,
+      exampleWikitext: ext.exampleWikitext,
+      isActive: ext.defaultActive,
+      installedVia: 'code',
+      config: ext.config || {},
+      updatedAt: '',
+    });
+  }
+  for (const remote of remoteExtensions) {
+    map.set(remote.id, remote);
+  }
+  return Array.from(map.values()).sort((a, b) => {
+    if (a.category !== b.category) return a.category.localeCompare(b.category);
+    return a.name.localeCompare(b.name);
+  });
+}
+
+/**
+ * Verifica se uma extensão está ativa no Wiki-site (por padrão, todas vêm ativas).
+ */
+export function isExtensionEnabled(extensions: WikiExtensionDoc[], extensionId: string): boolean {
+  const remote = extensions.find(e => e.id === extensionId);
+  if (remote) return remote.isActive;
+  const codebase = CODEBASE_EXTENSIONS.find(e => e.id === extensionId);
+  return codebase ? codebase.defaultActive : true;
+}
+
+/**
+ * Retorna a lista de IDs das extensões atualmente desativadas no Firestore.
+ */
+export function getDisabledExtensionIds(extensions: WikiExtensionDoc[]): string[] {
+  return extensions.filter(e => !e.isActive).map(e => e.id);
+}
+
+/**
+ * Ativa todas as extensões cadastradas (código-base e personalizadas) no Firestore.
+ * ESTRITAMENTE RESTRITO A BUROCRATAS.
+ */
+export async function activateAllExtensionsInFirestore(
+  extensions: WikiExtensionDoc[],
+  isBureaucrat: boolean,
+  username: string
+): Promise<number> {
+  if (!isBureaucrat) {
+    throw new Error('Apenas burocratas têm permissão para ativar todas as extensões.');
+  }
+
+  let updated = 0;
+  const merged = mergeExtensionsWithCodebase(extensions);
+  for (const ext of merged) {
+    if (!ext.isActive || !extensions.some(r => r.id === ext.id)) {
+      const docRef = doc(db, WIKI_EXTENSIONS_COLLECTION, ext.id);
+      await setDoc(
+        docRef,
+        {
+          ...ext,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+          updatedBy: username,
+        },
+        { merge: true }
+      );
+      updated++;
+    }
+  }
+  return updated;
 }
 
 // ========================================================================

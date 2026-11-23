@@ -38,16 +38,20 @@ import {
   createBureaucratExtension,
   deleteBureaucratExtension,
   updateExtensionConfigInFirestore,
+  mergeExtensionsWithCodebase,
+  activateAllExtensionsInFirestore,
 } from '../services/extensionService';
 import { WikiExtensionDoc, ExtensionCategory } from '../extensions/types';
-import { CODEBASE_EXTENSIONS } from '../extensions';
 
 export const SpecialExtensions: React.FC = () => {
-  const { navigateToPage, existingPageSlugs, isBureaucrat, currentUser } = useWiki();
+  const { navigateToPage, existingPageSlugs, isBureaucrat, currentUser, disabledExtensionIds } = useWiki();
 
-  const [extensions, setExtensions] = useState<WikiExtensionDoc[]>([]);
+  const [extensions, setExtensions] = useState<WikiExtensionDoc[]>(() =>
+    mergeExtensionsWithCodebase([])
+  );
   const [loading, setLoading] = useState(true);
   const [isSyncingDirs, setIsSyncingDirs] = useState(false);
+  const [isActivatingAll, setIsActivatingAll] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
@@ -79,8 +83,8 @@ export const SpecialExtensions: React.FC = () => {
 
   // 1. REAL-TIME SUBSCRIPTION TO FIRESTORE
   useEffect(() => {
-    // Sync codebase extensions on mount (skips automatically if unauthenticated)
-    syncCodebaseExtensionsToFirestore().then(res => {
+    // Sync codebase extensions on mount (skips automatically if not bureaucrat)
+    syncCodebaseExtensionsToFirestore(isBureaucrat).then(res => {
       if (res.syncedCount > 0) {
         setSyncMessage(`${res.syncedCount} nova(s) extensão(ões) do diretório sincronizada(s) para o Firebase!`);
         setTimeout(() => setSyncMessage(null), 5000);
@@ -90,40 +94,21 @@ export const SpecialExtensions: React.FC = () => {
     // Real-time listener
     const unsubscribe = subscribeToExtensions(
       extList => {
-        const effectiveList: WikiExtensionDoc[] =
-          extList.length > 0
-            ? extList
-            : CODEBASE_EXTENSIONS.map(ext => ({
-                id: ext.id,
-                name: ext.name,
-                category: ext.category,
-                version: ext.version,
-                authors: ext.authors,
-                description: ext.description,
-                url: ext.url,
-                gitTag: ext.gitTag,
-                license: ext.license,
-                hooks: ext.hooks,
-                exampleWikitext: ext.exampleWikitext,
-                isActive: ext.defaultActive,
-                installedVia: 'code' as const,
-                config: ext.config || {},
-                updatedAt: new Date().toISOString(),
-              }));
+        const effectiveList = mergeExtensionsWithCodebase(extList);
 
         setExtensions(effectiveList);
         setLoading(false);
 
-        if (!selectedExtension && effectiveList.length > 0) {
-          setSelectedExtension(effectiveList[0]);
-          setPlaygroundInput(effectiveList[0].exampleWikitext || '');
-        } else if (selectedExtension) {
-          // Keep selected extension data updated with remote doc
-          const updated = effectiveList.find(e => e.id === selectedExtension.id);
-          if (updated) {
-            setSelectedExtension(updated);
+        setSelectedExtension(prev => {
+          if (!prev && effectiveList.length > 0) {
+            setPlaygroundInput(effectiveList[0].exampleWikitext || '');
+            return effectiveList[0];
           }
-        }
+          if (prev) {
+            return effectiveList.find(e => e.id === prev.id) || prev;
+          }
+          return prev;
+        });
       },
       err => {
         console.warn('Aviso ao assinar wiki_extensions:', err);
@@ -132,7 +117,7 @@ export const SpecialExtensions: React.FC = () => {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [isBureaucrat]);
 
   // Update playground input when selected extension changes
   const handleSelectExtension = (ext: WikiExtensionDoc) => {
@@ -145,7 +130,9 @@ export const SpecialExtensions: React.FC = () => {
 
   // Run Parsoid / Wikitext playground
   const handleRunPlayground = () => {
-    const result = parseWikitext(playgroundInput, existingPageSlugs);
+    const result = parseWikitext(playgroundInput, existingPageSlugs, {
+      disabledExtensions: disabledExtensionIds,
+    });
     setRenderedHtml(result.html);
   };
 
@@ -155,16 +142,41 @@ export const SpecialExtensions: React.FC = () => {
     setIsSyncingDirs(true);
     setSyncMessage(null);
     try {
-      const res = await syncCodebaseExtensionsToFirestore();
-      if (res.syncedCount > 0) {
+      const res = await syncCodebaseExtensionsToFirestore(isBureaucrat);
+      if (!isBureaucrat) {
+        setSyncMessage('Modo leitura: faça login como Burocrata para gravar extensões no Firestore.');
+      } else if (res.syncedCount > 0) {
         setSyncMessage(`Sucesso! ${res.syncedCount} extensão(ões) adicionada(s) nos diretórios foram sincronizadas.`);
       } else {
         setSyncMessage(`Todas as ${res.totalCodebase} extensões dos diretórios já estão sincronizadas com o Firebase.`);
       }
-    } catch (err) {
+    } catch {
       setSyncMessage('Erro ao sincronizar com o Firebase.');
     } finally {
       setIsSyncingDirs(false);
+      setTimeout(() => setSyncMessage(null), 6000);
+    }
+  };
+
+  const handleActivateAll = async () => {
+    if (!isBureaucrat || isActivatingAll) return;
+    setIsActivatingAll(true);
+    setSyncMessage(null);
+    try {
+      const count = await activateAllExtensionsInFirestore(
+        extensions,
+        isBureaucrat,
+        currentUser.username
+      );
+      setSyncMessage(
+        count > 0
+          ? `${count} extensão(ões) ativada(s) com sucesso no Firestore (configuração padrão restaurada).`
+          : 'Todas as extensões do Wiki já estão ativadas.'
+      );
+    } catch (err: any) {
+      setSyncMessage(err?.message || 'Erro ao ativar todas as extensões.');
+    } finally {
+      setIsActivatingAll(false);
       setTimeout(() => setSyncMessage(null), 6000);
     }
   };
@@ -503,6 +515,20 @@ export const SpecialExtensions: React.FC = () => {
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncingDirs ? 'animate-spin text-blue-600' : ''}`} />
             <span>{isSyncingDirs ? 'Verificando Diretórios...' : 'Sincronizar Diretórios (/src/extensions)'}</span>
           </button>
+
+          {/* Activate All Extensions Button (Bureaucrat Only) */}
+          {isBureaucrat && (
+            <button
+              type="button"
+              onClick={handleActivateAll}
+              disabled={isActivatingAll}
+              className="px-3 py-1.5 rounded font-medium bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs disabled:opacity-60"
+              title="Ativa todas as extensões do Wiki no Firestore (padrão recomendado)"
+            >
+              <CheckCircle2 className={`w-3.5 h-3.5 ${isActivatingAll ? 'animate-pulse' : ''}`} />
+              <span>{isActivatingAll ? 'Ativando Todas...' : 'Ativar Todas (Padrão)'}</span>
+            </button>
+          )}
         </div>
 
         <div className="text-[11px] text-gray-500 flex items-center gap-1.5">
