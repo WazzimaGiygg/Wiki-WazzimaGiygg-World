@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import type { Request, Response } from 'express';
+import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
@@ -122,6 +123,8 @@ async function startServer() {
     }
   });
 
+  const httpServer = http.createServer(app);
+
   if (isProduction) {
     const distDir = path.resolve(__dirname, 'dist');
     app.use(express.static(distDir));
@@ -129,15 +132,64 @@ async function startServer() {
       res.sendFile(path.join(distDir, 'index.html'));
     });
   } else {
+    const disableHmr = process.env.DISABLE_HMR === 'true';
+
+    if (disableHmr) {
+      app.get('/@vite/client', (_req: Request, res: Response) => {
+        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+        res.send(`
+const sheetsMap = new Map();
+export function updateStyle(id, content) {
+  let style = sheetsMap.get(id);
+  if (!style) {
+    style = document.createElement('style');
+    style.setAttribute('type', 'text/css');
+    style.setAttribute('data-vite-dev-id', id);
+    style.textContent = content;
+    document.head.appendChild(style);
+    sheetsMap.set(id, style);
+  } else if (style.textContent !== content) {
+    style.textContent = content;
+  }
+}
+export function removeStyle(id) {
+  const style = sheetsMap.get(id);
+  if (style && style.parentNode) {
+    style.parentNode.removeChild(style);
+    sheetsMap.delete(id);
+  }
+}
+export function createHotContext() {
+  return {
+    data: {},
+    accept() {},
+    acceptExports() {},
+    dispose() {},
+    prune() {},
+    invalidate() {},
+    on() {},
+    off() {},
+    send() {},
+  };
+}
+export function injectQuery(url) { return url; }
+export class ErrorOverlay extends HTMLElement {}
+`);
+      });
+    }
+
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        ...(disableHmr ? { hmr: false, ws: false } : { ws: { server: httpServer } }),
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`WikiWazzimaGiygg server running on http://0.0.0.0:${PORT}`);
   });
 }
