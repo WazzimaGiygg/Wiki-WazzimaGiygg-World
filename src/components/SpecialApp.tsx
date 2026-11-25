@@ -637,7 +637,7 @@ export const SpecialApp: React.FC = () => {
             <span>Privacidade e Segurança</span>
           </div>
           <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-            Mantém bloqueio anti-iframe, conformidade com LGPD/Marco Civil e sincronização segura com o Firebase Firestore.
+            Mantém proteção contra iframes não autorizados (com suporte ao Google AI Studio), conformidade LGPD/Marco Civil e sincronização segura no Firestore.
           </p>
         </div>
       </div>

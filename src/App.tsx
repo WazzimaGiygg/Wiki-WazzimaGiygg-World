@@ -430,13 +430,53 @@ function WikiMain() {
   );
 }
 
+function isAllowedIframeOrigin(originOrUrl: string): boolean {
+  if (!originOrUrl) return false;
+  try {
+    const parsed = new URL(originOrUrl, window.location.origin);
+    if (parsed.origin === window.location.origin) return true;
+    const host = parsed.hostname.toLowerCase();
+    return (
+      host === 'aistudio.google.com' ||
+      host.endsWith('.aistudio.google.com') ||
+      host === 'makersuite.google.com' ||
+      host.endsWith('.googleusercontent.com') ||
+      host.endsWith('.usercontent.goog') ||
+      host.endsWith('.run.app') ||
+      host.endsWith('.web.app') ||
+      host.endsWith('.firebaseapp.com') ||
+      host === 'localhost' ||
+      host === '127.0.0.1'
+    );
+  } catch {
+    return false;
+  }
+}
+
 function isBlockedIframeContext(): boolean {
   try {
+    if (window.self === window.top) return false;
+
     const hostname = window.location.hostname.toLowerCase();
-    const isAiStudioPreview =
-      hostname.startsWith('ais-dev-') || hostname.startsWith('ais-pre-');
-    if (isAiStudioPreview) return false;
-    return window.self !== window.top;
+    if (
+      hostname.startsWith('ais-dev-') ||
+      hostname.startsWith('ais-pre-') ||
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1'
+    ) {
+      return false;
+    }
+
+    const ancestorOrigins = (window.location as Location & { ancestorOrigins?: DOMStringList }).ancestorOrigins;
+    if (ancestorOrigins && ancestorOrigins.length > 0) {
+      return !Array.from(ancestorOrigins).every(origin => isAllowedIframeOrigin(origin));
+    }
+
+    if (document.referrer && isAllowedIframeOrigin(document.referrer)) {
+      return false;
+    }
+
+    return true;
   } catch {
     return true;
   }
