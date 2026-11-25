@@ -27,6 +27,15 @@
   line-height: 1.65;
 }
 
+.mw-body-content :where(p, li, blockquote, dd):where(:not([style*="text-align"], [align], .text-left, .text-center, .text-right)) {
+  text-align: justify;
+  text-justify: inter-word;
+}
+
+.mw-body-content :is(table, .infobox, figure, figcaption, pre, code, .mw-references-wrap, .mw-no-justify, [style*="text-align"], [align], .text-left, .text-center, .text-right) :where(p, li, blockquote, dd) {
+  text-align: inherit;
+}
+
 .mw-headline {
   scroll-margin-top: 4.5rem;
 }
