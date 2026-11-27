@@ -3,7 +3,7 @@ import { MessageSquare, Plus, Send, Clock, User, ArrowLeft, RefreshCw, Lock, Log
 import { useWiki } from '../context/WikiContext';
 import { WikiPage, TalkComment } from '../types/wiki';
 import { subscribeToPageTalks, addTalkComment } from '../services/wikiService';
-import { parseWikitext } from '../core/parser';
+import { expandWikitextTemplates } from '../services/templateService';
 
 interface TalkViewProps {
   page: WikiPage | null;
@@ -12,7 +12,7 @@ interface TalkViewProps {
 }
 
 export const TalkView: React.FC<TalkViewProps> = ({ page, slug, onBackToArticle }) => {
-  const { currentUser, existingPageSlugs, loginWithGoogle } = useWiki();
+  const { currentUser, existingPageSlugs, loginWithGoogle, disabledExtensionIds } = useWiki();
 
   const [topics, setTopics] = useState<TalkComment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -218,7 +218,10 @@ export const TalkView: React.FC<TalkViewProps> = ({ page, slug, onBackToArticle 
               <div
                 className="mw-body-content leading-relaxed text-gray-800 dark:text-gray-200"
                 dangerouslySetInnerHTML={{
-                  __html: parseWikitext(topic.content, existingPageSlugs).html,
+                  __html: expandWikitextTemplates(topic.content, existingPageSlugs, {
+                    pageSlug: slug,
+                    disabledExtensions: disabledExtensionIds,
+                  }).html,
                 }}
               />
             </div>

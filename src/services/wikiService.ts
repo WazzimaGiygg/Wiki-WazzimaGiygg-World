@@ -973,15 +973,89 @@ export interface UserPagesResult {
   userTalkTitle: string;
   isDisambiguated: boolean;
   createdPages: string[];
+  welcomeMessageAdded: boolean;
+}
+
+const inFlightUserPages = new Map<string, Promise<UserPagesResult>>();
+
+async function ensureWelcomeTalkTopic(
+  rawPageSlug: string,
+  userName: string,
+  uid: string,
+  userPageSlug: string,
+  userTalkSlug: string
+): Promise<boolean> {
+  const slug = slugify(rawPageSlug);
+  const welcomeDocId = `welcome_${uid}`;
+  const path = `${WIKI_PAGES_COLLECTION}/${slug}/talks/${welcomeDocId}`;
+  const talkRef = doc(db, `${WIKI_PAGES_COLLECTION}/${slug}/talks`, welcomeDocId);
+
+  try {
+    const existing = await getDoc(talkRef);
+    if (existing.exists()) {
+      return false;
+    }
+
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    const welcomeWikitext = `{{Info|título=Seja bem-vindo(a) ao WikiWazzimaGiygg, ${userName}!|texto=Sua conta foi autenticada com sucesso em ${formattedDate}. Este é o seu espaço pessoal de comunicação com a comunidade.}}
+
+Olá, '''${userName}'''! É um prazer receber você no '''WikiWazzimaGiygg'''.
+
+Aqui estão alguns atalhos úteis para os seus primeiros passos:
+* '''Sua página pessoal:''' [[${userPageSlug}|Usuário:${userName}]] (personalize seu perfil e Infobox).
+* '''Sua página de discussão:''' [[${userTalkSlug}|Discussão de Usuário:${userName}]] (acompanhe mensagens e avisos de outros editores).
+* '''Como editar:''' Leia o guia [[Ajuda:Wikitexto]] e descubra as caixas reutilizáveis em [[Ajuda:Predefinições]].
+* '''Aplicativo e alertas:''' Instale o app ou ative notificações push de páginas vigiadas em [[Especial:Aplicativo]].
+* '''Boas práticas:''' Conheça o [[Wiki:Código_Universal_de_Conduta|Código Universal de Conduta]].
+
+Desejamos ótimas contribuições! — ''Equipe WikiWazzimaGiygg''`;
+
+    await setDoc(talkRef, {
+      pageId: slug,
+      topicTitle: `Boas-vindas ao WikiWazzimaGiygg, ${userName}!`,
+      content: welcomeWikitext,
+      author: 'Equipe WikiWazzimaGiygg',
+      authorId: uid,
+      timestamp: now.toISOString(),
+    });
+    return true;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
 }
 
 /**
  * Creates initial user page (Usuário:<Nome>) and user talk page (Discussão_Usuário:<Nome>)
- * automatically in Firestore upon first login.
+ * automatically in Firestore upon first login, including a welcome message on their personal talk page.
  * If another user already exists with the same name, disambiguates by appending Google UID
  * (Usuário:<Nome> (<UID>)) to ensure pages are never shared or overwritten between users.
  */
-export async function ensureUserPagesExist(user: {
+export function ensureUserPagesExist(user: {
+  uid: string;
+  displayName?: string | null;
+  email?: string | null;
+  photoURL?: string | null;
+  creationTime?: string | null;
+}): Promise<UserPagesResult> {
+  const existingPromise = inFlightUserPages.get(user.uid);
+  if (existingPromise) {
+    return existingPromise;
+  }
+
+  const runPromise = runEnsureUserPagesExist(user).finally(() => {
+    inFlightUserPages.delete(user.uid);
+  });
+  inFlightUserPages.set(user.uid, runPromise);
+  return runPromise;
+}
+
+async function runEnsureUserPagesExist(user: {
   uid: string;
   displayName?: string | null;
   email?: string | null;
@@ -990,6 +1064,7 @@ export async function ensureUserPagesExist(user: {
 }): Promise<UserPagesResult> {
   const baseName = (user.displayName || user.email?.split('@')[0] || 'Usuário').trim();
   const createdPages: string[] = [];
+  let welcomeMessageAdded = false;
 
   const disambiguatedTitle = `Usuário:${baseName} (${user.uid})`;
   const disambiguatedTalkTitle = `Discussão_Usuário:${baseName} (${user.uid})`;
@@ -1005,18 +1080,24 @@ export async function ensureUserPagesExist(user: {
   // 1. Check if user already has an existing disambiguated page they own
   const userDisambiguatedPage = await getPage(disambiguatedTitle);
   if (userDisambiguatedPage && userDisambiguatedPage.authorId === user.uid) {
+    const userSlug = slugify(disambiguatedTitle);
+    const talkSlug = slugify(disambiguatedTalkTitle);
     const existingTalk = await getPage(disambiguatedTalkTitle);
     if (!existingTalk) {
-      await createInitialUserTalkPage(disambiguatedTalkTitle, baseName, user.uid);
+      await createInitialUserTalkPage(disambiguatedTalkTitle, baseName, user.uid, userSlug);
       createdPages.push(disambiguatedTalkTitle);
+      const postedTalk = await ensureWelcomeTalkTopic(talkSlug, baseName, user.uid, userSlug, talkSlug);
+      const postedUserTalk = await ensureWelcomeTalkTopic(userSlug, baseName, user.uid, userSlug, talkSlug);
+      welcomeMessageAdded = postedTalk || postedUserTalk || true;
     }
     return {
-      userPageSlug: slugify(disambiguatedTitle),
-      userTalkSlug: slugify(disambiguatedTalkTitle),
+      userPageSlug: userSlug,
+      userTalkSlug: talkSlug,
       userPageTitle: disambiguatedTitle,
       userTalkTitle: disambiguatedTalkTitle,
       isDisambiguated: true,
       createdPages,
+      welcomeMessageAdded,
     };
   }
 
@@ -1025,24 +1106,32 @@ export async function ensureUserPagesExist(user: {
   if (standardPage) {
     if (standardPage.authorId === user.uid) {
       // The standard page is already owned by this exact user
+      const userSlug = slugify(standardTitle);
+      const talkSlug = slugify(standardTalkTitle);
       const existingTalk = await getPage(standardTalkTitle);
       if (!existingTalk) {
-        await createInitialUserTalkPage(standardTalkTitle, baseName, user.uid);
+        await createInitialUserTalkPage(standardTalkTitle, baseName, user.uid, userSlug);
         createdPages.push(standardTalkTitle);
+        const postedTalk = await ensureWelcomeTalkTopic(talkSlug, baseName, user.uid, userSlug, talkSlug);
+        const postedUserTalk = await ensureWelcomeTalkTopic(userSlug, baseName, user.uid, userSlug, talkSlug);
+        welcomeMessageAdded = postedTalk || postedUserTalk || true;
       }
       return {
-        userPageSlug: slugify(standardTitle),
-        userTalkSlug: slugify(standardTalkTitle),
+        userPageSlug: userSlug,
+        userTalkSlug: talkSlug,
         userPageTitle: standardTitle,
         userTalkTitle: standardTalkTitle,
         isDisambiguated: false,
         createdPages,
+        welcomeMessageAdded,
       };
     } else {
       // Collision detected! Another user already owns the standard title.
       // Append the Google UID to the created page name:
       const targetTitle = disambiguatedTitle;
       const targetTalkTitle = disambiguatedTalkTitle;
+      const userSlug = slugify(targetTitle);
+      const talkSlug = slugify(targetTalkTitle);
 
       const existingTarget = await getPage(targetTitle);
       if (!existingTarget) {
@@ -1051,16 +1140,22 @@ export async function ensureUserPagesExist(user: {
       }
       const existingTargetTalk = await getPage(targetTalkTitle);
       if (!existingTargetTalk) {
-        await createInitialUserTalkPage(targetTalkTitle, baseName, user.uid);
+        await createInitialUserTalkPage(targetTalkTitle, baseName, user.uid, userSlug);
         createdPages.push(targetTalkTitle);
       }
+      if (!existingTarget || !existingTargetTalk) {
+        await ensureWelcomeTalkTopic(talkSlug, baseName, user.uid, userSlug, talkSlug);
+        await ensureWelcomeTalkTopic(userSlug, baseName, user.uid, userSlug, talkSlug);
+        welcomeMessageAdded = true;
+      }
       return {
-        userPageSlug: slugify(targetTitle),
-        userTalkSlug: slugify(targetTalkTitle),
+        userPageSlug: userSlug,
+        userTalkSlug: talkSlug,
         userPageTitle: targetTitle,
         userTalkTitle: targetTalkTitle,
         isDisambiguated: true,
         createdPages,
+        welcomeMessageAdded,
       };
     }
   }
@@ -1085,6 +1180,9 @@ export async function ensureUserPagesExist(user: {
     isDisambiguated = true;
   }
 
+  const finalUserSlug = slugify(finalTitle);
+  const finalTalkSlug = slugify(finalTalkTitle);
+
   // Create user page if needed
   const existingUserPage = await getPage(finalTitle);
   if (!existingUserPage) {
@@ -1095,17 +1193,25 @@ export async function ensureUserPagesExist(user: {
   // Create user talk page if needed
   const existingTalkPage = await getPage(finalTalkTitle);
   if (!existingTalkPage) {
-    await createInitialUserTalkPage(finalTalkTitle, baseName, user.uid);
+    await createInitialUserTalkPage(finalTalkTitle, baseName, user.uid, finalUserSlug);
     createdPages.push(finalTalkTitle);
   }
 
+  // Always add welcome discussion messages for a newly registered user login
+  if (!existingUserPage || !existingTalkPage) {
+    await ensureWelcomeTalkTopic(finalTalkSlug, baseName, user.uid, finalUserSlug, finalTalkSlug);
+    await ensureWelcomeTalkTopic(finalUserSlug, baseName, user.uid, finalUserSlug, finalTalkSlug);
+    welcomeMessageAdded = true;
+  }
+
   return {
-    userPageSlug: slugify(finalTitle),
-    userTalkSlug: slugify(finalTalkTitle),
+    userPageSlug: finalUserSlug,
+    userTalkSlug: finalTalkSlug,
     userPageTitle: finalTitle,
     userTalkTitle: finalTalkTitle,
     isDisambiguated,
     createdPages,
+    welcomeMessageAdded,
   };
 }
 
@@ -1193,17 +1299,34 @@ Você pode editar esta página a qualquer momento clicando na aba '''Editar''' e
 async function createInitialUserTalkPage(
   title: string,
   userName: string,
-  uid: string
+  uid: string,
+  userPageSlug?: string
 ): Promise<WikiPage> {
+  const nowFormatted = new Date().toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+  const profileLink = userPageSlug
+    ? `[[${userPageSlug}|sua página de usuário]]`
+    : `[[Usuário:${userName}|sua página de usuário]]`;
+
   const content = `== Discussão de Usuário: ${userName} ==
 
-Esta é a página de discussão de '''${userName}''' no '''WikiWazzimaGiygg'''. Outros colaboradores autenticados podem utilizar este espaço para deixar mensagens, sugestões e orientações sobre edições.
+{{Info|título=Boas-vindas ao WikiWazzimaGiygg, ${userName}!|texto=Sua conta foi criada/autenticada com sucesso em ${nowFormatted}. Esta é a sua página de discussão pessoal para conversar com a comunidade, tirar dúvidas e receber avisos de outros editores.}}
 
-=== Boas-vindas ===
-Olá, '''${userName}'''! Seja muito bem-vindo(a) à comunidade WikiWazzimaGiygg.
-* Você pode usar esta página para receber notificações de outros editores.
-* Para iniciar uma nova conversa, use o botão de novo tópico ou edite esta seção.
-* Lembre-se sempre de manter uma comunicação respeitosa e construtiva.
+=== Mensagem de Boas-vindas ===
+Olá, '''${userName}'''! Seja muito bem-vindo(a) à comunidade '''WikiWazzimaGiygg'''! 🎉
+
+* '''Perfil pessoal:''' Acesse ${profileLink} para personalizar sua apresentação e seu Infobox.
+* '''Primeiras edições:''' Consulte [[Ajuda:Wikitexto]] para aprender a formatar textos, links, tabelas e citações, ou utilize o editor formatado lado a lado.
+* '''Predefinições:''' Veja modelos prontos de caixas informativas e avisos em [[Ajuda:Predefinições]] e [[Exemplo_de_Uso_de_Predefinições]].
+* '''Notificações e App:''' Você pode vigiar artigos (ícone de estrela) e configurar alertas push em [[Especial:Aplicativo]].
+* '''Convivência:''' Lembre-se sempre de manter uma comunicação respeitosa seguindo o [[Wiki:Código_Universal_de_Conduta|Código Universal de Conduta]].
+
+Para responder ou abrir novos tópicos em tempo real, clique na aba '''Discussão''' no topo desta página ou edite diretamente clicando em '''Editar'''.
+
+''Boas contribuições!'' — '''Equipe WikiWazzimaGiygg''' (${nowFormatted})
 
 [[Categoria:Discussões_de_Usuários]]`;
 
@@ -1211,7 +1334,7 @@ Olá, '''${userName}'''! Seja muito bem-vindo(a) à comunidade WikiWazzimaGiygg.
     slug: slugify(title),
     title,
     content,
-    summary: 'Criação automática de página de discussão de usuário no primeiro acesso',
+    summary: 'Criação automática de página de discussão pessoal com mensagem de boas-vindas no primeiro login',
     author: userName,
     authorId: uid,
     namespace: 'Talk',

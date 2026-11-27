@@ -87,6 +87,12 @@ interface WikiContextType {
   latestToastAlert: PushNotificationLogItem | null;
   dismissToastAlert: () => void;
   sendTestPushNotification: () => Promise<{ ok: boolean; message: string }>;
+  welcomeBanner: {
+    userName: string;
+    userTalkSlug: string;
+    userPageSlug: string;
+  } | null;
+  dismissWelcomeBanner: () => void;
 }
 
 const DEFAULT_SETTINGS: WikiSettings = {
@@ -145,6 +151,11 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
     userTalkTitle: string;
     isDisambiguated: boolean;
   } | null>(null);
+  const [welcomeBanner, setWelcomeBanner] = useState<{
+    userName: string;
+    userTalkSlug: string;
+    userPageSlug: string;
+  } | null>(null);
 
   // Sync hash routing e.g. #/wiki/MediaWiki or #/wiki/MediaWiki?action=edit
   useEffect(() => {
@@ -195,6 +206,13 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
             creationTime: user.metadata?.creationTime,
           });
           setUserPagesInfo(res);
+          if (res.welcomeMessageAdded) {
+            setWelcomeBanner({
+              userName: user.displayName || user.email?.split('@')[0] || 'Usuário',
+              userTalkSlug: res.userTalkSlug,
+              userPageSlug: res.userPageSlug,
+            });
+          }
         } catch (err) {
           console.warn('Could not auto-create user pages on login:', err);
         }
@@ -202,6 +220,7 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
         if (unsubRights) unsubRights();
         setUserRights(null);
         setUserPagesInfo(null);
+        setWelcomeBanner(null);
       }
     });
 
@@ -836,6 +855,8 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
         latestToastAlert,
         dismissToastAlert,
         sendTestPushNotification,
+        welcomeBanner,
+        dismissWelcomeBanner: () => setWelcomeBanner(null),
       }}
     >
       {children}

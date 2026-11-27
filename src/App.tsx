@@ -26,7 +26,7 @@ import { Footer } from './components/Footer';
 import { LocalSettingsModal } from './components/LocalSettingsModal';
 import { subscribeToPage } from './services/wikiService';
 import { WikiPage } from './types/wiki';
-import { Loader2, Blocks, Lock, BellRing, X } from 'lucide-react';
+import { Loader2, Blocks, Lock, BellRing, X, MessageSquare } from 'lucide-react';
 import { updateDocumentSEO } from './utils/seo';
 
 function WikiMain() {
@@ -42,6 +42,8 @@ function WikiMain() {
     navigateToPage,
     latestToastAlert,
     dismissToastAlert,
+    welcomeBanner,
+    dismissWelcomeBanner,
   } = useWiki();
 
   const [currentPage, setCurrentPage] = useState<WikiPage | null>(null);
@@ -355,8 +357,43 @@ function WikiMain() {
         <Sidebar onOpenSettings={() => setSettingsOpen(true)} />
 
         <main className="flex-1 min-w-0 pb-16">
-          {(settings.maintenanceMode || settings.siteNotice) && (
+          {(settings.maintenanceMode || settings.siteNotice || welcomeBanner) && (
             <div className="print:hidden px-4 sm:px-8 pt-3 max-w-5xl space-y-2">
+              {welcomeBanner && (
+                <div className="px-4 py-3 rounded border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-100 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-2.5">
+                    <MessageSquare className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <div className="font-semibold">
+                        Boas-vindas ao {settings.sitename}, {welcomeBanner.userName}!
+                      </div>
+                      <p className="text-emerald-800 dark:text-emerald-200/90 leading-snug">
+                        Adicionamos automaticamente uma mensagem de boas-vindas com atalhos e instruções na sua página de discussão pessoal.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigateToPage(welcomeBanner.userTalkSlug);
+                        dismissWelcomeBanner();
+                      }}
+                      className="px-3 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-medium cursor-pointer transition-colors"
+                    >
+                      Abrir Página de Discussão
+                    </button>
+                    <button
+                      type="button"
+                      onClick={dismissWelcomeBanner}
+                      className="p-1 rounded text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200/60 dark:hover:bg-emerald-900/60 cursor-pointer"
+                      aria-label="Fechar aviso de boas-vindas"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
               {settings.maintenanceMode && (
                 <div className="px-3.5 py-2 rounded border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs">
                   <strong>Modo de Manutenção (Somente Leitura):</strong>{' '}
