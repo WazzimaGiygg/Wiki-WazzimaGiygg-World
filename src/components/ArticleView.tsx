@@ -39,6 +39,7 @@ import { canUserEditPage, getEffectiveProtectionLevel } from '../services/wikiSe
 import { getFileDoc } from '../services/extensionService';
 import { WikiFileDoc } from '../extensions/types';
 import { PageProtectionModal } from './PageProtectionModal';
+import { CategoryExplorer } from './CategoryExplorer';
 import { WIKI_SITE_VERSION } from '../core/version';
 
 interface ArticleViewProps {
@@ -205,8 +206,40 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
     }
   }, [page?.updatedAt]);
 
+  const isCategoryNamespace = /^(Categoria|Category):/i.test(slug);
+  const categoryNamespaceName = isCategoryNamespace
+    ? slug.replace(/^(Categoria|Category):/i, '').replace(/_/g, ' ').trim()
+    : '';
+
   // Page does not exist yet state (MediaWiki prompt to create page)
   if (!page) {
+    if (isCategoryNamespace && extCategories) {
+      return (
+        <div className="py-4 space-y-5">
+          <div className="border-b border-[#a2a9b1] dark:border-gray-700 pb-2 flex flex-wrap items-center justify-between gap-2">
+            <h1 className="text-3xl font-serif font-normal text-gray-900 dark:text-gray-100">
+              {slug.replace(/_/g, ' ')}
+            </h1>
+            {!currentUser.isAnonymous && (
+              <button
+                type="button"
+                onClick={() => onEdit()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3366cc] hover:bg-[#254b99] text-white rounded font-medium text-xs cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Adicionar descrição da categoria</span>
+              </button>
+            )}
+          </div>
+          <CategoryExplorer
+            initialCategory={categoryNamespaceName}
+            embedded
+            hideCategoryPageLink
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="py-6">
         <h1 className="text-3xl font-serif font-normal text-gray-900 dark:text-gray-100 border-b border-[#a2a9b1] dark:border-gray-700 pb-2 mb-4">
@@ -632,28 +665,48 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
         dangerouslySetInnerHTML={{ __html: parseResult.html }}
       />
 
+      {/* Embedded Category Member List on Categoria: pages */}
+      {isCategoryNamespace && extCategories && (
+        <div className="my-6 pt-4 border-t border-gray-200 dark:border-gray-800">
+          <CategoryExplorer
+            initialCategory={categoryNamespaceName}
+            embedded
+            hideCategoryPageLink
+          />
+        </div>
+      )}
+
       {/* Categories Box (mw-catlinks) */}
       {extCategories && parseResult.categories.length > 0 && (
         <div
           id="catlinks"
-          className="my-6 p-2 bg-[#f8f9fa] dark:bg-gray-900 border border-[#a2a9b1] dark:border-gray-700 rounded text-xs flex flex-wrap items-center gap-1.5 text-gray-700 dark:text-gray-300"
+          className="my-6 p-2 bg-[#f8f9fa] dark:bg-gray-900 border border-[#a2a9b1] dark:border-gray-700 rounded text-xs flex flex-wrap items-center justify-between gap-2 text-gray-700 dark:text-gray-300"
         >
-          <span className="font-semibold text-gray-500 flex items-center gap-1">
-            <Tag className="w-3 h-3" />
-            <span>Categorias:</span>
-          </span>
-          {parseResult.categories.map((cat, idx) => (
-            <React.Fragment key={cat}>
-              {idx > 0 && <span className="text-gray-400">|</span>}
-              <button
-                type="button"
-                onClick={() => navigateToPage(`Categoria:${cat}`)}
-                className="text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer"
-              >
-                {cat}
-              </button>
-            </React.Fragment>
-          ))}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="font-semibold text-gray-500 flex items-center gap-1">
+              <Tag className="w-3 h-3" />
+              <span>Categorias:</span>
+            </span>
+            {parseResult.categories.map((cat, idx) => (
+              <React.Fragment key={cat}>
+                {idx > 0 && <span className="text-gray-400">|</span>}
+                <button
+                  type="button"
+                  onClick={() => navigateToPage(`Categoria:${cat}`)}
+                  className="text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer"
+                >
+                  {cat}
+                </button>
+              </React.Fragment>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => navigateToPage('Especial:Categorias')}
+            className="text-[11px] text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer shrink-0"
+          >
+            Explorar todas
+          </button>
         </div>
       )}
 

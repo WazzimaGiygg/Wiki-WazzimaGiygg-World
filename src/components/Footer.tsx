@@ -41,6 +41,10 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSettings }) => {
       : []),
     { label: 'Sobre a Wiki', slug: 'Página_principal' },
     { label: `Versão (${WIKI_SITE_VERSION})`, slug: 'Especial:Versão' },
+    { label: 'Páginas especiais', slug: 'Especial:Páginas_especiais' },
+    ...(isExtensionActive('dynamic-page-list')
+      ? [{ label: 'Categorias', slug: 'Especial:Categorias' }]
+      : []),
     { label: 'Extensões', slug: 'Especial:Extensões' },
     ...(extPwaApp ? [{ label: 'Aplicativo (PC/Celular)', slug: 'Especial:Aplicativo' }] : []),
     ...(extRecentChanges

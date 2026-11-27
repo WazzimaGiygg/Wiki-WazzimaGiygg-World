@@ -16,6 +16,8 @@ import {
   Upload,
   Braces,
   Smartphone,
+  Compass,
+  Tag,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { getRandomPageSlug } from '../utils/randomPage';
@@ -58,6 +60,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
     ...(isExtensionActive('all-pages-index')
       ? [{ label: 'Todas as páginas', slug: 'Especial:Todas_as_páginas', icon: List }]
       : []),
+    ...(isExtensionActive('dynamic-page-list')
+      ? [{ label: 'Categorias', slug: 'Especial:Categorias', icon: Tag }]
+      : []),
+    { label: 'Páginas especiais', slug: 'Especial:Páginas_especiais', icon: Compass },
   ];
 
   const archLinks = [

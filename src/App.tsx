@@ -20,6 +20,8 @@ import { SpecialExtensions } from './components/SpecialExtensions';
 import { SpecialUpload } from './components/SpecialUpload';
 import { SpecialPrivacy } from './components/SpecialPrivacy';
 import { SpecialApp } from './components/SpecialApp';
+import { SpecialPagesHub } from './components/SpecialPagesHub';
+import { CategoryExplorer } from './components/CategoryExplorer';
 import { ConsentBanner } from './components/ConsentBanner';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { Footer } from './components/Footer';
@@ -140,6 +142,21 @@ function WikiMain() {
       return isExtensionActive('recent-changes')
         ? <SpecialRecentChanges />
         : renderDisabledExtensionNotice('Mudanças Recentes', 'recent-changes');
+    }
+    if (
+      currentSlug === 'Especial:Páginas_especiais' ||
+      currentSlug === 'Especial:Paginas_especiais' ||
+      currentSlug === 'Special:SpecialPages'
+    ) {
+      return <SpecialPagesHub />;
+    }
+    if (
+      currentSlug === 'Especial:Categorias' ||
+      currentSlug === 'Special:Categories'
+    ) {
+      return isExtensionActive('dynamic-page-list')
+        ? <CategoryExplorer />
+        : renderDisabledExtensionNotice('Explorador de Categorias (DPL)', 'dynamic-page-list');
     }
     if (currentSlug === 'Especial:Todas_as_páginas' || currentSlug === 'Special:AllPages') {
       return isExtensionActive('all-pages-index')
