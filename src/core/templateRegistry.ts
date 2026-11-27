@@ -170,23 +170,55 @@ export function stripTemplateViewingTags(rawContent: string): string {
 export function extractTemplateParams(rawContent: string): TemplateParamMeta[] {
   const transcludable = extractTransclusionBody(rawContent);
   const seen = new Map<string, TemplateParamMeta>();
-  const regex = /\{\{\{([^|{}]+)(?:\|([^{}]*))?\}\}\}/g;
-  let match: RegExpExecArray | null;
 
-  while ((match = regex.exec(transcludable)) !== null) {
-    const paramName = match[1].trim();
-    if (!paramName) continue;
-    const defaultValue = match[2] !== undefined ? match[2].trim() : undefined;
-    if (!seen.has(paramName)) {
-      seen.set(paramName, {
-        name: paramName,
-        isPositional: /^\d+$/.test(paramName),
-        defaultValue,
-      });
-    } else if (defaultValue && !seen.get(paramName)?.defaultValue) {
-      const existing = seen.get(paramName)!;
-      seen.set(paramName, { ...existing, defaultValue });
+  let i = 0;
+  while (i < transcludable.length) {
+    if (
+      transcludable[i] === '{' &&
+      transcludable[i + 1] === '{' &&
+      transcludable[i + 2] === '{'
+    ) {
+      let depth = 3;
+      let j = i + 3;
+      let firstPipe = -1;
+      while (j < transcludable.length && depth > 0) {
+        const ch = transcludable[j];
+        if (ch === '{') depth++;
+        else if (ch === '}') depth--;
+        else if (ch === '|' && depth === 3 && firstPipe === -1) {
+          firstPipe = j;
+        }
+        j++;
+      }
+
+      if (depth === 0) {
+        const nameEnd = firstPipe !== -1 ? firstPipe : j - 3;
+        const paramName = transcludable.slice(i + 3, nameEnd).trim();
+        const defaultRaw =
+          firstPipe !== -1 ? transcludable.slice(firstPipe + 1, j - 3).trim() : undefined;
+        // Hide raw nested {{{...}}} markup from placeholder text
+        const cleanDefault =
+          defaultRaw && !/\{\{\{/.test(defaultRaw) ? defaultRaw : undefined;
+
+        if (paramName && !/[{}<>]/.test(paramName)) {
+          if (!seen.has(paramName)) {
+            seen.set(paramName, {
+              name: paramName,
+              isPositional: /^\d+$/.test(paramName),
+              defaultValue: cleanDefault,
+            });
+          } else if (cleanDefault && !seen.get(paramName)?.defaultValue) {
+            const existing = seen.get(paramName)!;
+            seen.set(paramName, { ...existing, defaultValue: cleanDefault });
+          }
+        }
+
+        // Advance past opening {{{ so inner nested {{{1|}}} defaults are also discovered
+        i += 3;
+        continue;
+      }
     }
+    i++;
   }
 
   return Array.from(seen.values()).sort((a, b) => {

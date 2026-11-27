@@ -1,6 +1,8 @@
 import { WikiPage } from '../types/wiki';
+import { WIKIPEDIA_DEFAULT_TEMPLATES } from './wikipediaTemplates';
 
 export const INITIAL_PAGES: Record<string, WikiPage> = {
+  ...WIKIPEDIA_DEFAULT_TEMPLATES,
   'Página_principal': {
     slug: 'Página_principal',
     title: 'Página principal',
@@ -265,12 +267,34 @@ As predefinições [[Predefinição:Sim]], [[Predefinição:Não]] e [[Predefini
 | [[Predefinição:Fonte]] || \`<ref>{{Fonte|Autor|Título|Ano|URL}}</ref>\` || Transclusão em nota de rodapé
 |}
 
-== 6. Marcação de Esboço e Portais ao Rodapé ==
+== 6. Clássicos da Wikipédia: Citações, Formatação e Navegação ==
+Agora o sistema também traz dezenas das predefinições mais utilizadas pela Wikipédia em Português, incluindo citações bibliográficas (\`{{Citar_web}}\`, \`{{Citar_livro}}\`, \`{{Citar_periódico}}\`), marcações inline (\`{{Sem_fonte}}\`, \`{{Quando}}\`, \`{{Quem}}\`), formatação tipográfica (\`{{Tecla}}\`, \`{{Cor}}\`, \`{{Lang}}\`, \`{{Fórmula}}\`, \`{{Ocultar}}\`) e caixas de rodapé (\`{{Navbox}}\`, \`{{Controle_de_autoridade}}\`):
+
+* '''Atalhos de teclado:''' Pressione {{Tecla|Ctrl|B}} para negrito ou {{Tecla|Ctrl|S}} para salvar.
+* '''Amostras de cor e unidades:''' {{Cor|#3366cc|Azul MediaWiki}} e distância de {{Unidade|384 400|km}}.
+* '''Idiomas e fórmulas:''' Termo {{Lang|en|Open Source}} e equação {{Fórmula|E = mc²|número=1}}
+* '''Marcações de verificação inline:''' Afirmação sem fonte comprovada{{Sem_fonte|data=Novembro de 2026}} ou data vaga{{Quando}}.
+* '''Discussões e votações:''' {{Concordo|Modelo padronizado aprovado}} e {{Feito|Integrado ao catálogo}}.
+
+{{Ocultar|título=Clique para expandir: Exemplo de Citação Web e Navbox da Wikipédia|conteúdo=Exemplo de citação com {{Citar_web|url=https://wikiwazzimagiygg.wazzimagiygg.com|título=Portal Oficial WikiWazzimaGiygg|autor=Equipe Editorial|obra=WikiWazzimaGiygg|data=2026}}}}
+
+{{Navbox
+| título = Guia de Pré-definições do {{SITENAME}}
+| grupo1 = Citações
+| lista1 = {{Lista_horizontal|[[Predefinição:Citar_web]]|[[Predefinição:Citar_livro]]|[[Predefinição:Citar_jornal]]|[[Predefinição:Citar_periódico]]}}
+| grupo2 = Manutenção
+| lista2 = {{Lista_horizontal|[[Predefinição:Wikificar]]|[[Predefinição:Carece_de_fontes]]|[[Predefinição:Parcialidade]]|[[Predefinição:Fusão]]}}
+| rodapé = [[Ajuda:Predefinições|Ver catálogo completo das 88 pré-definições]]
+}}
+
+== 7. Marcação de Esboço e Portais ao Rodapé ==
 Ao final do artigo, a chamada \`{{Esboço|Pré-definições MediaWiki}}\` exibe o banner de expansão e adiciona automaticamente o artigo à [[:Categoria:Esboços]]:
 
 {{Esboço|Pré-definições MediaWiki}}
 
 {{Portal|Wikitexto|Predefinições|TypeScript}}
+
+{{Controle_de_autoridade|VIAF=100200300|ORCID=0000-0002-1825-0097}}
 
 == Referências ==
 <references />
@@ -1004,6 +1028,24 @@ As predefinições do WikiWazzimaGiygg suportam palavras mágicas e lógica cond
 |-
 | [[Predefinição:Portal]] || \`{{Portal|Tecnologia|Privacidade}}\` || Caixa de rodapé indicando portais temáticos relacionados
 |}
+
+== 6. Catálogo Completo de Predefinições da Wikipédia ==
+Além das predefinições básicas acima, o WikiWazzimaGiygg inclui um amplo acervo dos modelos mais populares da Wikipédia Lusófona:
+
+=== Citações e Referências ===
+* '''Bibliográficas:''' [[Predefinição:Citar_web]], [[Predefinição:Citar_livro]], [[Predefinição:Citar_jornal]], [[Predefinição:Citar_periódico]], [[Predefinição:Citar_vídeo]], [[Predefinição:Citar_tese]], [[Predefinição:Citar_enciclopédia]]
+* '''Marcações inline:''' [[Predefinição:Sem_fonte]], [[Predefinição:Carece_de_esclarecimento]], [[Predefinição:Quando]], [[Predefinição:Quem]], [[Predefinição:Onde]], [[Predefinição:Verificar_credibilidade]], [[Predefinição:Ligação_inativa]]
+
+=== Manutenção, Qualidade e Avisos ===
+* '''Manutenção editorial:''' [[Predefinição:Wikificar]], [[Predefinição:Formatar_referências]], [[Predefinição:Reciclagem]], [[Predefinição:Contextualizar]], [[Predefinição:Expandir]], [[Predefinição:Parcialidade]], [[Predefinição:Contraditório]], [[Predefinição:Globalizar]], [[Predefinição:Publicidade]], [[Predefinição:Falta_de_notoriedade]], [[Predefinição:Conflito_de_interesses]], [[Predefinição:Fusão]], [[Predefinição:Órfão]], [[Predefinição:Sem_categoria]], [[Predefinição:Sem_imagem]]
+* '''Tradução e proteção:''' [[Predefinição:Traduzir]], [[Predefinição:Revisão_de_tradução]], [[Predefinição:Protegido]], [[Predefinição:Eliminação_rápida]], [[Predefinição:Páginas_para_eliminar]], [[Predefinição:Direitos_autorais]]
+* '''Avisos temáticos e selos:''' [[Predefinição:Spoiler]], [[Predefinição:Médico]], [[Predefinição:Aviso_legal]], [[Predefinição:Artigo_destacado]], [[Predefinição:Artigo_bom]]
+
+=== Formatação, Navegação e Comunidade ===
+* '''Notas de topo (Hatnotes):''' [[Predefinição:Não_confundir]], [[Predefinição:Redirecionamento]], [[Predefinição:Mais_detalhes]], [[Predefinição:Sobre]], [[Predefinição:Minidesambiguação]], [[Predefinição:Ver_desambiguação]]
+* '''Tipografia e layout:''' [[Predefinição:Lang]], [[Predefinição:Pronúncia]], [[Predefinição:Etimologia]], [[Predefinição:Epígrafe]], [[Predefinição:Destaque]], [[Predefinição:Tecla]], [[Predefinição:Código]], [[Predefinição:Cor]], [[Predefinição:Idade]], [[Predefinição:Fórmula]], [[Predefinição:Unidade]], [[Predefinição:Lista_horizontal]], [[Predefinição:Ocultar]], [[Predefinição:Limpar]]
+* '''Navegação e rodapé:''' [[Predefinição:Navbox]], [[Predefinição:Sucessão]], [[Predefinição:Projetos_irmãos]], [[Predefinição:Controle_de_autoridade]], [[Predefinição:Coordenadas]], [[Predefinição:Versão_estável]]
+* '''Discussões e votações:''' [[Predefinição:Boas-vindas]], [[Predefinição:Ping]], [[Predefinição:Resposta]], [[Predefinição:Assinado]], [[Predefinição:Concordo]], [[Predefinição:Discordo]], [[Predefinição:Neutro]], [[Predefinição:Comentário]], [[Predefinição:Feito]], [[Predefinição:Em_andamento]], [[Predefinição:Não_feito]], [[Predefinição:Traduzido_de]], [[Predefinição:Arquivo_de_discussão]]
 
 [[Categoria:Ajuda]]
 [[Categoria:Documentação]]

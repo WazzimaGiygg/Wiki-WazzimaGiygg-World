@@ -56,46 +56,58 @@ export async function seedInitialPagesIfNeeded(): Promise<void> {
   if (isSeeding || !auth.currentUser || auth.currentUser.isAnonymous) return;
   isSeeding = true;
   try {
-    const mainDocRef = doc(db, WIKI_PAGES_COLLECTION, 'Página_principal');
-    const snap = await getDoc(mainDocRef);
+    const existingSnap = await getDocs(collection(db, WIKI_PAGES_COLLECTION));
+    const existingSlugs = new Set(existingSnap.docs.map(d => d.id));
 
-    // Seed any missing default policy pages
-    for (const [slug, page] of Object.entries(INITIAL_PAGES)) {
-      const pageRef = doc(db, WIKI_PAGES_COLLECTION, slug);
-      const pageSnap = await getDoc(pageRef);
-      if (!pageSnap.exists()) {
-        await setDoc(pageRef, {
-          ...page,
-          titleLower: page.title.toLowerCase(),
-        });
+    const missingEntries = Object.entries(INITIAL_PAGES).filter(
+      ([slug]) => !existingSlugs.has(slug)
+    );
 
-        const revRef = doc(db, `${WIKI_PAGES_COLLECTION}/${slug}/revisions`, page.latestRevisionId);
-        await setDoc(revRef, {
-          revId: page.latestRevisionId,
-          pageId: slug,
-          pageTitle: page.title,
-          content: page.content,
-          summary: page.summary,
-          timestamp: page.createdAt,
-          author: page.author,
-          authorId: page.authorId,
-          byteSize: new Blob([page.content]).size,
-          minorEdit: false,
-        });
+    const BATCH_SIZE = 12;
+    for (let i = 0; i < missingEntries.length; i += BATCH_SIZE) {
+      const chunk = missingEntries.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        chunk.map(async ([slug, page]) => {
+          const pageRef = doc(db, WIKI_PAGES_COLLECTION, slug);
+          await setDoc(pageRef, {
+            ...page,
+            titleLower: page.title.toLowerCase(),
+          });
 
-        await addDoc(collection(db, RECENT_CHANGES_COLLECTION), {
-          pageId: slug,
-          pageTitle: page.title,
-          author: page.author,
-          authorId: page.authorId,
-          summary: page.summary,
-          timestamp: page.updatedAt,
-          oldLen: 0,
-          newLen: new Blob([page.content]).size,
-          revId: page.latestRevisionId,
-          minorEdit: false,
-        });
-      }
+          const revRef = doc(
+            db,
+            `${WIKI_PAGES_COLLECTION}/${slug}/revisions`,
+            page.latestRevisionId
+          );
+          await setDoc(revRef, {
+            revId: page.latestRevisionId,
+            pageId: slug,
+            pageTitle: page.title,
+            content: page.content,
+            summary: page.summary,
+            timestamp: page.createdAt,
+            author: page.author,
+            authorId: page.authorId,
+            byteSize: new Blob([page.content]).size,
+            minorEdit: false,
+          });
+
+          if (page.namespace !== 'Template') {
+            await addDoc(collection(db, RECENT_CHANGES_COLLECTION), {
+              pageId: slug,
+              pageTitle: page.title,
+              author: page.author,
+              authorId: page.authorId,
+              summary: page.summary,
+              timestamp: page.updatedAt,
+              oldLen: 0,
+              newLen: new Blob([page.content]).size,
+              revId: page.latestRevisionId,
+              minorEdit: false,
+            });
+          }
+        })
+      );
     }
 
     // Seed sample CheckUser case if empty
