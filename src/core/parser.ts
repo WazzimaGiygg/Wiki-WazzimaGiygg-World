@@ -1148,15 +1148,16 @@ function parseInlineWikitext(input: string, existingPages: Set<string>): string 
       </figure>`;
     }
 
-    const cleanTarget = rawTarget.replace(/\s+/g, '_');
-    const label = rawParams ? rawParams.trim() : rawTarget;
+    const normalizedTarget = rawTarget.replace(/^:/, '').trim();
+    const cleanTarget = normalizedTarget.replace(/\s+/g, '_');
+    const label = rawParams ? rawParams.trim() : normalizedTarget;
 
-    const pageExists = existingPages.has(cleanTarget) || existingPages.has(rawTarget);
+    const pageExists = existingPages.has(cleanTarget) || existingPages.has(normalizedTarget);
 
     if (pageExists) {
       return `<a href="#/wiki/${encodeURIComponent(cleanTarget)}" class="mw-wiki-link text-[#0645ad] dark:text-[#6ba4ff] hover:underline" data-target="${escapeHtml(cleanTarget)}">${escapeHtml(label)}</a>`;
     } else {
-      return `<a href="#/wiki/${encodeURIComponent(cleanTarget)}?action=edit" class="mw-new-link text-[#ba0000] dark:text-[#ff7878] hover:underline cursor-pointer" title="${escapeHtml(rawTarget)} (página ainda não criada)" data-target="${escapeHtml(cleanTarget)}">${escapeHtml(label)}</a>`;
+      return `<a href="#/wiki/${encodeURIComponent(cleanTarget)}?action=edit" class="mw-new-link text-[#ba0000] dark:text-[#ff7878] hover:underline cursor-pointer" title="${escapeHtml(normalizedTarget)} (página ainda não criada)" data-target="${escapeHtml(cleanTarget)}">${escapeHtml(label)}</a>`;
     }
   });
 
@@ -1341,6 +1342,80 @@ const INFOBOX_LABEL_MAP: Record<string, string> = {
   'direção': 'Direção',
   duracao: 'Duração',
   'duração': 'Duração',
+  'local nascimento': 'Local de nascimento',
+  'local falecimento': 'Local de falecimento',
+  conjuge: 'Cônjuge',
+  'cônjuge': 'Cônjuge',
+  filhos: 'Filhos',
+  premios: 'Prêmios',
+  'prêmios': 'Prêmios',
+  lema: 'Lema',
+  hino: 'Hino',
+  'maior cidade': 'Maior cidade',
+  governo: 'Governo',
+  pib: 'PIB',
+  'fuso horario': 'Fuso horário',
+  'fuso horário': 'Fuso horário',
+  'codigo iso': 'Código ISO',
+  'código iso': 'Código ISO',
+  estado: 'Estado',
+  densidade: 'Densidade',
+  gentilico: 'Gentílico',
+  'gentílico': 'Gentílico',
+  prefeito: 'Prefeito(a)',
+  fundadores: 'Fundadores',
+  produtos: 'Produtos',
+  receita: 'Receita',
+  funcionarios: 'Funcionários',
+  'funcionários': 'Funcionários',
+  sigla: 'Sigla',
+  proposito: 'Propósito',
+  'propósito': 'Propósito',
+  membros: 'Membros',
+  tradutor: 'Tradutor(a)',
+  ilustrador: 'Ilustrador(a)',
+  roteiro: 'Roteiro',
+  elenco: 'Elenco',
+  distribuidora: 'Distribuidora',
+  artista: 'Artista',
+  gravadora: 'Gravadora',
+  produtor: 'Produtor(a)',
+  publicadora: 'Publicadora',
+  diretor: 'Diretor(a)',
+  serie: 'Série',
+  'série': 'Série',
+  modos: 'Modos de jogo',
+  reino: 'Reino',
+  filo: 'Filo',
+  classe: 'Classe',
+  ordem: 'Ordem',
+  familia: 'Família',
+  'família': 'Família',
+  especie: 'Espécie',
+  'espécie': 'Espécie',
+  'nome binomial': 'Nome binomial',
+  'estado conservacao': 'Estado de conservação',
+  'estado conservação': 'Estado de conservação',
+  data: 'Data',
+  local: 'Local',
+  participantes: 'Participantes',
+  resultado: 'Resultado',
+  consequencias: 'Consequências',
+  'consequências': 'Consequências',
+  simbolo: 'Símbolo',
+  'símbolo': 'Símbolo',
+  'numero atomico': 'Número atômico',
+  'número atômico': 'Número atômico',
+  'massa atomica': 'Massa atômica',
+  'massa atômica': 'Massa atômica',
+  'serie quimica': 'Série química',
+  'série química': 'Série química',
+  grupo: 'Grupo',
+  periodo: 'Período',
+  'período': 'Período',
+  'estado materia': 'Estado da matéria',
+  'estado matéria': 'Estado da matéria',
+  idioma: 'Idioma',
 };
 
 function formatInfoboxValue(value: string): string {
@@ -1353,8 +1428,10 @@ function formatInfoboxValue(value: string): string {
     const safeEmail = escapeHtml(trimmed);
     return `<a href="mailto:${safeEmail}" class="text-[#3366cc] dark:text-[#729fcf] hover:underline break-all">${safeEmail}</a>`;
   }
-  if (/^\[\[/.test(trimmed) || /__INLINE_CODE_\d+__/.test(trimmed)) {
-    return trimmed;
+  if (/\[\[[^\]]+\]\]/.test(trimmed) || /__INLINE_CODE_\d+__/.test(trimmed)) {
+    return trimmed
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
   return escapeHtml(trimmed);
 }

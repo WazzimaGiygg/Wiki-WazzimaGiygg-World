@@ -18,6 +18,11 @@ import {
   Smartphone,
   Compass,
   Tag,
+  Scale,
+  Flag,
+  UserSearch,
+  FileCheck2,
+  MessageSquare,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { getRandomPageSlug } from '../utils/randomPage';
@@ -28,7 +33,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
-  const { currentSlug, navigateToPage, sidebarOpen, setSidebarOpen, settings, isBureaucrat, isExtensionActive } =
+  const { currentSlug, navigateToPage, sidebarOpen, setSidebarOpen, settings, isBureaucrat, isAdmin, isExtensionActive } =
     useWiki();
 
   const handleRandomPage = async () => {
@@ -62,6 +67,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
       : []),
     ...(isExtensionActive('dynamic-page-list')
       ? [{ label: 'Categorias', slug: 'Especial:Categorias', icon: Tag }]
+      : []),
+    ...(isExtensionActive('arbcom-ucoc-governance')
+      ? [
+          { label: 'Conselho de arbitragem', slug: 'Especial:Conselho_de_Arbitragem', icon: Scale },
+          { label: 'Denúncias', slug: 'Especial:Denúncias', icon: Flag },
+        ]
       : []),
     { label: 'Páginas especiais', slug: 'Especial:Páginas_especiais', icon: Compass },
   ];
@@ -139,7 +150,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
           <ul className="space-y-0.5">
             {navLinks.map((item, idx) => {
               const Icon = item.icon;
-              const isActive = item.slug && currentSlug === item.slug;
+              const isActive =
+                item.slug &&
+                (currentSlug === item.slug ||
+                  (item.slug === 'Especial:Conselho_de_Arbitragem' &&
+                    ['Especial:ArbCom', 'Especial:Conselho_de_Arbitragem', 'Special:ArbCom'].includes(currentSlug)) ||
+                  (item.slug === 'Especial:Denúncias' &&
+                    [
+                      'Especial:Denúncias',
+                      'Especial:Denuncias',
+                      'Especial:UCOC',
+                      'Especial:UCoC',
+                      'Especial:Código_de_Conduta',
+                      'Especial:Codigo_de_Conduta',
+                      'Special:UCoC',
+                      'Special:Reports',
+                    ].includes(currentSlug)));
               return (
                 <li key={idx}>
                   <button
@@ -229,11 +255,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
             <h3 className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-[10px]">
               Administração
             </h3>
-            {isBureaucrat && (
+            {isBureaucrat ? (
               <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-300 dark:border-purple-800">
                 Burocrata
               </span>
-            )}
+            ) : isAdmin ? (
+              <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
+                Sysop
+              </span>
+            ) : null}
           </div>
           <ul className="space-y-0.5">
             <li>
@@ -248,30 +278,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
                     'Especial:Permissoes_de_usuario',
                     'Special:UserRights',
                     'Special:Bureaucrat',
-                    'Especial:CheckUser',
-                    'Especial:Verificação_de_contas',
-                    'Especial:Verificacao_de_contas',
-                    'Especial:Fantoches',
-                    'Special:CheckUser',
                     'Especial:Desbloqueio',
                     'Especial:Discussão_de_desbloqueio',
                     'Especial:Discussao_de_desbloqueio',
                     'Especial:Discussão_de_bloqueio',
                     'Especial:Discussao_de_bloqueio',
                     'Special:Unblock',
-                    'Especial:ArbCom',
-                    'Especial:Conselho_de_Arbitragem',
-                    'Special:ArbCom',
-                    'Especial:UCOC',
-                    'Especial:UCoC',
-                    'Especial:Código_de_Conduta',
-                    'Especial:Codigo_de_Conduta',
-                    'Special:UCoC',
                     'Especial:Páginas_protegidas',
                     'Especial:Paginas_protegidas',
                     'Special:ProtectedPages',
                     'Especial:SEO',
                     'Special:SEO',
+                    'Especial:Banco_de_Dados',
+                    'Especial:Firebase',
+                    'Special:Database',
                   ].includes(currentSlug)
                     ? 'bg-[#3366cc]/10 text-[#0645ad] dark:text-[#6ba4ff] font-semibold border-l-3 border-[#3366cc]'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-800'
@@ -281,11 +301,71 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
                   <ShieldCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
                   <span>Painel de Administração</span>
                 </div>
-                {isBureaucrat && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" />
-                )}
               </button>
             </li>
+            {(isBureaucrat || isAdmin) && (
+              <>
+                {isExtensionActive('checkuser') && (
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => navigateToPage('Especial:Verificação_de_contas')}
+                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded transition-colors text-left cursor-pointer ${
+                        [
+                          'Especial:CheckUser',
+                          'Especial:Verificação_de_contas',
+                          'Especial:Verificacao_de_contas',
+                          'Especial:Fantoches',
+                          'Special:CheckUser',
+                        ].includes(currentSlug)
+                          ? 'bg-[#3366cc]/10 text-[#0645ad] dark:text-[#6ba4ff] font-semibold border-l-3 border-[#3366cc]'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      <UserSearch className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+                      <span>Verificação de contas</span>
+                    </button>
+                  </li>
+                )}
+                {isExtensionActive('lgpd-privacy-suite') && (
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => navigateToPage('Especial:Pedidos_LGPD')}
+                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded transition-colors text-left cursor-pointer ${
+                        ['Especial:Pedidos_LGPD', 'Especial:LGPD_Admin', 'Special:PrivacyRequests'].includes(
+                          currentSlug
+                        )
+                          ? 'bg-[#3366cc]/10 text-[#0645ad] dark:text-[#6ba4ff] font-semibold border-l-3 border-[#3366cc]'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      <FileCheck2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>Pedidos de LGPD</span>
+                    </button>
+                  </li>
+                )}
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => navigateToPage('Especial:Discussão_Administrativa')}
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded transition-colors text-left cursor-pointer ${
+                      [
+                        'Especial:Discussão_Administrativa',
+                        'Especial:Discussao_Administrativa',
+                        'Especial:Esplanada_Admin',
+                        'Special:AdminNoticeboard',
+                      ].includes(currentSlug)
+                        ? 'bg-[#3366cc]/10 text-[#0645ad] dark:text-[#6ba4ff] font-semibold border-l-3 border-[#3366cc]'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                    <span>Discussão de admins</span>
+                  </button>
+                </li>
+              </>
+            )}
           </ul>
         </div>
 

@@ -62,6 +62,7 @@ interface WikiContextType {
   setSidebarOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
   isRealtimeConnected: boolean;
   isBureaucrat: boolean;
+  isAdmin: boolean;
   userPageSlug?: string;
   userTalkSlug?: string;
   isBlazePlanActive: boolean;
@@ -827,6 +828,7 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
         setSidebarOpen,
         isRealtimeConnected,
         isBureaucrat,
+        isAdmin,
         userPageSlug: userPagesInfo?.userPageSlug,
         userTalkSlug: userPagesInfo?.userTalkSlug,
         isBlazePlanActive,

@@ -24,7 +24,8 @@ import {
 } from '../../services/wikiService';
 
 export const CheckUserPanel: React.FC = () => {
-  const { currentUser, isBureaucrat, navigateToPage } = useWiki();
+  const { currentUser, isBureaucrat, isAdmin, navigateToPage } = useWiki();
+  const isStaff = isBureaucrat || isAdmin;
 
   const [cases, setCases] = useState<CheckUserCase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +42,8 @@ export const CheckUserPanel: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [confirmBlockKey, setConfirmBlockKey] = useState<string | null>(null);
 
   // Verdict state for active bureaucrat review
   const [editingVerdictCaseId, setEditingVerdictCaseId] = useState<string | null>(null);
@@ -106,32 +109,31 @@ export const CheckUserPanel: React.FC = () => {
 
   const handleUpdateVerdict = async (caseItem: CheckUserCase) => {
     if (!verdictNotes.trim()) {
-      alert('Por favor, informe a nota técnica ou parecer da verificação.');
+      setActionError('Por favor, informe a nota técnica ou parecer da verificação.');
       return;
     }
+    setActionError(null);
     setSavingVerdict(true);
     try {
       await updateCheckUserCase(caseItem.id, {
         status: selectedVerdict,
         verdictNotes: verdictNotes.trim(),
-        verifiedBy: currentUser.username || 'Burocrata / Verificador',
+        verifiedBy: currentUser.username || 'Administrador / Verificador',
       });
       setEditingVerdictCaseId(null);
       setVerdictNotes('');
       setActionSuccess(`Veredito atualizado para "${getStatusLabel(selectedVerdict)}" com sucesso!`);
       setTimeout(() => setActionSuccess(null), 5000);
     } catch (err: any) {
-      alert('Erro ao atualizar veredito: ' + err.message);
+      setActionError('Erro ao atualizar veredito: ' + (err?.message || 'falha inesperada'));
     } finally {
       setSavingVerdict(false);
     }
   };
 
-  // Block confirmed puppets directly
+  // Block confirmed puppets directly (Bureaucrat only per Firestore user_roles rule)
   const handleQuickBlockPuppet = async (puppetUsername: string) => {
-    if (!confirm(`Deseja aplicar a restrição de bloqueio ao utilizador "${puppetUsername}" no Firestore?`)) {
-      return;
-    }
+    setActionError(null);
     try {
       await saveUserRights({
         bureaucrat: {
@@ -144,10 +146,11 @@ export const CheckUserPanel: React.FC = () => {
         previousGroups: [],
         reason: 'Uso abusivo de conta fantoche (Sockpuppet) confirmado em verificação formal de contas',
       });
+      setConfirmBlockKey(null);
       setActionSuccess(`Conta fantoche "${puppetUsername}" bloqueada com sucesso!`);
       setTimeout(() => setActionSuccess(null), 5000);
     } catch (err: any) {
-      alert('Erro ao bloquear conta: ' + err.message);
+      setActionError('Erro ao bloquear conta: ' + (err?.message || 'falha inesperada'));
     }
   };
 
@@ -264,6 +267,13 @@ export const CheckUserPanel: React.FC = () => {
         </div>
       )}
 
+      {actionError && (
+        <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800 text-red-800 dark:text-red-200 rounded flex items-center gap-2 text-xs">
+          <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+          <span>{actionError}</span>
+        </div>
+      )}
+
       {/* Filter & Search Bar */}
       <div className="p-3 bg-[#f8f9fa] dark:bg-gray-900 border border-[#a2a9b1] dark:border-gray-700 rounded flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-1 min-w-[220px]">
@@ -377,14 +387,33 @@ export const CheckUserPanel: React.FC = () => {
                             <span className="text-[10px] uppercase font-bold text-red-700 dark:text-red-300">Fantoche:</span>
                             <span className="font-medium text-gray-900 dark:text-gray-100">{puppet}</span>
                             {isBureaucrat && caseItem.status === 'confirmado_fantoche' && (
-                              <button
-                                type="button"
-                                onClick={() => handleQuickBlockPuppet(puppet)}
-                                className="px-1.5 py-0.5 bg-red-600 hover:bg-red-700 text-white rounded text-[10px] font-bold"
-                                title="Bloquear esta conta no Firestore"
-                              >
-                                Bloquear
-                              </button>
+                              confirmBlockKey === `${caseItem.id}:${puppet}` ? (
+                                <span className="inline-flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleQuickBlockPuppet(puppet)}
+                                    className="px-1.5 py-0.5 bg-red-700 hover:bg-red-800 text-white rounded text-[10px] font-bold cursor-pointer"
+                                  >
+                                    Confirmar bloqueio
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setConfirmBlockKey(null)}
+                                    className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-[10px] cursor-pointer"
+                                  >
+                                    Cancelar
+                                  </button>
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmBlockKey(`${caseItem.id}:${puppet}`)}
+                                  className="px-1.5 py-0.5 bg-red-600 hover:bg-red-700 text-white rounded text-[10px] font-bold cursor-pointer"
+                                  title="Bloquear esta conta no Firestore"
+                                >
+                                  Bloquear
+                                </button>
+                              )
                             )}
                           </div>
                         ))}
@@ -404,8 +433,8 @@ export const CheckUserPanel: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Bureaucrat Action Panel */}
-                    {isBureaucrat && (
+                    {/* Bureaucrat / Admin Action Panel */}
+                    {isStaff && (
                       <div className="pt-3 border-t border-gray-200 dark:border-gray-800 flex flex-wrap items-center justify-between gap-2">
                         {isEditing ? (
                           <div className="w-full p-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded space-y-3">
@@ -454,7 +483,7 @@ export const CheckUserPanel: React.FC = () => {
                         ) : (
                           <div className="w-full flex items-center justify-between">
                             <span className="text-[11px] text-gray-500">
-                              Painel administrativo para Burocratas e Verificadores credenciados.
+                              Painel administrativo para Administradores, Burocratas e Verificadores credenciados.
                             </span>
                             <button
                               type="button"

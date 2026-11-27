@@ -92,7 +92,7 @@ export async function seedInitialPagesIfNeeded(): Promise<void> {
             minorEdit: false,
           });
 
-          if (page.namespace !== 'Template') {
+          if (page.namespace !== 'Template' && page.namespace !== 'Category') {
             await addDoc(collection(db, RECENT_CHANGES_COLLECTION), {
               pageId: slug,
               pageTitle: page.title,

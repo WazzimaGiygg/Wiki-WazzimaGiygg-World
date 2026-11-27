@@ -63,6 +63,7 @@ import {
 } from '../services/templateService';
 import { WikiFileDoc } from '../extensions/types';
 import { computeRevisionDiff } from '../core/diff';
+import { DEFAULT_CATEGORY_DEFINITIONS } from '../core/defaultCategories';
 
 interface EditViewProps {
   page: WikiPage | null;
@@ -142,10 +143,13 @@ export const EditView: React.FC<EditViewProps> = ({
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [templateFeedback, setTemplateFeedback] = useState<{ type: 'error' | 'success'; msg: string } | null>(null);
 
-  // Visual toolbar interactive drawers for new editors (Link builder, Table builder, Quick templates, Cheat sheet)
+  // Visual toolbar interactive drawers for new editors (Link builder, Table builder, Quick templates, Categories, Cheat sheet)
   const [activeToolbarDrawer, setActiveToolbarDrawer] = useState<
-    'none' | 'link' | 'table' | 'templates' | 'cheatsheet'
+    'none' | 'link' | 'table' | 'templates' | 'categories' | 'cheatsheet'
   >('none');
+  const [categoryDrawerSearch, setCategoryDrawerSearch] = useState('');
+  const [categoryDrawerCustom, setCategoryDrawerCustom] = useState('');
+  const [categoryDrawerKind, setCategoryDrawerKind] = useState<'all' | 'article' | 'page'>('all');
   const [quickLinkType, setQuickLinkType] = useState<'internal' | 'external'>('internal');
   const [quickLinkTarget, setQuickLinkTarget] = useState('');
   const [quickLinkLabel, setQuickLinkLabel] = useState('');
@@ -586,6 +590,46 @@ export const EditView: React.FC<EditViewProps> = ({
         t.summary.toLowerCase().includes(q)
     );
   }, [liveTemplates, templateSearch]);
+
+  const availableCategoriesForDrawer = useMemo(() => {
+    const byKey = new Map<string, { name: string; kind: 'article' | 'page'; summary: string }>();
+
+    for (const def of DEFAULT_CATEGORY_DEFINITIONS) {
+      byKey.set(def.name.toLowerCase(), {
+        name: def.name,
+        kind: def.kind,
+        summary: def.summary,
+      });
+    }
+
+    existingPageSlugs.forEach(s => {
+      const m = s.match(/^(?:Categoria|Category):(.+)$/i);
+      if (m) {
+        const name = m[1].replace(/_/g, ' ').trim();
+        if (name && !byKey.has(name.toLowerCase())) {
+          byKey.set(name.toLowerCase(), {
+            name,
+            kind: 'article',
+            summary: 'Categoria personalizada da wiki',
+          });
+        }
+      }
+    });
+
+    const q = categoryDrawerSearch.trim().toLowerCase();
+    return Array.from(byKey.values())
+      .filter(cat => {
+        if (categoryDrawerKind !== 'all' && cat.kind !== categoryDrawerKind) return false;
+        if (q) {
+          return (
+            cat.name.toLowerCase().includes(q) ||
+            cat.summary.toLowerCase().includes(q)
+          );
+        }
+        return true;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
+  }, [existingPageSlugs, categoryDrawerSearch, categoryDrawerKind]);
 
   const selectedTemplate = useMemo<TemplateCatalogEntry | null>(() => {
     return (
@@ -1193,12 +1237,19 @@ export const EditView: React.FC<EditViewProps> = ({
           <button
             type="button"
             disabled={!editPermission.allowed}
-            onClick={() => insertSyntax('[[Categoria:', ']]', 'Geral')}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 cursor-pointer"
-            title="Adicionar Categoria ([[Categoria:...]])"
+            onClick={() =>
+              setActiveToolbarDrawer(prev => (prev === 'categories' ? 'none' : 'categories'))
+            }
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium cursor-pointer disabled:opacity-40 transition-colors ${
+              activeToolbarDrawer === 'categories'
+                ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-200 border-emerald-400 dark:border-emerald-700'
+                : 'bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600'
+            }`}
+            title="Selecionar ou inserir Categorias de Artigos e Páginas ([[Categoria:...]])"
           >
-            <Tag className="w-3.5 h-3.5" />
+            <Tag className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span className="hidden sm:inline">Categoria</span>
+            <ChevronDown className="w-3 h-3 opacity-70" />
           </button>
 
           {extCite && (
@@ -1572,12 +1623,26 @@ export const EditView: React.FC<EditViewProps> = ({
                 </button>
               </div>
             </div>
-            <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
+            <div className="flex flex-wrap gap-1.5 max-h-44 overflow-y-auto">
               {[
+                { label: '{{Info/Biografia}}', code: '{{Info/Biografia|nome=|imagem=|nascimento_data=|nascimento_local=|nacionalidade=|ocupacao=|obras_principais=}}\n' },
+                { label: '{{Info/País}}', code: '{{Info/País|nome=|capital=|lingua_oficial=|populacao=|area_total=|moeda=|governo=}}\n' },
+                { label: '{{Info/Município}}', code: '{{Info/Município|nome=|pais=|estado=|fundacao=|populacao=|area_total=|site=}}\n' },
+                { label: '{{Info/Empresa}}', code: '{{Info/Empresa|nome=|tipo=|fundacao=|sede=|industria=|site=}}\n' },
+                { label: '{{Info/Livro}}', code: '{{Info/Livro|nome=|autor=|idioma=|genero=|editora=|lancamento=|paginas=|isbn=}}\n' },
+                { label: '{{Info/Filme}}', code: '{{Info/Filme|nome=|diretor=|genero=|lancamento=|duracao=|idioma=|pais=}}\n' },
+                { label: '{{Info/Jogo}}', code: '{{Info/Jogo|nome=|desenvolvedora=|publicadora=|plataformas=|lancamento=|genero=|modos=}}\n' },
+                { label: '{{Info/Evento}}', code: '{{Info/Evento|nome=|data=|local=|tipo=|participantes=|resultado=}}\n' },
                 { label: '{{Citar_web}}', code: '<ref>{{Citar_web|url=https://|título=|autor=|obra=|data=|acessodata=}}</ref>' },
                 { label: '{{Citar_livro}}', code: '<ref>{{Citar_livro|autor=|título=|editora=|ano=|local=|isbn=}}</ref>' },
                 { label: '{{Citar_jornal}}', code: '<ref>{{Citar_jornal|autor=|título=|jornal=|data=|url=|acessodata=}}</ref>' },
                 { label: '{{Citar_periódico}}', code: '<ref>{{Citar_periódico|autor=|título=|periódico=|volume=|ano=|doi=}}</ref>' },
+                { label: '{{Citar_lei}}', code: '<ref>{{Citar_lei|jurisdição=Brasil|número=|data=|ementa=|url=}}</ref>' },
+                { label: '{{Citar_jogo}}', code: '<ref>{{Citar_jogo|título=|desenvolvedora=|ano=|plataforma=}}</ref>' },
+                { label: '{{Referências}}', code: '\n== Referências ==\n{{Referências}}\n' },
+                { label: '{{ISBN}}', code: '{{ISBN|978-85-00000-00-0}}' },
+                { label: '{{DOI}}', code: '{{DOI|10.1000/182}}' },
+                { label: '{{Wayback}}', code: '{{Wayback|url=https://|date=20261127}}' },
                 { label: '{{Sem_fonte}}', code: '{{Sem_fonte|data=Novembro de 2026}}' },
                 { label: '{{Quando}}', code: '{{Quando}}' },
                 { label: '{{Quem}}', code: '{{Quem}}' },
@@ -1589,12 +1654,16 @@ export const EditView: React.FC<EditViewProps> = ({
                 { label: '{{Artigo_principal}}', code: '{{Artigo_principal|Nome_do_Artigo}}\n' },
                 { label: '{{Ver_também}}', code: '{{Ver_também|Artigo_1|Artigo_2}}\n' },
                 { label: '{{Não_confundir}}', code: '{{Não_confundir|Outro_Artigo}}\n' },
+                { label: '{{Redireciona_aqui}}', code: '{{Redireciona_aqui|Termo|Outro_Artigo}}\n' },
+                { label: '{{Homônimos}}', code: '{{Homônimos|Termo}}\n' },
                 { label: '{{Sobre}}', code: '{{Sobre|este tema|outro significado|Outro_Artigo}}\n' },
                 { label: '{{Citação}}', code: '{{Citação|Texto citado|Autor|Fonte}}\n' },
                 { label: '{{Epígrafe}}', code: '{{Epígrafe|Texto da epígrafe|Autor|Obra}}\n' },
                 { label: '{{Esboço}}', code: '{{Esboço|Tema do Artigo}}\n' },
                 { label: '{{Wikificar}}', code: '{{Wikificar|data=Novembro de 2026}}\n' },
                 { label: '{{Carece_de_fontes}}', code: '{{Carece_de_fontes|data=Novembro de 2026}}\n' },
+                { label: '{{Poucas_referências}}', code: '{{Poucas_referências|data=Novembro de 2026}}\n' },
+                { label: '{{Desatualizado}}', code: '{{Desatualizado|data=Novembro de 2026}}\n' },
                 { label: '{{Parcialidade}}', code: '{{Parcialidade|motivo=|data=Novembro de 2026}}\n' },
                 { label: '{{Fusão}}', code: '{{Fusão|Outro_Artigo|data=Novembro de 2026}}\n' },
                 { label: '{{Atualizar}}', code: '{{Atualizar|data=Novembro de 2026}}\n' },
@@ -1602,6 +1671,11 @@ export const EditView: React.FC<EditViewProps> = ({
                 { label: '{{Lang}}', code: '{{Lang|en|termo em inglês}}' },
                 { label: '{{Tecla}}', code: '{{Tecla|Ctrl|B}}' },
                 { label: '{{Cor}}', code: '{{Cor|#3366cc|Azul MediaWiki}}' },
+                { label: '{{Data}}', code: '{{Data|27|11|2026}}' },
+                { label: '{{Data_de_nascimento}}', code: '{{Data_de_nascimento|01|01|1990}}' },
+                { label: '{{Moeda}}', code: '{{Moeda|1500|BRL}}' },
+                { label: '{{Bandeira}}', code: '{{Bandeira|Brasil}}' },
+                { label: '{{Tooltip}}', code: '{{Tooltip|sigla|Significado completo}}' },
                 { label: '{{Fórmula}}', code: '{{Fórmula|E = mc²|número=1}}\n' },
                 { label: '{{Ocultar}}', code: '{{Ocultar|título=Clique para expandir|conteúdo=Conteúdo oculto aqui.}}\n' },
                 { label: '{{Navbox}}', code: '{{Navbox\n| título = Navegação Temática\n| grupo1 = Tópicos\n| lista1 = [[Página_principal]] • [[Ajuda:Wikitexto]]\n}}\n' },
@@ -1612,9 +1686,14 @@ export const EditView: React.FC<EditViewProps> = ({
                 { label: '{{Sim}}', code: '{{Sim}}' },
                 { label: '{{Não}}', code: '{{Não}}' },
                 { label: '{{Parcial}}', code: '{{Parcial}}' },
+                { label: '{{Apoio}}', code: '{{Apoio}}' },
+                { label: '{{Contra}}', code: '{{Contra}}' },
+                { label: '{{Abstenção}}', code: '{{Abstenção}}' },
                 { label: '{{Concordo}}', code: '{{Concordo}}' },
                 { label: '{{Discordo}}', code: '{{Discordo}}' },
                 { label: '{{Feito}}', code: '{{Feito}}' },
+                { label: '{{Resolvido}}', code: '{{Resolvido}}' },
+                { label: '{{Estrela}}', code: '{{Estrela|título=Reconhecimento|texto=Excelente contribuição na wiki!}}\n' },
                 { label: '{{Portal}}', code: '{{Portal|Tecnologia|Privacidade}}\n' },
               ].map(item => (
                 <button
@@ -1626,6 +1705,110 @@ export const EditView: React.FC<EditViewProps> = ({
                   {item.label}
                 </button>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Interactive Drawer 3B: Categories Picker (Article & Wiki Page Categories) */}
+        {activeToolbarDrawer === 'categories' && editPermission.allowed && (
+          <div className="p-2.5 bg-emerald-50/70 dark:bg-emerald-950/20 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-semibold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5 text-[11px]">
+                <Tag className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Seletor de Categorias (Artigos e Páginas):</span>
+              </span>
+              <div className="flex items-center gap-1.5">
+                {(
+                  [
+                    { id: 'all', label: 'Todas' },
+                    { id: 'article', label: 'Artigos' },
+                    { id: 'page', label: 'Páginas' },
+                  ] as const
+                ).map(tab => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setCategoryDrawerKind(tab.id)}
+                    className={`px-2 py-0.5 rounded border text-[10px] font-medium cursor-pointer transition-colors ${
+                      categoryDrawerKind === tab.id
+                        ? 'bg-emerald-700 text-white border-emerald-700'
+                        : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-emerald-200 dark:border-emerald-800'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setActiveToolbarDrawer('none')}
+                  className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer ml-1"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={categoryDrawerSearch}
+                  onChange={e => setCategoryDrawerSearch(e.target.value)}
+                  placeholder="Filtrar categorias existentes..."
+                  className="w-full pl-7 pr-2.5 py-1 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-xs"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={categoryDrawerCustom}
+                  onChange={e => setCategoryDrawerCustom(e.target.value)}
+                  placeholder="Nova categoria (ex: Astronomia)"
+                  className="flex-1 px-2.5 py-1 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-xs"
+                />
+                <button
+                  type="button"
+                  disabled={!categoryDrawerCustom.trim()}
+                  onClick={() => {
+                    const clean = categoryDrawerCustom.trim().replace(/^Categoria:/i, '');
+                    if (!clean) return;
+                    insertRawText(`\n[[Categoria:${clean}]]`);
+                    setCategoryDrawerCustom('');
+                  }}
+                  className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-40 text-white rounded text-[11px] font-medium cursor-pointer shrink-0"
+                >
+                  + Inserir
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pt-0.5">
+              {availableCategoriesForDrawer.map(cat => {
+                const escaped = cat.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '[\\s_]+');
+                const alreadyInContent = new RegExp(`\\[\\[\\s*(?:Categoria|Category)\\s*:\\s*${escaped}\\s*(?:\\|[^\\]]*)?\\]\\]`, 'i').test(content);
+                return (
+                  <button
+                    key={cat.name}
+                    type="button"
+                    title={cat.summary}
+                    onClick={() => {
+                      if (!alreadyInContent) {
+                        const prefix = content.endsWith('\n') || content.length === 0 ? '' : '\n';
+                        setContent(prev => `${prev}${prefix}[[Categoria:${cat.name}]]`);
+                      }
+                    }}
+                    className={`px-2 py-1 rounded border text-[11px] inline-flex items-center gap-1 cursor-pointer transition-colors ${
+                      alreadyInContent
+                        ? 'bg-emerald-700 text-white border-emerald-700'
+                        : 'bg-white dark:bg-gray-900 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-900 dark:text-emerald-200'
+                    }`}
+                  >
+                    {alreadyInContent && <Check className="w-3 h-3 shrink-0" />}
+                    <span>{cat.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

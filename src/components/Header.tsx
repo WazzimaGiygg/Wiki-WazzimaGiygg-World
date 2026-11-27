@@ -20,6 +20,8 @@ import {
   ArrowRight,
   Globe,
   Bell,
+  Scale,
+  Flag,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { subscribeToSearchPageTitles, subscribeToRecentPages, searchWikiPages } from '../services/wikiService';
@@ -43,6 +45,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
     settings,
     setSidebarOpen,
     isBureaucrat,
+    isAdmin,
     isExtensionActive,
     unreadAlertsCount,
     notificationPermission,
@@ -56,6 +59,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   const extRecentChanges = isExtensionActive('recent-changes');
   const extPwaApp = isExtensionActive('pwa-app');
   const extPushNotifications = isExtensionActive('push-notifications');
+  const extArbCom = isExtensionActive('arbcom-ucoc-governance');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<WikiPage[]>([]);
@@ -798,19 +802,47 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
                       Suas contribuições
                     </button>
                   )}
+                  {extArbCom && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigateToPage('Especial:Conselho_de_Arbitragem');
+                          setShowUserMenu(false);
+                        }}
+                        className="text-left py-1 text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Scale className="w-3.5 h-3.5 shrink-0" />
+                        <span>Conselho de arbitragem</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigateToPage('Especial:Denúncias');
+                          setShowUserMenu(false);
+                        }}
+                        className="text-left py-1 text-rose-700 dark:text-rose-400 hover:underline flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Flag className="w-3.5 h-3.5 shrink-0" />
+                        <span>Denúncias</span>
+                      </button>
+                    </>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
                       navigateToPage('Especial:Administração');
                       setShowUserMenu(false);
                     }}
-                    className="text-left py-1 text-purple-600 dark:text-purple-400 hover:underline flex items-center justify-between font-medium pt-1 border-t border-gray-100 dark:border-gray-800"
+                    className="text-left py-1 text-purple-600 dark:text-purple-400 hover:underline flex items-center justify-between font-medium pt-1 border-t border-gray-100 dark:border-gray-800 cursor-pointer"
                   >
                     <span className="flex items-center gap-1.5">
                       <ShieldCheck className="w-3.5 h-3.5" />
                       <span>Painel de Administração</span>
                     </span>
-                    <span className="text-[10px] text-purple-500 font-mono">Burocrata</span>
+                    <span className="text-[10px] text-purple-500 font-mono">
+                      {isBureaucrat ? 'Burocrata' : isAdmin ? 'Sysop' : 'Admin'}
+                    </span>
                   </button>
                   <button
                     type="button"

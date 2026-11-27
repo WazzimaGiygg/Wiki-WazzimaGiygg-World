@@ -10,7 +10,7 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onOpenSettings }) => {
-  const { skin, setSkin, settings, navigateToPage, isBureaucrat, isExtensionActive } = useWiki();
+  const { skin, setSkin, settings, navigateToPage, isBureaucrat, isAdmin, isExtensionActive } = useWiki();
 
   const extLgpd = isExtensionActive('lgpd-privacy-suite');
   const extArbCom = isExtensionActive('arbcom-ucoc-governance');
@@ -37,7 +37,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSettings }) => {
         ]
       : []),
     ...(extArbCom
-      ? [{ label: 'Código de Conduta (UCoC)', slug: 'Wiki:Código_Universal_de_Conduta' }]
+      ? [
+          { label: 'Conselho de Arbitragem', slug: 'Especial:Conselho_de_Arbitragem' },
+          { label: 'Denúncias', slug: 'Especial:Denúncias' },
+          { label: 'Código de Conduta (UCoC)', slug: 'Wiki:Código_Universal_de_Conduta' },
+        ]
       : []),
     { label: 'Sobre a Wiki', slug: 'Página_principal' },
     { label: `Versão (${WIKI_SITE_VERSION})`, slug: 'Especial:Versão' },
@@ -53,7 +57,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSettings }) => {
     { label: 'Ajuda de Wikitexto', slug: 'Ajuda:Wikitexto' },
     ...(extScribunto ? [{ label: 'Guia de Infobox', slug: 'Ajuda:Infobox' }] : []),
     ...(extTemplates ? [{ label: 'Predefinições', slug: 'Ajuda:Predefinições' }] : []),
-    ...(isBureaucrat ? [{ label: 'Administração', slug: 'Especial:Administração' }] : []),
+    ...(isBureaucrat || isAdmin ? [{ label: 'Administração', slug: 'Especial:Administração' }] : []),
   ];
 
   return (

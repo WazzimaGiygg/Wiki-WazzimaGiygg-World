@@ -22,13 +22,19 @@ import {
   resolveUCoCReport,
 } from '../../services/wikiService';
 
-export const UCoCPanel: React.FC = () => {
-  const { currentUser, isBureaucrat, navigateToPage } = useWiki();
+export interface UCoCPanelProps {
+  embeddedUserView?: boolean;
+}
+
+export const UCoCPanel: React.FC<UCoCPanelProps> = ({ embeddedUserView = false }) => {
+  const { currentUser, isBureaucrat, isAdmin, loginWithGoogle, navigateToPage } = useWiki();
+  const isStaff = isBureaucrat || isAdmin;
 
   const [reports, setReports] = useState<UCoCReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<string>('todos');
   const [filterStatus, setFilterStatus] = useState<string>('todos');
+  const [onlyMyReports, setOnlyMyReports] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // New Report Modal
@@ -40,8 +46,9 @@ export const UCoCPanel: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  // Bureaucrat Resolution Form
+  // Staff Resolution Form
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [resolutionStatus, setResolutionStatus] = useState<UCoCStatus>('resolvido');
   const [resolutionNotes, setResolutionNotes] = useState('');
@@ -57,6 +64,10 @@ export const UCoCPanel: React.FC = () => {
 
   const handleCreateReport = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (currentUser.isAnonymous) {
+      setFormError('Entre com sua conta Google antes de registrar uma denúncia.');
+      return;
+    }
     if (!reportedUser.trim() || !description.trim()) {
       setFormError('Informe o usuário denunciado e a descrição da ocorrência.');
       return;
@@ -68,7 +79,7 @@ export const UCoCPanel: React.FC = () => {
     try {
       await createUCoCReport({
         reportedUser: reportedUser.trim(),
-        reporter: currentUser.username || 'Colaborador Anônimo',
+        reporter: currentUser.username || 'Colaborador',
         reporterUid: currentUser.uid || 'anon',
         category,
         description: description.trim(),
@@ -79,7 +90,7 @@ export const UCoCPanel: React.FC = () => {
       setReportedUser('');
       setDescription('');
       setEvidence('');
-      setActionSuccess('Denúncia de infração ao UCoC registrada com sucesso no Firestore.');
+      setActionSuccess('Denúncia registrada com sucesso no Firestore.');
       setTimeout(() => setActionSuccess(null), 5000);
     } catch (err: any) {
       setFormError(err.message || 'Erro ao registrar denúncia.');
@@ -90,23 +101,24 @@ export const UCoCPanel: React.FC = () => {
 
   const handleResolveReport = async (report: UCoCReport) => {
     if (!resolutionNotes.trim()) {
-      alert('Por favor, informe a justificativa ou parecer da resolução.');
+      setActionError('Por favor, informe a justificativa ou parecer da resolução.');
       return;
     }
+    setActionError(null);
     setResolving(true);
     try {
       await resolveUCoCReport(
         report.id,
         resolutionStatus,
         resolutionNotes.trim(),
-        currentUser.username || 'Burocrata'
+        currentUser.username || 'Administrador / Burocrata'
       );
       setResolvingId(null);
       setResolutionNotes('');
-      setActionSuccess('Denúncia UCoC resolvida e arquivada com sucesso!');
+      setActionSuccess('Denúncia resolvida e registrada com sucesso!');
       setTimeout(() => setActionSuccess(null), 5000);
     } catch (err: any) {
-      alert('Erro ao resolver denúncia: ' + err.message);
+      setActionError('Erro ao resolver denúncia: ' + (err?.message || 'falha inesperada'));
     } finally {
       setResolving(false);
     }
@@ -169,6 +181,9 @@ export const UCoCPanel: React.FC = () => {
   };
 
   const filteredReports = reports.filter(r => {
+    if (onlyMyReports && !currentUser.isAnonymous && r.reporterUid !== currentUser.uid && r.reporter !== currentUser.username) {
+      return false;
+    }
     if (filterStatus !== 'todos' && r.status !== filterStatus) return false;
     if (filterCategory !== 'todos' && r.category !== filterCategory) return false;
     return true;
@@ -177,37 +192,39 @@ export const UCoCPanel: React.FC = () => {
   return (
     <div className="space-y-5 text-xs">
       {/* Intro Box */}
-      <div className="p-4 bg-gradient-to-r from-rose-50 to-orange-50 dark:from-rose-950/30 dark:to-orange-950/30 border border-rose-200 dark:border-rose-800/60 rounded space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Flag className="w-5 h-5 text-rose-700 dark:text-rose-400" />
-            <h2 className="text-base font-serif font-bold text-gray-900 dark:text-gray-100">
-              Código Universal de Conduta (UCoC) & Ouvidoria
-            </h2>
+      {!embeddedUserView && (
+        <div className="p-4 bg-gradient-to-r from-rose-50 to-orange-50 dark:from-rose-950/30 dark:to-orange-950/30 border border-rose-200 dark:border-rose-800/60 rounded space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Flag className="w-5 h-5 text-rose-700 dark:text-rose-400" />
+              <h2 className="text-base font-serif font-bold text-gray-900 dark:text-gray-100">
+                Código Universal de Conduta (UCoC) &amp; Central de Denúncias
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => navigateToPage('Wiki:Código_Universal_de_Conduta')}
+                className="px-2.5 py-1 text-[11px] bg-white dark:bg-gray-800 hover:bg-gray-50 border border-gray-300 dark:border-gray-700 rounded text-rose-700 dark:text-rose-300 font-medium inline-flex items-center gap-1 cursor-pointer"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Ver Política UCoC</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowNewModal(true)}
+                className="px-3 py-1 bg-rose-700 hover:bg-rose-800 text-white font-medium rounded shadow-2xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Registrar Denúncia</span>
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigateToPage('Wiki:Código_Universal_de_Conduta')}
-              className="px-2.5 py-1 text-[11px] bg-white dark:bg-gray-800 hover:bg-gray-50 border border-gray-300 dark:border-gray-700 rounded text-rose-700 dark:text-rose-300 font-medium inline-flex items-center gap-1"
-            >
-              <ExternalLink className="w-3 h-3" />
-              <span>Ver Política UCoC</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowNewModal(true)}
-              className="px-3 py-1 bg-rose-700 hover:bg-rose-800 text-white font-medium rounded shadow-2xs flex items-center gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Registrar Denúncia UCoC</span>
-            </button>
-          </div>
+          <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-[11px]">
+            Canal dedicado à segurança, respeito mútuo e conformidade com o Código Universal de Conduta no WikiWazzimaGiygg. Denúncias são acompanhadas em tempo real e auditadas pela administração.
+          </p>
         </div>
-        <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-[11px]">
-          Canal dedicado à segurança, respeito mútuo e conformidade com o Código Universal de Conduta no WikiWazzimaGiygg. Denúncias são acompanhadas em tempo real e auditadas pelos burocratas.
-        </p>
-      </div>
+      )}
 
       {actionSuccess && (
         <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 rounded flex items-center gap-2 text-xs">
@@ -216,13 +233,35 @@ export const UCoCPanel: React.FC = () => {
         </div>
       )}
 
+      {actionError && (
+        <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800 text-red-800 dark:text-red-200 rounded flex items-center gap-2 text-xs">
+          <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+          <span>{actionError}</span>
+        </div>
+      )}
+
       {/* Filter Bar */}
       <div className="p-3 bg-[#f8f9fa] dark:bg-gray-900 border border-[#a2a9b1] dark:border-gray-700 rounded flex flex-wrap items-center justify-between gap-3">
-        <span className="font-bold text-gray-700 dark:text-gray-300">
-          Denúncias Registradas ({reports.length})
-        </span>
-
         <div className="flex flex-wrap items-center gap-3">
+          <span className="font-bold text-gray-700 dark:text-gray-300 font-mono tabular-nums">
+            Denúncias Registradas ({filteredReports.length})
+          </span>
+          {!currentUser.isAnonymous && (
+            <button
+              type="button"
+              onClick={() => setOnlyMyReports(prev => !prev)}
+              className={`px-2.5 py-1 rounded border text-[11px] font-medium cursor-pointer ${
+                onlyMyReports
+                  ? 'bg-rose-700 text-white border-rose-700'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700'
+              }`}
+            >
+              {onlyMyReports ? 'Mostrando minhas denúncias' : 'Filtrar minhas denúncias'}
+            </button>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1.5">
             <label className="text-gray-600 dark:text-gray-400 font-medium text-[11px]">Categoria:</label>
             <select
@@ -255,6 +294,17 @@ export const UCoCPanel: React.FC = () => {
               <option value="arquivado">Arquivado</option>
             </select>
           </div>
+
+          {embeddedUserView && (
+            <button
+              type="button"
+              onClick={() => setShowNewModal(true)}
+              className="px-3 py-1 bg-rose-700 hover:bg-rose-800 text-white font-medium rounded flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Nova Denúncia</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -339,8 +389,8 @@ export const UCoCPanel: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Bureaucrat Moderation Panel */}
-                    {isBureaucrat && (
+                    {/* Staff Moderation Panel */}
+                    {isStaff && (
                       <div className="pt-3 border-t border-gray-200 dark:border-gray-800">
                         {isResolving ? (
                           <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-700 rounded space-y-3">
@@ -433,6 +483,19 @@ export const UCoCPanel: React.FC = () => {
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
+
+            {currentUser.isAnonymous && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 rounded flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span>Entre com sua conta Google para enviar uma denúncia formal.</span>
+                <button
+                  type="button"
+                  onClick={loginWithGoogle}
+                  className="px-3 py-1 bg-[#3366cc] hover:bg-[#254b99] text-white rounded font-medium cursor-pointer"
+                >
+                  Entrar com Google
+                </button>
+              </div>
+            )}
 
             {formError && (
               <div className="p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded text-xs">

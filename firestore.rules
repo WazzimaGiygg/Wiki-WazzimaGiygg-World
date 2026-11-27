@@ -290,6 +290,41 @@ service cloud.firestore {
       allow delete: if isSignedIn() && isValidUserWatchlistId(userId) && request.auth.uid == userId;
     }
 
+    function isValidAdminDiscussionId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidAdminDiscussion(data) {
+      return data.keys().hasAll(['title', 'category', 'content', 'author', 'authorUid', 'authorRole', 'status', 'replies', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['title', 'category', 'content', 'author', 'authorUid', 'authorRole', 'status', 'replies', 'createdAt', 'updatedAt'])
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 250
+        && data.category in ['geral', 'bloqueios', 'seguranca', 'politicas', 'tecnico']
+        && data.content is string && data.content.size() > 0 && data.content.size() <= 10000
+        && data.author is string && data.author.size() > 0 && data.author.size() <= 100
+        && data.authorUid is string && data.authorUid.size() > 0 && data.authorUid.size() <= 128
+        && data.authorRole is string && data.authorRole.size() > 0 && data.authorRole.size() <= 50
+        && data.status in ['aberto', 'em_votacao', 'resolvido', 'arquivado']
+        && data.replies is list && data.replies.size() <= 200
+        && data.createdAt is string && data.createdAt.size() > 0 && data.createdAt.size() <= 64
+        && data.updatedAt is string && data.updatedAt.size() > 0 && data.updatedAt.size() <= 64;
+    }
+
+    // Internal Administrator & Bureaucrat Discussion Area (strictly staff-only)
+    match /admin_discussions/{topicId} {
+      allow get, list: if isAdminOrBureaucrat();
+      allow create: if isAdminOrBureaucrat()
+        && isValidAdminDiscussionId(topicId)
+        && isValidAdminDiscussion(request.resource.data)
+        && request.resource.data.authorUid == request.auth.uid;
+      allow update: if isAdminOrBureaucrat()
+        && isValidAdminDiscussionId(topicId)
+        && request.resource.data.authorUid == resource.data.authorUid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['replies', 'status', 'updatedAt'])
+        && isValidAdminDiscussion(request.resource.data);
+      allow delete: if isBureaucrat() && isValidAdminDiscussionId(topicId);
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

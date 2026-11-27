@@ -22,12 +22,18 @@ import {
   updateArbComCase,
 } from '../../services/wikiService';
 
-export const ArbComPanel: React.FC = () => {
-  const { currentUser, isBureaucrat, navigateToPage } = useWiki();
+export interface ArbComPanelProps {
+  embeddedUserView?: boolean;
+}
+
+export const ArbComPanel: React.FC<ArbComPanelProps> = ({ embeddedUserView = false }) => {
+  const { currentUser, isBureaucrat, isAdmin, loginWithGoogle, navigateToPage } = useWiki();
+  const isStaff = isBureaucrat || isAdmin;
 
   const [cases, setCases] = useState<ArbComCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('todos');
+  const [onlyMyCases, setOnlyMyCases] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // New Case Modal
@@ -40,6 +46,7 @@ export const ArbComPanel: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Arbitrator Ruling / Decision Form
   const [rulingCaseId, setRulingCaseId] = useState<string | null>(null);
@@ -58,6 +65,10 @@ export const ArbComPanel: React.FC = () => {
 
   const handleCreateCase = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (currentUser.isAnonymous) {
+      setFormError('Entre com sua conta Google antes de submeter uma petição ao Conselho de Arbitragem.');
+      return;
+    }
     if (!title.trim() || !respondent.trim() || !summary.trim()) {
       setFormError('Preencha todos os campos obrigatórios (Título, Requerido e Resumo do Conflito).');
       return;
@@ -94,9 +105,10 @@ export const ArbComPanel: React.FC = () => {
 
   const handleSaveRuling = async (caseItem: ArbComCase) => {
     if (!decisionNotes.trim()) {
-      alert('Por favor, informe a fundamentação da decisão.');
+      setActionError('Por favor, informe a fundamentação da decisão.');
       return;
     }
+    setActionError(null);
     setSavingDecision(true);
     try {
       const remediesList = remediesInput
@@ -116,7 +128,7 @@ export const ArbComPanel: React.FC = () => {
       setActionSuccess('Acórdão e determinações do ArbCom publicados com sucesso!');
       setTimeout(() => setActionSuccess(null), 5000);
     } catch (err: any) {
-      alert('Erro ao publicar decisão: ' + err.message);
+      setActionError('Erro ao publicar decisão: ' + (err?.message || 'falha inesperada'));
     } finally {
       setSavingDecision(false);
     }
@@ -162,6 +174,9 @@ export const ArbComPanel: React.FC = () => {
   };
 
   const filteredCases = cases.filter(c => {
+    if (onlyMyCases && !currentUser.isAnonymous && c.plaintiffUid !== currentUser.uid && c.plaintiff !== currentUser.username) {
+      return false;
+    }
     if (filterStatus === 'todos') return true;
     return c.status === filterStatus;
   });
@@ -169,37 +184,39 @@ export const ArbComPanel: React.FC = () => {
   return (
     <div className="space-y-5 text-xs">
       {/* Intro Box */}
-      <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200 dark:border-purple-800/60 rounded space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Scale className="w-5 h-5 text-purple-700 dark:text-purple-400" />
-            <h2 className="text-base font-serif font-bold text-gray-900 dark:text-gray-100">
-              Conselho de Arbitragem (ArbCom)
-            </h2>
+      {!embeddedUserView && (
+        <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200 dark:border-purple-800/60 rounded space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Scale className="w-5 h-5 text-purple-700 dark:text-purple-400" />
+              <h2 className="text-base font-serif font-bold text-gray-900 dark:text-gray-100">
+                Conselho de Arbitragem (ArbCom)
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => navigateToPage('Wiki:Conselho_de_Arbitragem')}
+                className="px-2.5 py-1 text-[11px] bg-white dark:bg-gray-800 hover:bg-gray-50 border border-gray-300 dark:border-gray-700 rounded text-purple-700 dark:text-purple-300 font-medium inline-flex items-center gap-1 cursor-pointer"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Regimento do ArbCom</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowNewModal(true)}
+                className="px-3 py-1 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded shadow-2xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Abrir Caso no Conselho</span>
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigateToPage('Wiki:Conselho_de_Arbitragem')}
-              className="px-2.5 py-1 text-[11px] bg-white dark:bg-gray-800 hover:bg-gray-50 border border-gray-300 dark:border-gray-700 rounded text-purple-700 dark:text-purple-300 font-medium inline-flex items-center gap-1"
-            >
-              <ExternalLink className="w-3 h-3" />
-              <span>Regimento do ArbCom</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowNewModal(true)}
-              className="px-3 py-1 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded shadow-2xs flex items-center gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Abrir Caso no Conselho</span>
-            </button>
-          </div>
+          <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-[11px]">
+            Órgão máximo da comunidade do WikiWazzimaGiygg para resolução vinculativa de disputas graves de conduta, abuso de privilégios e recursos finais. As deliberações e acórdãos são irrecorríveis no âmbito editorial.
+          </p>
         </div>
-        <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-[11px]">
-          Órgão máximo da comunidade do WikiWazzimaGiygg para resolução vinculativa de disputas graves de conduta, abuso de privilégios e recursos finais. As deliberações e acórdãos são irrecorríveis no âmbito editorial.
-        </p>
-      </div>
+      )}
 
       {actionSuccess && (
         <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 rounded flex items-center gap-2 text-xs">
@@ -208,13 +225,35 @@ export const ArbComPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Filter Bar */}
-      <div className="p-3 bg-[#f8f9fa] dark:bg-gray-900 border border-[#a2a9b1] dark:border-gray-700 rounded flex items-center justify-between gap-3">
-        <span className="font-bold text-gray-700 dark:text-gray-300">
-          Processos e Casos ({cases.length})
-        </span>
+      {actionError && (
+        <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800 text-red-800 dark:text-red-200 rounded flex items-center gap-2 text-xs">
+          <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+          <span>{actionError}</span>
+        </div>
+      )}
 
-        <div className="flex items-center gap-2">
+      {/* Filter Bar */}
+      <div className="p-3 bg-[#f8f9fa] dark:bg-gray-900 border border-[#a2a9b1] dark:border-gray-700 rounded flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="font-bold text-gray-700 dark:text-gray-300 font-mono tabular-nums">
+            Processos e Casos ({filteredCases.length})
+          </span>
+          {!currentUser.isAnonymous && (
+            <button
+              type="button"
+              onClick={() => setOnlyMyCases(prev => !prev)}
+              className={`px-2.5 py-1 rounded border text-[11px] font-medium cursor-pointer ${
+                onlyMyCases
+                  ? 'bg-purple-700 text-white border-purple-700'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700'
+              }`}
+            >
+              {onlyMyCases ? 'Mostrando minhas petições' : 'Filtrar minhas petições'}
+            </button>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
           <label className="text-gray-600 dark:text-gray-400 font-medium text-[11px]">Status:</label>
           <select
             value={filterStatus}
@@ -228,6 +267,16 @@ export const ArbComPanel: React.FC = () => {
             <option value="rejeitado">Rejeitados</option>
             <option value="arquivado">Arquivados</option>
           </select>
+          {embeddedUserView && (
+            <button
+              type="button"
+              onClick={() => setShowNewModal(true)}
+              className="px-3 py-1 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Abrir Caso no Conselho</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -336,8 +385,8 @@ export const ArbComPanel: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Bureaucrat / Arbitrator Ruling Panel */}
-                    {isBureaucrat && (
+                    {/* Bureaucrat / Admin Arbitrator Ruling Panel */}
+                    {isStaff && (
                       <div className="pt-3 border-t border-gray-200 dark:border-gray-800">
                         {isRuling ? (
                           <div className="p-3 bg-purple-50 dark:bg-purple-950/40 border border-purple-300 dark:border-purple-700 rounded space-y-3">
@@ -444,6 +493,19 @@ export const ArbComPanel: React.FC = () => {
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
+
+            {currentUser.isAnonymous && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 rounded flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span>Entre com sua conta Google para protocolar uma petição no Conselho de Arbitragem.</span>
+                <button
+                  type="button"
+                  onClick={loginWithGoogle}
+                  className="px-3 py-1 bg-[#3366cc] hover:bg-[#254b99] text-white rounded font-medium cursor-pointer"
+                >
+                  Entrar com Google
+                </button>
+              </div>
+            )}
 
             {formError && (
               <div className="p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded text-xs">

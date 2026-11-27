@@ -305,6 +305,30 @@
         "updatedAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["userId", "slugs", "notifyEnabled", "notifyOwnEdits", "updatedAt"]
+    },
+    "AdminDiscussionTopic": {
+      "title": "AdminDiscussionTopic",
+      "description": "Internal administrator and bureaucrat discussion threads with threaded replies and status tracking",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 250 },
+        "category": {
+          "type": "string",
+          "enum": ["geral", "bloqueios", "seguranca", "politicas", "tecnico"]
+        },
+        "content": { "type": "string", "maxLength": 10000 },
+        "author": { "type": "string", "maxLength": 100 },
+        "authorUid": { "type": "string", "maxLength": 128 },
+        "authorRole": { "type": "string", "maxLength": 50 },
+        "status": {
+          "type": "string",
+          "enum": ["aberto", "em_votacao", "resolvido", "arquivado"]
+        },
+        "replies": { "type": "array" },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["title", "category", "content", "author", "authorUid", "authorRole", "status", "replies", "createdAt", "updatedAt"]
     }
   },
   "firestore": {
@@ -367,6 +391,10 @@
     "/user_watchlists/{userId}": {
       "schema": { "$ref": "#/entities/UserWatchlist" },
       "description": "Owner-only watchlist of monitored wiki pages and push notification settings"
+    },
+    "/admin_discussions/{topicId}": {
+      "schema": { "$ref": "#/entities/AdminDiscussionTopic" },
+      "description": "Restricted discussion board strictly for wiki administrators and bureaucrats"
     }
   }
 }

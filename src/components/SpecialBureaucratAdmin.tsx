@@ -20,6 +20,8 @@ import {
   UserSearch,
   Globe,
   Database,
+  FileCheck2,
+  MessageSquare,
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import {
@@ -46,6 +48,8 @@ import { ArbComPanel } from './admin/ArbComPanel';
 import { UCoCPanel } from './admin/UCoCPanel';
 import { SeoSearchPanel } from './admin/SeoSearchPanel';
 import { FirebaseAdminPanel } from './admin/FirebaseAdminPanel';
+import { LgpdRequestsPanel } from './admin/LgpdRequestsPanel';
+import { AdminDiscussionPanel } from './admin/AdminDiscussionPanel';
 
 export type BureaucratAdminTab =
   | 'manage'
@@ -53,6 +57,8 @@ export type BureaucratAdminTab =
   | 'logs'
   | 'users'
   | 'checkuser'
+  | 'lgpd'
+  | 'admin_discussion'
   | 'unblock'
   | 'arbcom'
   | 'ucoc'
@@ -131,9 +137,10 @@ const AVAILABLE_GROUPS: GroupDefinition[] = [
 ];
 
 export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ initialTab = 'manage' }) => {
-  const { currentUser, isBureaucrat, loginWithGoogle, navigateToPage } = useWiki();
+  const { currentUser, isBureaucrat, isAdmin, loginWithGoogle, navigateToPage } = useWiki();
+  const isStaff = isBureaucrat || isAdmin;
 
-  // Active view tab in Bureaucrat portal
+  // Active view tab in Bureaucrat / Admin portal
   const [activeTab, setActiveTab] = useState<BureaucratAdminTab>(initialTab);
 
   useEffect(() => {
@@ -168,6 +175,7 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
   const [allPages, setAllPages] = useState<WikiPage[]>([]);
   const [selectedPageForProtection, setSelectedPageForProtection] = useState<WikiPage | null>(null);
   const [pageToProtectQuery, setPageToProtectQuery] = useState<string>('');
+  const [pageProtectError, setPageProtectError] = useState<string | null>(null);
 
   // Real-time subscriptions to Firestore
   useEffect(() => {
@@ -348,6 +356,11 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
                 <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
                 <span>Burocrata Ativo</span>
               </span>
+            ) : isAdmin ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800 font-medium">
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                <span>Administrador (Sysop) Ativo</span>
+              </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 font-medium">
                 <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
@@ -359,7 +372,7 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
 
         <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 flex flex-wrap items-center justify-between gap-2">
           <span>
-            Central unificada da administração para Burocratas: permissões (<code>Special:UserRights</code>), CheckUser, desbloqueios, ArbCom, UCoC e páginas protegidas.
+            Central de Burocratas e Administradores: verificação de contas (fantoches), pedidos de LGPD, área de discussão de administradores, permissões, desbloqueios e páginas protegidas.
           </span>
           <span className="font-mono text-purple-700 dark:text-purple-300">
             Especial:Administração
@@ -368,14 +381,14 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
       </div>
 
       {/* Access Control Notice */}
-      {!isBureaucrat && (
+      {!isStaff && (
         <div className="mb-6 p-4 rounded bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs space-y-3">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <div className="font-bold text-sm">Permissão de Burocrata Necessária</div>
+              <div className="font-bold text-sm">Permissão de Administrador ou Burocrata Necessária</div>
               <p className="leading-relaxed">
-                A ação solicitada nesta página administrativa está limitada a utilizadores pertencentes ao grupo <strong>Burocratas</strong> da Wikipédia.
+                As ferramentas administrativas desta central são reservadas a utilizadores dos grupos <strong>Administradores</strong> e <strong>Burocratas</strong>.
                 O burocrata fundador registrado é <code>{DEFAULT_SUPER_ADMIN_EMAIL}</code>.
               </p>
             </div>
@@ -386,10 +399,10 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
               <button
                 type="button"
                 onClick={loginWithGoogle}
-                className="px-3 py-1.5 bg-[#3366cc] hover:bg-[#254b99] text-white rounded font-medium shadow-2xs flex items-center gap-1.5"
+                className="px-3 py-1.5 bg-[#3366cc] hover:bg-[#254b99] text-white rounded font-medium shadow-2xs flex items-center gap-1.5 cursor-pointer"
               >
                 <Lock className="w-3.5 h-3.5" />
-                <span>Iniciar sessão com Conta Google de Burocrata</span>
+                <span>Iniciar sessão com Conta Google</span>
               </button>
             ) : (
               <div className="text-[11px] text-gray-600 dark:text-gray-400">
@@ -400,12 +413,21 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
         </div>
       )}
 
+      {isAdmin && !isBureaucrat && ['manage', 'database', 'seo'].includes(activeTab) && (
+        <div className="mb-4 p-3 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <span>
+            Você está conectado como <strong>Administrador (Sysop)</strong>. Você tem acesso completo à Verificação de Contas (Fantoches), Pedidos de LGPD, Área de Discussão de Administradores, Páginas Protegidas e Desbloqueios; esta aba específica exige nível de <strong>Burocrata</strong> para alterações.
+          </span>
+        </div>
+      )}
+
       {/* Tabs Bar */}
       <div className="flex flex-wrap border-b border-[#a2a9b1] dark:border-gray-700 mb-4 text-xs gap-1">
         <button
           type="button"
           onClick={() => setActiveTab('manage')}
-          className={`px-3.5 py-2 font-medium border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 ${
+          className={`px-3.5 py-2 font-medium border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
             activeTab === 'manage'
               ? 'border-purple-600 text-purple-700 dark:text-purple-400 font-semibold bg-purple-50/50 dark:bg-purple-950/20'
               : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
@@ -418,7 +440,7 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
         <button
           type="button"
           onClick={() => setActiveTab('checkuser')}
-          className={`px-3.5 py-2 font-medium border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 ${
+          className={`px-3.5 py-2 font-medium border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
             activeTab === 'checkuser'
               ? 'border-purple-600 text-purple-700 dark:text-purple-400 font-semibold bg-purple-50/50 dark:bg-purple-950/20'
               : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
@@ -426,6 +448,32 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
         >
           <UserSearch className="w-4 h-4 text-purple-600 dark:text-purple-400" />
           <span>Verificação de Contas (Fantoches)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('lgpd')}
+          className={`px-3.5 py-2 font-medium border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+            activeTab === 'lgpd'
+              ? 'border-purple-600 text-purple-700 dark:text-purple-400 font-semibold bg-purple-50/50 dark:bg-purple-950/20'
+              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+          }`}
+        >
+          <FileCheck2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <span>Pedidos de LGPD</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('admin_discussion')}
+          className={`px-3.5 py-2 font-medium border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+            activeTab === 'admin_discussion'
+              ? 'border-purple-600 text-purple-700 dark:text-purple-400 font-semibold bg-purple-50/50 dark:bg-purple-950/20'
+              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          <span>Discussão de Administradores</span>
         </button>
 
         <button
@@ -983,9 +1031,10 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
                       p => p.title.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q)
                     );
                     if (found) {
+                      setPageProtectError(null);
                       setSelectedPageForProtection(found);
                     } else {
-                      alert(`Página "${pageToProtectQuery}" não encontrada no Firestore.`);
+                      setPageProtectError(`Página "${pageToProtectQuery}" não encontrada no Firestore.`);
                     }
                   }}
                   className="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium cursor-pointer"
@@ -994,6 +1043,11 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
                 </button>
               )}
             </div>
+            {pageProtectError && (
+              <div className="p-2 rounded bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 text-xs">
+                {pageProtectError}
+              </div>
+            )}
           </div>
 
           {/* Currently Protected Pages Table */}
@@ -1163,19 +1217,25 @@ export const SpecialBureaucratAdmin: React.FC<SpecialBureaucratAdminProps> = ({ 
       {/* TAB 5: CHECKUSER / FANTOCHES */}
       {activeTab === 'checkuser' && <CheckUserPanel />}
 
-      {/* TAB 6: UNBLOCK REQUESTS */}
+      {/* TAB 6: PEDIDOS DE LGPD */}
+      {activeTab === 'lgpd' && <LgpdRequestsPanel />}
+
+      {/* TAB 7: ÁREA DE DISCUSSÃO DE ADMINISTRADORES */}
+      {activeTab === 'admin_discussion' && <AdminDiscussionPanel />}
+
+      {/* TAB 8: UNBLOCK REQUESTS */}
       {activeTab === 'unblock' && <UnblockRequestsPanel />}
 
-      {/* TAB 7: ARBCOM / CONSELHO DE ARBITRAGEM */}
+      {/* TAB 9: ARBCOM / CONSELHO DE ARBITRAGEM */}
       {activeTab === 'arbcom' && <ArbComPanel />}
 
-      {/* TAB 8: UCOC / CÓDIGO UNIVERSAL DE CONDUTA */}
+      {/* TAB 10: UCOC / CÓDIGO UNIVERSAL DE CONDUTA */}
       {activeTab === 'ucoc' && <UCoCPanel />}
 
-      {/* TAB 9: SEO & BUSCADORES */}
+      {/* TAB 11: SEO & BUSCADORES */}
       {activeTab === 'seo' && <SeoSearchPanel />}
 
-      {/* TAB 10: BANCO DE DADOS FIREBASE */}
+      {/* TAB 12: BANCO DE DADOS FIREBASE */}
       {activeTab === 'database' && <FirebaseAdminPanel />}
 
       {/* Page Protection Modal */}

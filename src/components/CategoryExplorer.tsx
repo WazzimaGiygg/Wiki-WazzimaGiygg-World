@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { INITIAL_PAGES } from '../core/defaultPages';
+import { DEFAULT_CATEGORY_DEFINITIONS, CategorySeedMeta } from '../core/defaultCategories';
 import { subscribeToAllPages } from '../services/wikiService';
 import { WikiPage } from '../types/wiki';
 
@@ -23,6 +24,8 @@ export interface CategoryExplorerProps {
 interface CategoryGroup {
   key: string;
   name: string;
+  kind: 'article' | 'page';
+  description?: string;
   pages: WikiPage[];
 }
 
@@ -116,12 +119,21 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
   const [firestorePages, setFirestorePages] = useState<WikiPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [kindFilter, setKindFilter] = useState<'all' | 'article' | 'page'>('all');
   const [articleFilter, setArticleFilter] = useState('');
   const [namespaceFilter, setNamespaceFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'alpha' | 'count'>('alpha');
   const [selectedCategoryKey, setSelectedCategoryKey] = useState<string | null>(() =>
     initialCategory ? normalizeCategoryKey(initialCategory) : null
   );
+
+  const defaultCategoryMetaMap = useMemo(() => {
+    const metaMap = new Map<string, CategorySeedMeta>();
+    for (const def of DEFAULT_CATEGORY_DEFINITIONS) {
+      metaMap.set(normalizeCategoryKey(def.name), def);
+    }
+    return metaMap;
+  }, []);
 
   useEffect(() => {
     setSelectedCategoryKey(initialCategory ? normalizeCategoryKey(initialCategory) : null);
@@ -154,10 +166,36 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
   const categoryGroups = useMemo<CategoryGroup[]>(() => {
     const map = new Map<string, { name: string; pagesBySlug: Map<string, WikiPage> }>();
 
+    // Ensure every seeded default category is always discoverable
+    for (const def of DEFAULT_CATEGORY_DEFINITIONS) {
+      const key = normalizeCategoryKey(def.name);
+      if (!map.has(key)) {
+        map.set(key, { name: def.name, pagesBySlug: new Map() });
+      }
+    }
+
     for (const page of allPages) {
+      // Register Category:* pages themselves as browsable categories even when empty
+      if (page.namespace === 'Category' || /^(?:Categoria|Category):/i.test(page.slug)) {
+        const ownCatName = cleanCategoryName(
+          page.title.replace(/^(?:Categoria|Category):/i, '')
+        );
+        const ownKey = normalizeCategoryKey(ownCatName);
+        if (ownKey && !map.has(ownKey)) {
+          map.set(ownKey, { name: ownCatName, pagesBySlug: new Map() });
+        }
+      }
+
       const cats = extractCategoriesFromPage(page);
       for (const catName of cats) {
         const key = normalizeCategoryKey(catName);
+        // Prevent a Categoria:X page from listing itself as a member
+        if (
+          (page.namespace === 'Category' || /^(?:Categoria|Category):/i.test(page.slug)) &&
+          normalizeCategoryKey(page.title.replace(/^(?:Categoria|Category):/i, '')) === key
+        ) {
+          continue;
+        }
         if (!map.has(key)) {
           map.set(key, { name: catName, pagesBySlug: new Map() });
         }
@@ -166,20 +204,49 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
       }
     }
 
-    return Array.from(map.entries()).map(([key, value]) => ({
-      key,
-      name: value.name,
-      pages: Array.from(value.pagesBySlug.values()).sort((a, b) =>
+    return Array.from(map.entries()).map(([key, value]) => {
+      const pages = Array.from(value.pagesBySlug.values()).sort((a, b) =>
         a.title.localeCompare(b.title, 'pt-BR', { sensitivity: 'base' })
-      ),
-    }));
-  }, [allPages]);
+      );
+      const seedMeta = defaultCategoryMetaMap.get(key);
+      const inferredKind: 'article' | 'page' = seedMeta
+        ? seedMeta.kind
+        : pages.length > 0 && pages.every(p => p.namespace !== 'Main')
+        ? 'page'
+        : 'article';
+
+      return {
+        key,
+        name: seedMeta?.name || value.name,
+        kind: inferredKind,
+        description: seedMeta?.description,
+        pages,
+      };
+    });
+  }, [allPages, defaultCategoryMetaMap]);
+
+  const kindCounts = useMemo(() => {
+    let article = 0;
+    let page = 0;
+    for (const cat of categoryGroups) {
+      if (cat.kind === 'article') article++;
+      else page++;
+    }
+    return { all: categoryGroups.length, article, page };
+  }, [categoryGroups]);
 
   const sortedAndFilteredCategories = useMemo(() => {
     const q = categoryFilter.trim().toLowerCase();
-    const filtered = q
-      ? categoryGroups.filter(cat => cat.name.toLowerCase().includes(q))
-      : categoryGroups;
+    const filtered = categoryGroups.filter(cat => {
+      if (kindFilter !== 'all' && cat.kind !== kindFilter) return false;
+      if (q) {
+        return (
+          cat.name.toLowerCase().includes(q) ||
+          (cat.description || '').toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
 
     return [...filtered].sort((a, b) => {
       if (sortBy === 'count') {
@@ -188,21 +255,24 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
       }
       return a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' });
     });
-  }, [categoryGroups, categoryFilter, sortBy]);
+  }, [categoryGroups, categoryFilter, kindFilter, sortBy]);
 
   const selectedGroup = useMemo<CategoryGroup | null>(() => {
     if (!selectedCategoryKey) return null;
     const found = categoryGroups.find(c => c.key === selectedCategoryKey);
     if (found) return found;
     if (initialCategory) {
+      const seedMeta = defaultCategoryMetaMap.get(selectedCategoryKey);
       return {
         key: selectedCategoryKey,
-        name: cleanCategoryName(initialCategory),
+        name: seedMeta?.name || cleanCategoryName(initialCategory),
+        kind: seedMeta?.kind || 'article',
+        description: seedMeta?.description,
         pages: [],
       };
     }
     return null;
-  }, [categoryGroups, selectedCategoryKey, initialCategory]);
+  }, [categoryGroups, selectedCategoryKey, initialCategory, defaultCategoryMetaMap]);
 
   const availableNamespaces = useMemo(() => {
     if (!selectedGroup) return [];
@@ -307,7 +377,8 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
                 <span>{selectedGroup.name}</span>
               </span>
               <span className="font-mono tabular-nums text-[11px] text-gray-500 dark:text-gray-400">
-                · {selectedGroup.pages.length}{' '}
+                · {selectedGroup.kind === 'article' ? 'Categoria de artigos' : 'Categoria de páginas'} ·{' '}
+                {selectedGroup.pages.length}{' '}
                 {selectedGroup.pages.length === 1 ? 'página' : 'páginas'}
               </span>
             </div>
@@ -323,6 +394,12 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
               </button>
             )}
           </div>
+
+          {selectedGroup.description && (
+            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed px-0.5">
+              {selectedGroup.description}
+            </p>
+          )}
 
           {/* Search & Namespace Filter for Articles inside Category */}
           <div className="flex flex-wrap items-center gap-2.5 p-2.5 rounded border border-gray-200 dark:border-gray-800 bg-[#f8f9fa] dark:bg-[#131722] text-xs">
@@ -428,56 +505,89 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
         /* Category Directory: All Categories */
         <div className="space-y-3">
           {/* Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 p-2.5 rounded border border-gray-200 dark:border-gray-800 bg-[#f8f9fa] dark:bg-[#131722] text-xs">
-            <div className="relative flex-1 min-w-[220px]">
-              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={categoryFilter}
-                onChange={e => setCategoryFilter(e.target.value)}
-                placeholder="Buscar categoria por nome..."
-                className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3366cc]"
-              />
+          <div className="space-y-2 p-2.5 rounded border border-gray-200 dark:border-gray-800 bg-[#f8f9fa] dark:bg-[#131722] text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2.5">
+              <div className="relative flex-1 min-w-[220px]">
+                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={categoryFilter}
+                  onChange={e => setCategoryFilter(e.target.value)}
+                  placeholder="Buscar categoria por nome ou descrição..."
+                  className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3366cc]"
+                />
+              </div>
+
+              <div className="flex items-center gap-1" role="group" aria-label="Ordenar categorias">
+                <button
+                  type="button"
+                  onClick={() => setSortBy('alpha')}
+                  className={`px-2.5 py-1.5 rounded border text-xs font-medium transition-colors cursor-pointer ${
+                    sortBy === 'alpha'
+                      ? 'bg-[#3366cc] text-white border-[#254b99]'
+                      : 'bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  Alfabética (A–Z)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('count')}
+                  className={`px-2.5 py-1.5 rounded border text-xs font-medium transition-colors cursor-pointer ${
+                    sortBy === 'count'
+                      ? 'bg-[#3366cc] text-white border-[#254b99]'
+                      : 'bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  Mais páginas
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-1" role="group" aria-label="Ordenar categorias">
-              <button
-                type="button"
-                onClick={() => setSortBy('alpha')}
-                className={`px-2.5 py-1.5 rounded border text-xs font-medium transition-colors cursor-pointer ${
-                  sortBy === 'alpha'
-                    ? 'bg-[#3366cc] text-white border-[#254b99]'
-                    : 'bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-              >
-                Alfabética (A–Z)
-              </button>
-              <button
-                type="button"
-                onClick={() => setSortBy('count')}
-                className={`px-2.5 py-1.5 rounded border text-xs font-medium transition-colors cursor-pointer ${
-                  sortBy === 'count'
-                    ? 'bg-[#3366cc] text-white border-[#254b99]'
-                    : 'bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-              >
-                Mais artigos
-              </button>
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-gray-200/80 dark:border-gray-800">
+              <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Filtrar tipo de categoria">
+                {(
+                  [
+                    { id: 'all', label: 'Todas', count: kindCounts.all },
+                    { id: 'article', label: 'Categorias de Artigos', count: kindCounts.article },
+                    { id: 'page', label: 'Categorias de Páginas', count: kindCounts.page },
+                  ] as const
+                ).map(tab => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setKindFilter(tab.id)}
+                    className={`px-2.5 py-1 rounded border text-[11px] font-medium tabular-nums transition-colors cursor-pointer ${
+                      kindFilter === tab.id
+                        ? 'bg-[#3366cc] text-white border-[#254b99]'
+                        : 'bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    {tab.label} ({tab.count})
+                  </button>
+                ))}
+              </div>
+              <span className="text-[11px] font-mono tabular-nums text-gray-500 dark:text-gray-400">
+                Exibindo {sortedAndFilteredCategories.length}
+              </span>
             </div>
           </div>
 
           {sortedAndFilteredCategories.length === 0 ? (
             <div className="p-8 text-center border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-[#1a1f2c] space-y-2">
               <p className="text-xs text-gray-600 dark:text-gray-400">
-                Nenhuma categoria encontrada para &quot;{categoryFilter}&quot;.
+                Nenhuma categoria encontrada para os filtros atuais.
               </p>
-              {categoryFilter && (
+              {(categoryFilter || kindFilter !== 'all') && (
                 <button
                   type="button"
-                  onClick={() => setCategoryFilter('')}
+                  onClick={() => {
+                    setCategoryFilter('');
+                    setKindFilter('all');
+                  }}
                   className="text-xs text-[#0645ad] dark:text-[#6ba4ff] hover:underline font-medium cursor-pointer"
                 >
-                  Limpar busca
+                  Limpar filtros
                 </button>
               )}
             </div>
@@ -491,13 +601,24 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
                   className="p-3 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1f2c] hover:border-[#3366cc] dark:hover:border-blue-500 hover:bg-[#f8f9fa] dark:hover:bg-gray-900/70 transition-colors text-left flex items-center justify-between gap-2 group cursor-pointer"
                 >
                   <span className="flex items-center gap-2 min-w-0">
-                    <FolderOpen className="w-4 h-4 text-[#0645ad] dark:text-[#6ba4ff] shrink-0" />
-                    <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-[#0645ad] dark:group-hover:text-[#6ba4ff] truncate">
-                      {cat.name}
+                    <FolderOpen
+                      className={`w-4 h-4 shrink-0 ${
+                        cat.kind === 'article'
+                          ? 'text-[#0645ad] dark:text-[#6ba4ff]'
+                          : 'text-teal-600 dark:text-teal-400'
+                      }`}
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-[#0645ad] dark:group-hover:text-[#6ba4ff] truncate">
+                        {cat.name}
+                      </span>
+                      <span className="block text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                        {cat.kind === 'article' ? 'Artigos' : 'Páginas'}
+                      </span>
                     </span>
                   </span>
                   <span className="text-[11px] font-mono tabular-nums text-gray-500 dark:text-gray-400 shrink-0">
-                    {cat.pages.length} {cat.pages.length === 1 ? 'artigo' : 'artigos'}
+                    {cat.pages.length} {cat.pages.length === 1 ? 'página' : 'páginas'}
                   </span>
                 </button>
               ))}

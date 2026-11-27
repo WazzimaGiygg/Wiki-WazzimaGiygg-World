@@ -363,6 +363,39 @@ export interface AdminAuditLogEntry {
   timestamp: string;
 }
 
+// 7. Área de Discussão Interna de Administradores e Burocratas
+export type AdminDiscussionCategory =
+  | 'geral'
+  | 'bloqueios'
+  | 'seguranca'
+  | 'politicas'
+  | 'tecnico';
 
+export type AdminDiscussionStatus =
+  | 'aberto'
+  | 'em_votacao'
+  | 'resolvido'
+  | 'arquivado';
 
+export interface AdminDiscussionReply {
+  id: string;
+  author: string;
+  authorUid: string;
+  authorRole: string;
+  content: string;
+  createdAt: string;
+}
 
+export interface AdminDiscussionTopic {
+  id: string;
+  title: string;
+  category: AdminDiscussionCategory;
+  content: string;
+  author: string;
+  authorUid: string;
+  authorRole: string;
+  status: AdminDiscussionStatus;
+  replies: AdminDiscussionReply[];
+  createdAt: string;
+  updatedAt: string;
+}

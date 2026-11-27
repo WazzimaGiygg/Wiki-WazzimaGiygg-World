@@ -1,8 +1,10 @@
 import { WikiPage } from '../types/wiki';
 import { WIKIPEDIA_DEFAULT_TEMPLATES } from './wikipediaTemplates';
+import { WIKI_DEFAULT_CATEGORY_PAGES } from './defaultCategories';
 
 export const INITIAL_PAGES: Record<string, WikiPage> = {
   ...WIKIPEDIA_DEFAULT_TEMPLATES,
+  ...WIKI_DEFAULT_CATEGORY_PAGES,
   'Página_principal': {
     slug: 'Página_principal',
     title: 'Página principal',
@@ -11,7 +13,7 @@ export const INITIAL_PAGES: Record<string, WikiPage> = {
     authorId: 'system_admin',
     revisionCount: 1,
     latestRevisionId: 'rev_initial_wazzima_main',
-    categories: ['Portais', 'WikiWazzimaGiygg'],
+    categories: ['Portais', 'WikiWazzimaGiygg', 'Ciência e Tecnologia', 'Computação e Programação', 'TypeScript'],
     createdAt: '2026-11-01T00:00:00.000Z',
     updatedAt: '2026-11-02T12:00:00.000Z',
     summary: 'Criação da Página Principal do WikiWazzimaGiygg',
@@ -93,6 +95,8 @@ O WikiWazzimaGiygg substitui o paradigma tradicional por tecnologias modernas:
 
 [[Categoria:Portais]]
 [[Categoria:WikiWazzimaGiygg]]
+[[Categoria:Ciência e Tecnologia]]
+[[Categoria:Computação e Programação]]
 [[Categoria:TypeScript]]`
   },
 
@@ -104,7 +108,7 @@ O WikiWazzimaGiygg substitui o paradigma tradicional por tecnologias modernas:
     authorId: 'system_admin',
     revisionCount: 1,
     latestRevisionId: 'rev_initial_wazzima_arch',
-    categories: ['Arquitetura', 'TypeScript', 'Firebase'],
+    categories: ['Arquitetura', 'Computação e Programação', 'Ciência e Tecnologia', 'TypeScript', 'Firebase'],
     createdAt: '2026-11-01T02:00:00.000Z',
     updatedAt: '2026-11-02T11:00:00.000Z',
     summary: 'Documentação da arquitetura TypeScript e Firestore do WikiWazzimaGiygg',
@@ -131,6 +135,8 @@ Todos os dados residem nas seguintes coleções do banco de dados:
 O sistema inclui um algoritmo comparador de revisões em TypeScript (\`/src/core/diff.ts\`), permitindo comparar qualquer par de revisões no histórico com destaque de linhas e palavras adicionadas ou removidas.
 
 [[Categoria:Arquitetura]]
+[[Categoria:Computação e Programação]]
+[[Categoria:Ciência e Tecnologia]]
 [[Categoria:TypeScript]]
 [[Categoria:Firebase]]`
   },
@@ -143,7 +149,7 @@ O sistema inclui um algoritmo comparador de revisões em TypeScript (\`/src/core
     authorId: 'system_admin',
     revisionCount: 1,
     latestRevisionId: 'rev_initial_settings',
-    categories: ['Manual', 'Configuração', 'WikiWazzimaGiygg'],
+    categories: ['Manual', 'Configuração', 'Documentação', 'WikiWazzimaGiygg'],
     createdAt: '2026-11-01T03:00:00.000Z',
     updatedAt: '2026-11-02T08:00:00.000Z',
     summary: 'Configuração central do WikiWazzimaGiygg',
@@ -165,7 +171,9 @@ No '''WikiWazzimaGiygg''', o arquivo de configuração é o \`LocalSettings.ts\`
 Você pode alterar estas configurações clicando em '''Ferramentas > Configurações da Wiki''' na barra lateral!
 
 [[Categoria:Manual]]
-[[Categoria:Configuração]]`
+[[Categoria:Configuração]]
+[[Categoria:Documentação]]
+[[Categoria:WikiWazzimaGiygg]]`
   },
 
   'Exemplo_de_Uso_de_Predefinições': {
@@ -267,24 +275,28 @@ As predefinições [[Predefinição:Sim]], [[Predefinição:Não]] e [[Predefini
 | [[Predefinição:Fonte]] || \`<ref>{{Fonte|Autor|Título|Ano|URL}}</ref>\` || Transclusão em nota de rodapé
 |}
 
-== 6. Clássicos da Wikipédia: Citações, Formatação e Navegação ==
-Agora o sistema também traz dezenas das predefinições mais utilizadas pela Wikipédia em Português, incluindo citações bibliográficas (\`{{Citar_web}}\`, \`{{Citar_livro}}\`, \`{{Citar_periódico}}\`), marcações inline (\`{{Sem_fonte}}\`, \`{{Quando}}\`, \`{{Quem}}\`), formatação tipográfica (\`{{Tecla}}\`, \`{{Cor}}\`, \`{{Lang}}\`, \`{{Fórmula}}\`, \`{{Ocultar}}\`) e caixas de rodapé (\`{{Navbox}}\`, \`{{Controle_de_autoridade}}\`):
+== 6. Clássicos da Wikipédia: Citações, Infoboxes, Formatação e Navegação ==
+Agora o sistema também traz mais de uma centena das predefinições mais utilizadas pela Wikipédia em Português, incluindo citações bibliográficas e jurídicas (\`{{Citar_web}}\`, \`{{Citar_livro}}\`, \`{{Citar_periódico}}\`, \`{{Citar_lei}}\`, \`{{ISBN}}\`, \`{{DOI}}\`), caixas temáticas (\`{{Info/Biografia}}\`, \`{{Info/País}}\`, \`{{Info/Empresa}}\`, \`{{Info/Livro}}\`, \`{{Info/Jogo}}\`), marcações inline (\`{{Sem_fonte}}\`, \`{{Quando}}\`, \`{{Quem}}\`), formatação tipográfica (\`{{Tecla}}\`, \`{{Cor}}\`, \`{{Lang}}\`, \`{{Fórmula}}\`, \`{{Moeda}}\`, \`{{Bandeira}}\`, \`{{Data}}\`, \`{{Ocultar}}\`) e caixas de rodapé (\`{{Navbox}}\`, \`{{Controle_de_autoridade}}\`):
 
 * '''Atalhos de teclado:''' Pressione {{Tecla|Ctrl|B}} para negrito ou {{Tecla|Ctrl|S}} para salvar.
-* '''Amostras de cor e unidades:''' {{Cor|#3366cc|Azul MediaWiki}} e distância de {{Unidade|384 400|km}}.
-* '''Idiomas e fórmulas:''' Termo {{Lang|en|Open Source}} e equação {{Fórmula|E = mc²|número=1}}
+* '''Amostras de cor, moedas, bandeiras e unidades:''' {{Cor|#3366cc|Azul MediaWiki}}, {{Moeda|1.500,00|BRL}}, {{Bandeira|Brasil}} em {{Data|27|11|2026}} e distância de {{Unidade|384 400|km}}.
+* '''Idiomas, siglas e fórmulas:''' Termo {{Lang|en|Open Source}}, sigla {{Abreviatura|API|Application Programming Interface}} e equação {{Fórmula|E = mc²|número=1}}
 * '''Marcações de verificação inline:''' Afirmação sem fonte comprovada{{Sem_fonte|data=Novembro de 2026}} ou data vaga{{Quando}}.
-* '''Discussões e votações:''' {{Concordo|Modelo padronizado aprovado}} e {{Feito|Integrado ao catálogo}}.
+* '''Discussões e votações:''' {{Apoio|Modelo padronizado aprovado}}, {{Concordo}} e {{Feito|Integrado ao catálogo}}.
+
+{{Resolvido|Mais de 135 pré-definições oficiais e categorias de artigos/páginas integradas ao catálogo.}}
 
 {{Ocultar|título=Clique para expandir: Exemplo de Citação Web e Navbox da Wikipédia|conteúdo=Exemplo de citação com {{Citar_web|url=https://wikiwazzimagiygg.wazzimagiygg.com|título=Portal Oficial WikiWazzimaGiygg|autor=Equipe Editorial|obra=WikiWazzimaGiygg|data=2026}}}}
 
 {{Navbox
 | título = Guia de Pré-definições do {{SITENAME}}
 | grupo1 = Citações
-| lista1 = {{Lista_horizontal|[[Predefinição:Citar_web]]|[[Predefinição:Citar_livro]]|[[Predefinição:Citar_jornal]]|[[Predefinição:Citar_periódico]]}}
-| grupo2 = Manutenção
-| lista2 = {{Lista_horizontal|[[Predefinição:Wikificar]]|[[Predefinição:Carece_de_fontes]]|[[Predefinição:Parcialidade]]|[[Predefinição:Fusão]]}}
-| rodapé = [[Ajuda:Predefinições|Ver catálogo completo das 88 pré-definições]]
+| lista1 = {{Lista_horizontal|[[Predefinição:Citar_web]]|[[Predefinição:Citar_livro]]|[[Predefinição:Citar_lei]]|[[Predefinição:Citar_periódico]]}}
+| grupo2 = Infoboxes
+| lista2 = {{Lista_horizontal|[[Predefinição:Info/Biografia]]|[[Predefinição:Info/País]]|[[Predefinição:Info/Empresa]]|[[Predefinição:Info/Livro]]}}
+| grupo3 = Manutenção
+| lista3 = {{Lista_horizontal|[[Predefinição:Wikificar]]|[[Predefinição:Carece_de_fontes]]|[[Predefinição:Parcialidade]]|[[Predefinição:Fusão]]}}
+| rodapé = [[Ajuda:Predefinições|Ver catálogo completo das pré-definições]] · [[Especial:Categorias|Explorar categorias]]
 }}
 
 == 7. Marcação de Esboço e Portais ao Rodapé ==
@@ -810,7 +822,7 @@ Ao publicar textos ou edições no WikiWazzimaGiygg, o colaborador concorda em l
     authorId: 'system_admin',
     revisionCount: 1,
     latestRevisionId: 'rev_initial_investigacao_lgpd_wmf',
-    categories: ['LGPD', 'Marco Civil', 'Auditoria', 'Privacidade', 'Governança'],
+    categories: ['LGPD', 'Marco Civil', 'Auditoria', 'Privacidade', 'Direito Digital', 'Governança'],
     createdAt: '2026-11-19T00:00:00.000Z',
     updatedAt: '2026-11-19T00:00:00.000Z',
     summary: 'Dossiê investigativo sobre não-conformidades da Wikimedia Foundation (WMF) e Wikipédia Lusófona frente à LGPD e ao Marco Civil da Internet',
@@ -913,6 +925,7 @@ Ao publicar textos ou edições no WikiWazzimaGiygg, o colaborador concorda em l
 [[Categoria:Marco Civil]]
 [[Categoria:Auditoria]]
 [[Categoria:Privacidade]]
+[[Categoria:Direito Digital]]
 [[Categoria:Governança]]`
   },
 
@@ -1032,24 +1045,67 @@ As predefinições do WikiWazzimaGiygg suportam palavras mágicas e lógica cond
 == 6. Catálogo Completo de Predefinições da Wikipédia ==
 Além das predefinições básicas acima, o WikiWazzimaGiygg inclui um amplo acervo dos modelos mais populares da Wikipédia Lusófona:
 
+=== Infoboxes Temáticos da Wikipédia (Info/...) ===
+* '''Pessoas e lugares:''' [[Predefinição:Info/Biografia]], [[Predefinição:Info/País]], [[Predefinição:Info/Município]], [[Predefinição:Info/Evento]]
+* '''Organizações e tecnologia:''' [[Predefinição:Info/Empresa]], [[Predefinição:Info/Organização]], [[Predefinição:Info/Jogo]], [[Predefinição:Info/Elemento_químico]], [[Predefinição:Info/Taxonomia]]
+* '''Cultura e obras:''' [[Predefinição:Info/Livro]], [[Predefinição:Info/Filme]], [[Predefinição:Info/Álbum]]
+
 === Citações e Referências ===
-* '''Bibliográficas:''' [[Predefinição:Citar_web]], [[Predefinição:Citar_livro]], [[Predefinição:Citar_jornal]], [[Predefinição:Citar_periódico]], [[Predefinição:Citar_vídeo]], [[Predefinição:Citar_tese]], [[Predefinição:Citar_enciclopédia]]
-* '''Marcações inline:''' [[Predefinição:Sem_fonte]], [[Predefinição:Carece_de_esclarecimento]], [[Predefinição:Quando]], [[Predefinição:Quem]], [[Predefinição:Onde]], [[Predefinição:Verificar_credibilidade]], [[Predefinição:Ligação_inativa]]
+* '''Bibliográficas e jurídicas:''' [[Predefinição:Citar_web]], [[Predefinição:Citar_livro]], [[Predefinição:Citar_jornal]], [[Predefinição:Citar_periódico]], [[Predefinição:Citar_vídeo]], [[Predefinição:Citar_tese]], [[Predefinição:Citar_enciclopédia]], [[Predefinição:Citar_lei]], [[Predefinição:Citar_comunicado]], [[Predefinição:Citar_mapa]], [[Predefinição:Citar_jogo]]
+* '''Identificadores e lista de notas:''' [[Predefinição:Referências]], [[Predefinição:ISBN]], [[Predefinição:DOI]], [[Predefinição:Wayback]]
+* '''Marcações inline:''' [[Predefinição:Sem_fonte]], [[Predefinição:Carece_de_esclarecimento]], [[Predefinição:Carece_de_página]], [[Predefinição:Fonte_primária]], [[Predefinição:Quando]], [[Predefinição:Quem]], [[Predefinição:Onde]], [[Predefinição:Verificar_credibilidade]], [[Predefinição:Ligação_inativa]], [[Predefinição:Desatualizado]]
 
 === Manutenção, Qualidade e Avisos ===
-* '''Manutenção editorial:''' [[Predefinição:Wikificar]], [[Predefinição:Formatar_referências]], [[Predefinição:Reciclagem]], [[Predefinição:Contextualizar]], [[Predefinição:Expandir]], [[Predefinição:Parcialidade]], [[Predefinição:Contraditório]], [[Predefinição:Globalizar]], [[Predefinição:Publicidade]], [[Predefinição:Falta_de_notoriedade]], [[Predefinição:Conflito_de_interesses]], [[Predefinição:Fusão]], [[Predefinição:Órfão]], [[Predefinição:Sem_categoria]], [[Predefinição:Sem_imagem]]
-* '''Tradução e proteção:''' [[Predefinição:Traduzir]], [[Predefinição:Revisão_de_tradução]], [[Predefinição:Protegido]], [[Predefinição:Eliminação_rápida]], [[Predefinição:Páginas_para_eliminar]], [[Predefinição:Direitos_autorais]]
-* '''Avisos temáticos e selos:''' [[Predefinição:Spoiler]], [[Predefinição:Médico]], [[Predefinição:Aviso_legal]], [[Predefinição:Artigo_destacado]], [[Predefinição:Artigo_bom]]
+* '''Manutenção editorial:''' [[Predefinição:Wikificar]], [[Predefinição:Formatar_referências]], [[Predefinição:Poucas_referências]], [[Predefinição:Fontes_primárias]], [[Predefinição:Reciclagem]], [[Predefinição:Contextualizar]], [[Predefinição:Falta_de_contexto]], [[Predefinição:Estilo_inadequado]], [[Predefinição:Expandir]], [[Predefinição:Lista_incompleta]], [[Predefinição:Prosa]], [[Predefinição:Dividir]], [[Predefinição:Dicionário]], [[Predefinição:Parcialidade]], [[Predefinição:Contraditório]], [[Predefinição:Globalizar]], [[Predefinição:Publicidade]], [[Predefinição:Falta_de_notoriedade]], [[Predefinição:Conflito_de_interesses]], [[Predefinição:Autobiografia]], [[Predefinição:Fusão]], [[Predefinição:Órfão]], [[Predefinição:Sem_categoria]], [[Predefinição:Sem_imagem]]
+* '''Tradução, tempo e proteção:''' [[Predefinição:Traduzir]], [[Predefinição:Revisão_de_tradução]], [[Predefinição:Futuro]], [[Predefinição:Ficção]], [[Predefinição:Protegido]], [[Predefinição:Eliminação_rápida]], [[Predefinição:Páginas_para_eliminar]], [[Predefinição:Direitos_autorais]]
+* '''Avisos temáticos e selos:''' [[Predefinição:Spoiler]], [[Predefinição:Médico]], [[Predefinição:Aviso_legal]], [[Predefinição:Nota_histórica]], [[Predefinição:Artigo_destacado]], [[Predefinição:Artigo_bom]]
 
 === Formatação, Navegação e Comunidade ===
-* '''Notas de topo (Hatnotes):''' [[Predefinição:Não_confundir]], [[Predefinição:Redirecionamento]], [[Predefinição:Mais_detalhes]], [[Predefinição:Sobre]], [[Predefinição:Minidesambiguação]], [[Predefinição:Ver_desambiguação]]
-* '''Tipografia e layout:''' [[Predefinição:Lang]], [[Predefinição:Pronúncia]], [[Predefinição:Etimologia]], [[Predefinição:Epígrafe]], [[Predefinição:Destaque]], [[Predefinição:Tecla]], [[Predefinição:Código]], [[Predefinição:Cor]], [[Predefinição:Idade]], [[Predefinição:Fórmula]], [[Predefinição:Unidade]], [[Predefinição:Lista_horizontal]], [[Predefinição:Ocultar]], [[Predefinição:Limpar]]
+* '''Notas de topo (Hatnotes):''' [[Predefinição:Não_confundir]], [[Predefinição:Redirecionamento]], [[Predefinição:Redireciona_aqui]], [[Predefinição:Homônimos]], [[Predefinição:Mais_detalhes]], [[Predefinição:Sobre]], [[Predefinição:Minidesambiguação]], [[Predefinição:Ver_desambiguação]]
+* '''Tipografia, datas e moedas:''' [[Predefinição:Lang]], [[Predefinição:Pronúncia]], [[Predefinição:Etimologia]], [[Predefinição:Epígrafe]], [[Predefinição:Destaque]], [[Predefinição:Pequeno]], [[Predefinição:Grande]], [[Predefinição:Sublinhado]], [[Predefinição:Sem_quebra]], [[Predefinição:Tooltip]], [[Predefinição:Abreviatura]], [[Predefinição:Tecla]], [[Predefinição:Código]], [[Predefinição:Cor]], [[Predefinição:Data]], [[Predefinição:Data_de_nascimento]], [[Predefinição:Idade]], [[Predefinição:Moeda]], [[Predefinição:Bandeira]], [[Predefinição:Fórmula]], [[Predefinição:Unidade]], [[Predefinição:Centrar]], [[Predefinição:Âncora]], [[Predefinição:Lista_horizontal]], [[Predefinição:Ocultar]], [[Predefinição:Limpar]]
 * '''Navegação e rodapé:''' [[Predefinição:Navbox]], [[Predefinição:Sucessão]], [[Predefinição:Projetos_irmãos]], [[Predefinição:Controle_de_autoridade]], [[Predefinição:Coordenadas]], [[Predefinição:Versão_estável]]
-* '''Discussões e votações:''' [[Predefinição:Boas-vindas]], [[Predefinição:Ping]], [[Predefinição:Resposta]], [[Predefinição:Assinado]], [[Predefinição:Concordo]], [[Predefinição:Discordo]], [[Predefinição:Neutro]], [[Predefinição:Comentário]], [[Predefinição:Feito]], [[Predefinição:Em_andamento]], [[Predefinição:Não_feito]], [[Predefinição:Traduzido_de]], [[Predefinição:Arquivo_de_discussão]]
+* '''Discussões, votações e prêmios:''' [[Predefinição:Boas-vindas]], [[Predefinição:Ping]], [[Predefinição:Resposta]], [[Predefinição:Assinado]], [[Predefinição:Apoio]], [[Predefinição:Contra]], [[Predefinição:Abstenção]], [[Predefinição:Concordo]], [[Predefinição:Discordo]], [[Predefinição:Neutro]], [[Predefinição:Pergunta]], [[Predefinição:Sugestão]], [[Predefinição:Comentário]], [[Predefinição:Feito]], [[Predefinição:Em_andamento]], [[Predefinição:Em_análise]], [[Predefinição:Não_feito]], [[Predefinição:Resolvido]], [[Predefinição:Estrela]], [[Predefinição:Traduzido_de]], [[Predefinição:Arquivo_de_discussão]]
 
 [[Categoria:Ajuda]]
 [[Categoria:Documentação]]
 [[Categoria:Predefinições]]`
+  },
+
+  'Ajuda:Categorias': {
+    slug: 'Ajuda:Categorias',
+    title: 'Ajuda:Categorias',
+    namespace: 'Help',
+    author: 'Equipe de Documentação',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_help_categories',
+    categories: ['Ajuda', 'Documentação', 'WikiWazzimaGiygg', 'Wikitexto'],
+    createdAt: '2026-11-27T00:00:00.000Z',
+    updatedAt: '2026-11-27T00:00:00.000Z',
+    summary: 'Guia completo de classificação de artigos e páginas por categorias no WikiWazzimaGiygg',
+    content: `{{Aviso|As '''Categorias''' agrupam artigos e páginas por assunto, facilitando a descoberta temática em [[Especial:Categorias]] e [[Especial:Páginas_especiais]].}}
+
+== Como Categorizar um Artigo ou Página ==
+Para associar qualquer artigo, manual ou predefinição a uma categoria, adicione uma ou mais marcações ao final do wikitexto:
+
+<syntaxhighlight lang="text">
+[[Categoria:Ciência e Tecnologia]]
+[[Categoria:Computação e Programação]]
+</syntaxhighlight>
+
+Você também pode utilizar o botão '''Categoria''' na barra de ferramentas do editor para pesquisar categorias de artigos e páginas já existentes e inseri-las com um clique.
+
+== Categorias de Artigos vs. Categorias de Páginas ==
+* '''Categorias de Artigos (Temáticas):''' [[:Categoria:Ciência e Tecnologia|Ciência e Tecnologia]], [[:Categoria:Computação e Programação|Computação e Programação]], [[:Categoria:Direito Digital|Direito Digital]], [[:Categoria:História|História]], [[:Categoria:Geografia|Geografia]], [[:Categoria:Biografias|Biografias]], [[:Categoria:Ciências Exatas|Ciências Exatas]], [[:Categoria:Ciências Biológicas|Ciências Biológicas]], [[:Categoria:Cultura e Artes|Cultura e Artes]], [[:Categoria:Sociedade e Política|Sociedade e Política]], [[:Categoria:Educação|Educação]].
+* '''Categorias de Páginas (Estrutura e Manutenção):''' [[:Categoria:Portais|Portais]], [[:Categoria:Ajuda|Ajuda]], [[:Categoria:Documentação|Documentação]], [[:Categoria:Manual|Manual]], [[:Categoria:Políticas|Políticas]], [[:Categoria:Governança|Governança]], [[:Categoria:Predefinições|Predefinições]], [[:Categoria:Esboços|Esboços]], [[:Categoria:Desambiguação|Desambiguação]].
+
+== Dica: Linkando uma Categoria no Texto ==
+Se desejar criar um link visível para uma página de categoria no meio de uma frase (sem incluir o artigo nela), adicione dois pontos antes do prefixo: <code>[[:Categoria:História]]</code>.
+
+[[Categoria:Ajuda]]
+[[Categoria:Documentação]]
+[[Categoria:Wikitexto]]
+[[Categoria:WikiWazzimaGiygg]]`
   },
 
   'Predefinição:Aviso': {

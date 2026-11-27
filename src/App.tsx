@@ -21,6 +21,8 @@ import { SpecialUpload } from './components/SpecialUpload';
 import { SpecialPrivacy } from './components/SpecialPrivacy';
 import { SpecialApp } from './components/SpecialApp';
 import { SpecialPagesHub } from './components/SpecialPagesHub';
+import { SpecialArbCom } from './components/SpecialArbCom';
+import { SpecialReports } from './components/SpecialReports';
 import { CategoryExplorer } from './components/CategoryExplorer';
 import { ConsentBanner } from './components/ConsentBanner';
 import { OfflineIndicator } from './components/OfflineIndicator';
@@ -200,6 +202,23 @@ function WikiMain() {
         : renderDisabledExtensionNotice('CheckUser & Auditoria de IPs', 'checkuser');
     }
     if (
+      currentSlug === 'Especial:Pedidos_LGPD' ||
+      currentSlug === 'Especial:LGPD_Admin' ||
+      currentSlug === 'Special:PrivacyRequests'
+    ) {
+      return isExtensionActive('lgpd-privacy-suite')
+        ? <SpecialBureaucratAdmin initialTab="lgpd" />
+        : renderDisabledExtensionNotice('Pedidos de LGPD (DPO / Admin)', 'lgpd-privacy-suite');
+    }
+    if (
+      currentSlug === 'Especial:Discussão_Administrativa' ||
+      currentSlug === 'Especial:Discussao_Administrativa' ||
+      currentSlug === 'Especial:Esplanada_Admin' ||
+      currentSlug === 'Special:AdminNoticeboard'
+    ) {
+      return <SpecialBureaucratAdmin initialTab="admin_discussion" />;
+    }
+    if (
       currentSlug === 'Especial:Desbloqueio' ||
       currentSlug === 'Especial:Discussão_de_desbloqueio' ||
       currentSlug === 'Especial:Discussao_de_desbloqueio' ||
@@ -217,19 +236,22 @@ function WikiMain() {
       currentSlug === 'Special:ArbCom'
     ) {
       return isExtensionActive('arbcom-ucoc-governance')
-        ? <SpecialBureaucratAdmin initialTab="arbcom" />
+        ? <SpecialArbCom />
         : renderDisabledExtensionNotice('Conselho de Arbitragem (ArbCom)', 'arbcom-ucoc-governance');
     }
     if (
+      currentSlug === 'Especial:Denúncias' ||
+      currentSlug === 'Especial:Denuncias' ||
       currentSlug === 'Especial:UCOC' ||
       currentSlug === 'Especial:UCoC' ||
       currentSlug === 'Especial:Código_de_Conduta' ||
       currentSlug === 'Especial:Codigo_de_Conduta' ||
-      currentSlug === 'Special:UCoC'
+      currentSlug === 'Special:UCoC' ||
+      currentSlug === 'Special:Reports'
     ) {
       return isExtensionActive('arbcom-ucoc-governance')
-        ? <SpecialBureaucratAdmin initialTab="ucoc" />
-        : renderDisabledExtensionNotice('Código Universal de Conduta (UCoC)', 'arbcom-ucoc-governance');
+        ? <SpecialReports />
+        : renderDisabledExtensionNotice('Central de Denúncias & Código Universal de Conduta (UCoC)', 'arbcom-ucoc-governance');
     }
     if (
       currentSlug === 'Especial:Páginas_protegidas' ||

@@ -1479,6 +1479,1309 @@ Equivalente à \`{{Citar enciclopédia}}\` / \`{{Cite encyclopedia}}\` da Wikip�
 [[Categoria:Predefinições de citação]]
 </noinclude>`,
   },
+
+  // =========================================================================
+  // 6. CAIXAS DE INFORMAÇÃO TEMÁTICAS DA WIKIPÉDIA (Info/...)
+  // =========================================================================
+  {
+    slug: 'Predefinição:Info/Biografia',
+    title: 'Predefinição:Info/Biografia',
+    revId: 'rev_wp_tpl_info_biografia',
+    summary: 'Caixa de informação padrão da Wikipédia para biografias de personalidades históricas ou contemporâneas',
+    extraCategories: ['Predefinições de infobox', 'Biografias'],
+    content: `<includeonly>{{Infobox biografia
+| nome = {{{nome|{{PAGENAME}}}}}
+| subtítulo = {{{subtítulo|Biografia}}}
+| imagem = {{{imagem|}}}
+| legenda = {{{legenda|}}}
+| nascimento = {{{nascimento|}}}
+| local_nascimento = {{{local_nascimento|}}}
+| falecimento = {{{falecimento|}}}
+| local_falecimento = {{{local_falecimento|}}}
+| nacionalidade = {{{nacionalidade|}}}
+| ocupação = {{{ocupação|}}}
+| cônjuge = {{{cônjuge|}}}
+| filhos = {{{filhos|}}}
+| prêmios = {{{prêmios|}}}
+| site = {{{site|}}}
+}}</includeonly><noinclude>
+Caixa lateral padronizada para artigos biográficos (equivalente à \`{{Info/Biografia}}\`).
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Info/Biografia
+| nome = Ada Lovelace
+| subtítulo = Matemática e escritora britânica
+| nascimento = 10 de dezembro de 1815
+| local_nascimento = Londres, Reino Unido
+| falecimento = 27 de novembro de 1852
+| nacionalidade = Britânica
+| ocupação = Matemática, programadora pioneira
+}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de infobox]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Info/País',
+    title: 'Predefinição:Info/País',
+    revId: 'rev_wp_tpl_info_pais',
+    summary: 'Caixa de informação geográfica e política para países e territórios soberanos',
+    extraCategories: ['Predefinições de infobox', 'Geografia'],
+    content: `<includeonly>{{Infobox país
+| nome = {{{nome|{{PAGENAME}}}}}
+| subtítulo = {{{lema|País soberano}}}
+| imagem = {{{bandeira|{{{imagem|}}}}}}
+| legenda = {{{legenda|}}}
+| capital = {{{capital|}}}
+| maior_cidade = {{{maior_cidade|}}}
+| idioma_oficial = {{{idioma_oficial|}}}
+| governo = {{{governo|}}}
+| área = {{{área|}}}
+| população = {{{população|}}}
+| pib = {{{pib|}}}
+| moeda = {{{moeda|}}}
+| fuso_horário = {{{fuso_horário|}}}
+| código_iso = {{{código_iso|}}}
+}}</includeonly><noinclude>
+Equivalente à \`{{Info/País}}\` da Wikipédia para fichas geográficas nacionais.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Info/País
+| nome = Brasil
+| lema = Ordem e Progresso
+| capital = Brasília
+| maior_cidade = São Paulo
+| idioma_oficial = Português
+| governo = República federativa presidencialista
+| área = 8 510 417 km²
+| moeda = Real (BRL)
+| código_iso = BRA
+}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de infobox]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Info/Município',
+    title: 'Predefinição:Info/Município',
+    revId: 'rev_wp_tpl_info_municipio',
+    summary: 'Caixa de informação geográfica para cidades, municípios e divisões administrativas locais',
+    extraCategories: ['Predefinições de infobox', 'Geografia'],
+    content: `<includeonly>{{Infobox município
+| nome = {{{nome|{{PAGENAME}}}}}
+| subtítulo = {{{estado|Município}}}
+| imagem = {{{imagem|}}}
+| legenda = {{{legenda|}}}
+| país = {{{país|}}}
+| estado = {{{estado|}}}
+| fundação = {{{fundação|}}}
+| área = {{{área|}}}
+| população = {{{população|}}}
+| densidade = {{{densidade|}}}
+| gentílico = {{{gentílico|}}}
+| prefeito = {{{prefeito|}}}
+| fuso_horário = {{{fuso_horário|}}}
+| site = {{{site|}}}
+}}</includeonly><noinclude>
+Equivalente à \`{{Info/Município}}\` / \`{{Info/Cidade}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Info/Município
+| nome = São Paulo
+| país = Brasil
+| estado = São Paulo
+| fundação = 25 de janeiro de 1554
+| população = 11 451 999 hab.
+| gentílico = Paulistano
+}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de infobox]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Info/Empresa',
+    title: 'Predefinição:Info/Empresa',
+    revId: 'rev_wp_tpl_info_empresa',
+    summary: 'Ficha técnica institucional para empresas, corporações e startups',
+    extraCategories: ['Predefinições de infobox'],
+    content: `<includeonly>{{Infobox empresa
+| nome = {{{nome|{{PAGENAME}}}}}
+| subtítulo = {{{subtítulo|Empresa}}}
+| logotipo = {{{logotipo|{{{imagem|}}}}}}
+| legenda = {{{legenda|}}}
+| tipo = {{{tipo|}}}
+| indústria = {{{indústria|}}}
+| fundação = {{{fundação|}}}
+| fundadores = {{{fundadores|}}}
+| sede = {{{sede|}}}
+| produtos = {{{produtos|}}}
+| receita = {{{receita|}}}
+| funcionários = {{{funcionários|}}}
+| site = {{{site|}}}
+}}</includeonly><noinclude>
+Equivalente à \`{{Info/Empresa}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Info/Empresa
+| nome = Empresa Exemplo S.A.
+| tipo = Sociedade anônima
+| indústria = Tecnologia da informação
+| fundação = 2020
+| sede = São Paulo, Brasil
+| site = https://exemplo.com
+}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de infobox]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Info/Organização',
+    title: 'Predefinição:Info/Organização',
+    revId: 'rev_wp_tpl_info_organizacao',
+    summary: 'Ficha institucional para ONGs, fundações, associações e organismos internacionais',
+    extraCategories: ['Predefinições de infobox'],
+    content: `<includeonly>{{Infobox organização
+| nome = {{{nome|{{PAGENAME}}}}}
+| subtítulo = {{{sigla|Organização}}}
+| logotipo = {{{logotipo|{{{imagem|}}}}}}
+| sigla = {{{sigla|}}}
+| tipo = {{{tipo|}}}
+| fundação = {{{fundação|}}}
+| sede = {{{sede|}}}
+| propósito = {{{propósito|}}}
+| membros = {{{membros|}}}
+| idioma_oficial = {{{idioma_oficial|}}}
+| site = {{{site|}}}
+}}</includeonly><noinclude>
+Equivalente à \`{{Info/Organização}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Info/Organização
+| nome = Fundação Conhecimento Livre
+| sigla = FCL
+| tipo = Organização sem fins lucrativos
+| fundação = 2024
+| sede = Brasil
+| propósito = Educação e software livre
+}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de infobox]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Info/Livro',
+    title: 'Predefinição:Info/Livro',
+    revId: 'rev_wp_tpl_info_livro',
+    summary: 'Caixa de ficha bibliográfica para livros, romances, ensaios e obras literárias',
+    extraCategories: ['Predefinições de infobox', 'Cultura e Artes'],
+    content: `<includeonly>{{Infobox livro
+| nome = {{{nome|{{PAGENAME}}}}}
+| subtítulo = {{{subtítulo|Obra literária}}}
+| imagem = {{{capa|{{{imagem|}}}}}}
+| legenda = {{{legenda|}}}
+| autor = {{{autor|}}}
+| tradutor = {{{tradutor|}}}
+| ilustrador = {{{ilustrador|}}}
+| gênero = {{{gênero|}}}
+| idioma = {{{idioma|}}}
+| editora = {{{editora|}}}
+| lançamento = {{{lançamento|}}}
+| páginas = {{{páginas|}}}
+| isbn = {{{isbn|}}}
+}}</includeonly><noinclude>
+Equivalente à \`{{Info/Livro}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Info/Livro
+| nome = Dom Casmurro
+| autor = Machado de Assis
+| gênero = Romance realista
+| idioma = Português
+| lançamento = 1899
+| páginas = 256
+}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de infobox]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Info/Filme',
+    title: 'Predefinição:Info/Filme',
+    revId: 'rev_wp_tpl_info_filme',
+    summary: 'Caixa de ficha técnica cinematográfica para filmes e documentários',
+    extraCategories: ['Predefinições de infobox', 'Cultura e Artes'],
+    content: `<includeonly>{{Infobox filme
+| nome = {{{nome|{{PAGENAME}}}}}
+| subtítulo = {{{subtítulo|Filme}}}
+| imagem = {{{pôster|{{{imagem|}}}}}}
+| legenda = {{{legenda|}}}
+| direção = {{{direção|}}}
+| roteiro = {{{roteiro|}}}
+| elenco = {{{elenco|}}}
+| gênero = {{{gênero|}}}
+| país = {{{país|}}}
+| idioma = {{{idioma|}}}
+| duração = {{{duração|}}}
+| lançamento = {{{lançamento|}}}
+| distribuidora = {{{distribuidora|}}}
+}}</includeonly><noinclude>
+Equivalente à \`{{Info/Filme}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Info/Filme
+| nome = O Auto da Compadecida
+| direção = Guel Arraes
+| gênero = Comédia dramática
+| país = Brasil
+| idioma = Português
+| duração = 104 min
+| lançamento = 2000
+}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de infobox]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Info/Álbum',
+    title: 'Predefinição:Info/Álbum',
+    revId: 'rev_wp_tpl_info_album',
+    summary: 'Ficha discográfica para álbuns musicais, EPs e coletâneas',
+    extraCategories: ['Predefinições de infobox', 'Cultura e Artes'],
+    content: `<includeonly>{{Infobox álbum
+| nome = {{{nome|{{PAGENAME}}}}}
+| subtítulo = {{{tipo|Álbum de estúdio}}}
+| imagem = {{{capa|{{{imagem|}}}}}}
+| legenda = {{{legenda|}}}
+| artista = {{{artista|}}}
+| tipo = {{{tipo|}}}
+| lançamento = {{{lançamento|}}}
+| gênero = {{{gênero|}}}
+| duração = {{{duração|}}}
+| gravadora = {{{gravadora|}}}
+| produtor = {{{produtor|}}}
+}}</includeonly><noinclude>
+Equivalente à \`{{Info/Álbum}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Info/Álbum
+| nome = Clube da Esquina
+| artista = Milton Nascimento & Lô Borges
+| tipo = Álbum de estúdio
+| lançamento = 1972
+| gênero = MPB, rock progressivo
+| gravadora = Odeon
+}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de infobox]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Info/Jogo',
+    title: 'Predefinição:Info/Jogo',
+    revId: 'rev_wp_tpl_info_jogo',
+    summary: 'Ficha técnica para jogos eletrônicos e videogames',
+    extraCategories: ['Predefinições de infobox', 'Ciência e Tecnologia'],
+    content: `<includeonly>{{Infobox jogo
+| nome = {{{nome|{{PAGENAME}}}}}
+| subtítulo = {{{série|Jogo eletrônico}}}
+| imagem = {{{capa|{{{imagem|}}}}}}
+| legenda = {{{legenda|}}}
+| desenvolvedor = {{{desenvolvedor|}}}
+| publicadora = {{{publicadora|}}}
+| diretor = {{{diretor|}}}
+| série = {{{série|}}}
+| plataforma = {{{plataforma|}}}
+| lançamento = {{{lançamento|}}}
+| gênero = {{{gênero|}}}
+| modos = {{{modos|}}}
+}}</includeonly><noinclude>
+Equivalente à \`{{Info/Jogo}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Info/Jogo
+| nome = Jogo Exemplo
+| desenvolvedor = Estúdio Independente
+| plataforma = PC, Web
+| lançamento = 2026
+| gênero = Aventura / Estratégia
+| modos = Um jogador
+}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de infobox]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Info/Taxonomia',
+    title: 'Predefinição:Info/Taxonomia',
+    revId: 'rev_wp_tpl_info_taxonomia',
+    summary: 'Caixa de classificação biológica (Reino, Filo, Classe, Ordem, Família, Gênero, Espécie)',
+    extraCategories: ['Predefinições de infobox', 'Ciências Biológicas'],
+    content: `<includeonly>{{Infobox taxonomia
+| nome = {{{nome|{{PAGENAME}}}}}
+| subtítulo = {{{nome_binomial|Classificação científica}}}
+| imagem = {{{imagem|}}}
+| legenda = {{{legenda|}}}
+| reino = {{{reino|}}}
+| filo = {{{filo|}}}
+| classe = {{{classe|}}}
+| ordem = {{{ordem|}}}
+| família = {{{família|}}}
+| gênero = {{{gênero|}}}
+| espécie = {{{espécie|}}}
+| nome_binomial = {{{nome_binomial|}}}
+| estado_conservação = {{{estado_conservação|}}}
+}}</includeonly><noinclude>
+Equivalente à \`{{Info/Taxonomia}}\` / \`{{Taxocaixa}}\` da Wikipédia para artigos de zoologia e botânica.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Info/Taxonomia
+| nome = Onça-pintada
+| reino = Animalia
+| filo = Chordata
+| classe = Mammalia
+| ordem = Carnivora
+| família = Felidae
+| gênero = Panthera
+| espécie = P. onca
+| nome_binomial = Panthera onca
+| estado_conservação = Quase ameaçada (NT)
+}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de infobox]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Info/Evento',
+    title: 'Predefinição:Info/Evento',
+    revId: 'rev_wp_tpl_info_evento',
+    summary: 'Ficha resumida para acontecimentos históricos, conferências e eventos públicos',
+    extraCategories: ['Predefinições de infobox', 'História'],
+    content: `<includeonly>{{Infobox evento
+| nome = {{{nome|{{PAGENAME}}}}}
+| subtítulo = {{{tipo|Evento}}}
+| imagem = {{{imagem|}}}
+| legenda = {{{legenda|}}}
+| data = {{{data|}}}
+| local = {{{local|}}}
+| tipo = {{{tipo|}}}
+| participantes = {{{participantes|}}}
+| resultado = {{{resultado|}}}
+| consequências = {{{consequências|}}}
+}}</includeonly><noinclude>
+Equivalente à \`{{Info/Evento}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Info/Evento
+| nome = Conferência de Software Livre
+| data = 2026
+| local = São Paulo, Brasil
+| tipo = Congresso técnico
+| participantes = Comunidade aberta
+}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de infobox]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Info/Elemento_químico',
+    title: 'Predefinição:Info/Elemento químico',
+    revId: 'rev_wp_tpl_info_elemento',
+    summary: 'Ficha técnica da tabela periódica para elementos químicos',
+    extraCategories: ['Predefinições de infobox', 'Ciências Exatas'],
+    content: `<includeonly>{{Infobox elemento químico
+| nome = {{{nome|{{PAGENAME}}}}}
+| subtítulo = {{{símbolo|Elemento químico}}}
+| símbolo = {{{símbolo|}}}
+| número_atômico = {{{número_atômico|}}}
+| massa_atômica = {{{massa_atômica|}}}
+| série_química = {{{série_química|}}}
+| grupo = {{{grupo|}}}
+| período = {{{período|}}}
+| estado_matéria = {{{estado_matéria|}}}
+}}</includeonly><noinclude>
+Equivalente à \`{{Info/Elemento químico}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Info/Elemento_químico
+| nome = Carbono
+| símbolo = C
+| número_atômico = 6
+| massa_atômica = 12,011 u
+| série_química = Não metal
+| grupo = 14
+| período = 2
+| estado_matéria = Sólido
+}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de infobox]]
+</noinclude>`,
+  },
+
+  // =========================================================================
+  // 7. CITAÇÕES E IDENTIFICADORES ADICIONAIS
+  // =========================================================================
+  {
+    slug: 'Predefinição:Referências',
+    title: 'Predefinição:Referências',
+    revId: 'rev_wp_tpl_referencias',
+    summary: 'Insere automaticamente a seção formatada de notas de rodapé (<references />)',
+    extraCategories: ['Predefinições de citação'],
+    content: `<includeonly><references /></includeonly><noinclude>
+Equivalente à \`{{Referências}}\` / \`{{Reflist}}\` da Wikipédia para renderizar todas as notas \`<ref>...</ref>\` do artigo.
+
+== Uso ==
+<syntaxhighlight lang="text">
+== Referências ==
+{{Referências}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de citação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Citar_lei',
+    title: 'Predefinição:Citar lei',
+    revId: 'rev_wp_tpl_citar_lei',
+    summary: 'Formata referências jurídicas de leis, decretos, constituições e normas regulatórias',
+    extraCategories: ['Predefinições de citação', 'Direito Digital'],
+    content: `<includeonly><span class="mw-citation text-xs">{{#if:{{{jurisdição|}}}|{{{jurisdição}}}. |}}{{#if:{{{url|}}}|[{{{url}}} '''{{{lei|{{{título|Lei}}}}}}''']|'''{{{lei|{{{título|Lei}}}}}}'''}}{{#if:{{{data|}}}|, de {{{data}}}|}}{{#if:{{{ementa|}}}|. ''{{{ementa}}}''|}}{{#if:{{{diário_oficial|}}}|. {{{diário_oficial}}}|}}{{#if:{{{acessodata|}}}|. Consultado em {{{acessodata}}}|}}.</span></includeonly><noinclude>
+Formata citações de normas jurídicas como LGPD, Marco Civil da Internet e resoluções regulatórias.
+
+== Uso ==
+<syntaxhighlight lang="text">
+<ref>{{Citar_lei|jurisdição=Brasil|lei=Lei nº 13.709 (LGPD)|data=14 de agosto de 2018|ementa=Lei Geral de Proteção de Dados Pessoais|url=https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm}}</ref>
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de citação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Citar_comunicado',
+    title: 'Predefinição:Citar comunicado',
+    revId: 'rev_wp_tpl_citar_comunicado',
+    summary: 'Formata referências a comunicados oficiais de imprensa e notas públicas',
+    extraCategories: ['Predefinições de citação'],
+    content: `<includeonly><span class="mw-citation text-xs">{{#if:{{{publicado|}}}|{{{publicado}}}. |}}{{#if:{{{url|}}}|«[{{{url}}} {{{título|Comunicado à imprensa}}}]»|«{{{título|Comunicado à imprensa}}}»}} (Nota oficial){{#if:{{{data|}}}|, {{{data}}}|}}{{#if:{{{acessodata|}}}|. Consultado em {{{acessodata}}}|}}.</span></includeonly><noinclude>
+Equivalente à \`{{Citar comunicado de imprensa}}\` / \`{{Cite press release}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+<ref>{{Citar_comunicado|publicado=Assessoria|título=Lançamento da versão estável|data=27 de novembro de 2026|url=https://exemplo.com/nota}}</ref>
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de citação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Citar_mapa',
+    title: 'Predefinição:Citar mapa',
+    revId: 'rev_wp_tpl_citar_mapa',
+    summary: 'Formata citações de mapas, cartas topográficas e atlas geográficos',
+    extraCategories: ['Predefinições de citação', 'Geografia'],
+    content: `<includeonly><span class="mw-citation text-xs">{{#if:{{{autor|}}}|{{{autor}}}. |}}{{#if:{{{url|}}}|''[{{{url}}} {{{título|Mapa}}}]''|''{{{título|Mapa}}}''}} [mapa]{{#if:{{{escala|}}}|, escala {{{escala}}}|}}{{#if:{{{editora|}}}|. {{{editora}}}|}}{{#if:{{{ano|}}}|, {{{ano}}}|}}.</span></includeonly><noinclude>
+Equivalente à \`{{Citar mapa}}\` / \`{{Cite map}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+<ref>{{Citar_mapa|autor=IBGE|título=Mapa Político do Brasil|escala=1:5 000 000|ano=2025}}</ref>
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de citação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Citar_jogo',
+    title: 'Predefinição:Citar jogo',
+    revId: 'rev_wp_tpl_citar_jogo',
+    summary: 'Formata citações diretas de obras e jogos eletrônicos como fonte primária',
+    extraCategories: ['Predefinições de citação'],
+    content: `<includeonly><span class="mw-citation text-xs">{{#if:{{{desenvolvedora|}}}|{{{desenvolvedora}}}. |}}''{{{título|Jogo eletrônico}}}''{{#if:{{{plataforma|}}}| ({{{plataforma}}})|}}{{#if:{{{publicadora|}}}|. {{{publicadora}}}|}}{{#if:{{{ano|}}}|, {{{ano}}}|}}{{#if:{{{cena|}}}|. Cena/nível: {{{cena}}}|}}.</span></includeonly><noinclude>
+Equivalente à \`{{Citar jogo eletrônico}}\` / \`{{Cite video game}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+<ref>{{Citar_jogo|desenvolvedora=Estúdio|título=Título do Jogo|plataforma=PC|ano=2026|cena=Capítulo 1}}</ref>
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de citação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:ISBN',
+    title: 'Predefinição:ISBN',
+    revId: 'rev_wp_tpl_isbn',
+    summary: 'Formata identificador bibliográfico padrão ISBN com link de consulta',
+    extraCategories: ['Predefinições de citação'],
+    content: `<includeonly><span class="text-xs font-mono">ISBN [https://isbnsearch.org/isbn/{{{1|978-85-00000-00-0}}} {{{1|978-85-00000-00-0}}}]</span></includeonly><noinclude>
+Equivalente à \`{{ISBN}}\` da Wikipédia para referências de livros.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{ISBN|978-85-359-0277-8}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de citação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:DOI',
+    title: 'Predefinição:DOI',
+    revId: 'rev_wp_tpl_doi',
+    summary: 'Formata identificador acadêmico DOI como ligação direta para doi.org',
+    extraCategories: ['Predefinições de citação'],
+    content: `<includeonly><span class="text-xs font-mono">doi:[https://doi.org/{{{1|10.1000/182}}} {{{1|10.1000/182}}}]</span></includeonly><noinclude>
+Equivalente à \`{{DOI}}\` da Wikipédia para artigos científicos.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{DOI|10.1000/182}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de citação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Wayback',
+    title: 'Predefinição:Wayback',
+    revId: 'rev_wp_tpl_wayback',
+    summary: 'Cria ligação para cópia arquivada no Internet Archive (Wayback Machine)',
+    extraCategories: ['Predefinições de citação'],
+    content: `<includeonly><span class="text-xs">[https://web.archive.org/web/{{{data|{{{2|*}}}}}}/{{{url|{{{1|https://exemplo.com}}}}}} Cópia arquivada]{{#if:{{{título|}}}| de ''{{{título}}}''|}} no Wayback Machine</span></includeonly><noinclude>
+Equivalente à \`{{Wayback}}\` da Wikipédia para preservar referências contra links quebrados.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Wayback|url=https://exemplo.com/artigo|data=20261127000000|título=Artigo Original}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de citação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Carece_de_página',
+    title: 'Predefinição:Carece de página',
+    revId: 'rev_wp_tpl_carece_pagina',
+    summary: 'Marcação sobrescrita [carece de página] solicitando o número da página em citação de livro',
+    extraCategories: ['Predefinições de manutenção', 'Predefinições de citação'],
+    content: `<includeonly><sup class="text-[11px] text-amber-700 dark:text-amber-400 italic select-none" title="Especifique o número da página exata desta referência">[<span class="underline decoration-dotted">carece de página</span>]</sup>[[Categoria:Artigos que carecem de fontes]]</includeonly><noinclude>
+Equivalente à \`{{Carece de página}}\` / \`{{Page needed}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+Segundo o autor, o sistema foi publicado em 1995.<ref>{{Citar_livro|autor=Autor|título=Livro|ano=2020}}</ref>{{Carece_de_página}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de manutenção]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Fonte_primária',
+    title: 'Predefinição:Fonte primária',
+    revId: 'rev_wp_tpl_fonte_primaria_inline',
+    summary: 'Marcação inline [fonte primária] indicando necessidade de fonte secundária independente',
+    extraCategories: ['Predefinições de manutenção', 'Predefinições de citação'],
+    content: `<includeonly><sup class="text-[11px] text-amber-700 dark:text-amber-400 italic select-none" title="Esta informação baseia-se em fonte primária e carece de fonte secundária independente">[<span class="underline decoration-dotted">fonte primária</span>]</sup>[[Categoria:Artigos com fontes primárias]]</includeonly><noinclude>
+Equivalente à \`{{Fonte primária}}\` / \`{{Primary source inline}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+A empresa afirma ser líder de mercado.{{Fonte_primária}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de manutenção]]
+</noinclude>`,
+  },
+
+  // =========================================================================
+  // 8. MAIS HATNOTES, AVISOS E MANUTENÇÃO EDITORIAL
+  // =========================================================================
+  {
+    slug: 'Predefinição:Redireciona_aqui',
+    title: 'Predefinição:Redireciona aqui',
+    revId: 'rev_wp_tpl_redireciona_aqui',
+    summary: 'Nota de topo explicando que outro termo redireciona para o artigo atual',
+    extraCategories: ['Predefinições de navegação'],
+    content: `<includeonly><div class="my-1.5 pl-4 text-xs italic text-gray-700 dark:text-gray-300">↳ "{{{1|Termo}}}" redireciona para este artigo. {{#if:{{{2|}}}|Para outros significados, veja [[{{{2}}}]].|Para outros significados, veja [[{{{1|Termo}}}_(desambiguação)]].}}</div></includeonly><noinclude>
+Equivalente à \`{{Redireciona aqui}}\` / \`{{Redirect}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Redireciona_aqui|LGPD|LGPD (desambiguação)}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de navegação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Homônimos',
+    title: 'Predefinição:Homônimos',
+    revId: 'rev_wp_tpl_homonimos',
+    summary: 'Nota de topo apontando para outros termos homônimos ou artigos com o mesmo nome',
+    extraCategories: ['Predefinições de navegação'],
+    content: `<includeonly><div class="my-1.5 pl-4 text-xs italic text-gray-700 dark:text-gray-300">↳ '''Nota:''' Se procura por outros significados de '''{{{1|{{PAGENAME}}}}}''', consulte [[{{{2|{{{1|{{PAGENAME}}}}}_(desambiguação)}}}]].</div></includeonly><noinclude>
+Equivalente à \`{{Homônimos}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Homônimos|Wiki|Wiki (desambiguação)}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de navegação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Nota_histórica',
+    title: 'Predefinição:Nota histórica',
+    revId: 'rev_wp_tpl_nota_historica',
+    summary: 'Banner discreto contextualizando terminologia ou contexto histórico preservado',
+    extraCategories: ['Predefinições de navegação', 'História'],
+    content: `<includeonly><div class="my-3 p-3 rounded border border-stone-300 dark:border-stone-700 border-l-4 border-l-stone-500 bg-stone-50/90 dark:bg-stone-900/50 text-xs text-stone-800 dark:text-stone-200 flex items-start gap-2.5"><span class="text-base leading-none shrink-0">🏛️</span><div><span class="font-semibold">Contexto histórico:</span> {{{1|Este artigo descreve conceitos, nomenclaturas ou eventos dentro de seu contexto histórico original.}}}</div></div></includeonly><noinclude>
+Útil para artigos históricos com nomes antigos de países, instituições ou leis revogadas.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Nota_histórica|Esta seção descreve a legislação vigente antes de 2018.}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de navegação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Poucas_referências',
+    title: 'Predefinição:Poucas referências',
+    revId: 'rev_wp_tpl_poucas_refs',
+    summary: 'Banner indicando que o artigo já possui algumas fontes, mas precisa de referências adicionais',
+    extraCategories: ['Predefinições de manutenção', 'Predefinições de citação'],
+    content: `<includeonly><div class="my-3 p-3 rounded border border-amber-300 dark:border-amber-800 border-l-[6px] border-l-amber-500 bg-amber-50/75 dark:bg-amber-950/30 text-xs text-amber-950 dark:text-amber-200 flex items-start gap-3"><span class="text-lg leading-none shrink-0 mt-0.5">📑</span><div class="min-w-0 flex-1"><div class="font-bold text-sm">Este artigo precisa de fontes adicionais para verificação{{#if:{{{data|{{{1|}}}}}}| <span class="font-normal text-[11px] opacity-80">({{{data|{{{1}}}}}})</span>|}}.</div><div class="mt-0.5 leading-relaxed">Embora possua algumas referências, diversas seções ainda carecem de citações fiáveis e independentes.</div></div></div>[[Categoria:Artigos que carecem de fontes]]</includeonly><noinclude>
+Equivalente à \`{{Mais fontes}}\` / \`{{More citations needed}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Poucas_referências|data=Novembro de 2026}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de manutenção]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Fontes_primárias',
+    title: 'Predefinição:Fontes primárias',
+    revId: 'rev_wp_tpl_fontes_primarias',
+    summary: 'Alerta que o artigo depende excessivamente de fontes primárias e precisa de análise independente',
+    extraCategories: ['Predefinições de manutenção', 'Predefinições de citação'],
+    content: `<includeonly><div class="my-3 p-3 rounded border border-amber-300 dark:border-amber-800 border-l-[6px] border-l-amber-500 bg-amber-50/75 dark:bg-amber-950/30 text-xs text-amber-950 dark:text-amber-200 flex items-start gap-3"><span class="text-lg leading-none shrink-0 mt-0.5">📄</span><div class="min-w-0 flex-1"><div class="font-bold text-sm">Este artigo depende excessivamente de fontes primárias{{#if:{{{data|{{{1|}}}}}}| <span class="font-normal text-[11px] opacity-80">({{{data|{{{1}}}}}})</span>|}}.</div><div class="mt-0.5 leading-relaxed">Adicione referências secundárias confiáveis e independentes para consolidar a verificabilidade e imparcialidade do verbete.</div></div></div>[[Categoria:Artigos com fontes primárias]]</includeonly><noinclude>
+Equivalente à \`{{Fontes primárias}}\` / \`{{Primary sources}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Fontes_primárias|data=Novembro de 2026}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de manutenção]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Autobiografia',
+    title: 'Predefinição:Autobiografia',
+    revId: 'rev_wp_tpl_autobiografia',
+    summary: 'Aviso para páginas biográficas possivelmente redigidas pelo próprio biografado',
+    extraCategories: ['Predefinições de manutenção'],
+    content: `<includeonly><div class="my-3 p-3 rounded border border-orange-300 dark:border-orange-800 border-l-[6px] border-l-orange-500 bg-orange-50/80 dark:bg-orange-950/30 text-xs text-orange-950 dark:text-orange-200 flex items-start gap-3"><span class="text-lg leading-none shrink-0 mt-0.5">🪪</span><div class="min-w-0 flex-1"><div class="font-bold text-sm">Este artigo parece ser uma autobiografia ou conter autopromoção{{#if:{{{data|{{{1|}}}}}}| <span class="font-normal text-[11px] opacity-80">({{{data|{{{1}}}}}})</span>|}}.</div><div class="mt-0.5 leading-relaxed">Revise o texto para assegurar ponto de vista neutro, notoriedade enciclopédica e fontes externas independentes.</div></div></div>[[Categoria:Artigos com possível conflito de interesses]]</includeonly><noinclude>
+Equivalente à \`{{Autobiografia}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Autobiografia|data=Novembro de 2026}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de manutenção]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Estilo_inadequado',
+    title: 'Predefinição:Estilo inadequado',
+    revId: 'rev_wp_tpl_estilo',
+    summary: 'Sinaliza que a redação utiliza tom coloquial, opinativo ou ensaístico fora do padrão enciclopédico',
+    extraCategories: ['Predefinições de manutenção'],
+    content: `<includeonly><div class="my-3 p-3 rounded border border-amber-300 dark:border-amber-800 border-l-[6px] border-l-amber-500 bg-amber-50/75 dark:bg-amber-950/30 text-xs text-amber-950 dark:text-amber-200 flex items-start gap-3"><span class="text-lg leading-none shrink-0 mt-0.5">✍️</span><div class="min-w-0 flex-1"><div class="font-bold text-sm">A redação deste artigo não segue o estilo enciclopédico{{#if:{{{data|{{{1|}}}}}}| <span class="font-normal text-[11px] opacity-80">({{{data|{{{1}}}}}})</span>|}}.</div><div class="mt-0.5 leading-relaxed">Reescreva trechos coloquiais, opinativos ou em primeira pessoa adotando linguagem objetiva e impessoal.</div></div></div>[[Categoria:Artigos que carecem de revisão]]</includeonly><noinclude>
+Equivalente à \`{{Estilo de texto}}\` / \`{{Tone}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Estilo_inadequado|data=Novembro de 2026}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de manutenção]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Falta_de_contexto',
+    title: 'Predefinição:Falta de contexto',
+    revId: 'rev_wp_tpl_falta_contexto',
+    summary: 'Banner para artigos que iniciam sem definição clara do assunto ou público-alvo',
+    extraCategories: ['Predefinições de manutenção'],
+    content: `<includeonly><div class="my-3 p-3 rounded border border-amber-300 dark:border-amber-800 border-l-[6px] border-l-amber-500 bg-amber-50/75 dark:bg-amber-950/30 text-xs text-amber-950 dark:text-amber-200 flex items-start gap-3"><span class="text-lg leading-none shrink-0 mt-0.5">🧭</span><div class="min-w-0 flex-1"><div class="font-bold text-sm">Este artigo carece de contexto introdutório{{#if:{{{data|{{{1|}}}}}}| <span class="font-normal text-[11px] opacity-80">({{{data|{{{1}}}}}})</span>|}}.</div><div class="mt-0.5 leading-relaxed">Adicione um parágrafo inicial que defina claramente o tema, sua área de conhecimento e relevância para leitores não especialistas.</div></div></div>[[Categoria:Artigos que carecem de revisão]]</includeonly><noinclude>
+Equivalente à \`{{Contexto}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Falta_de_contexto|data=Novembro de 2026}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de manutenção]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Lista_incompleta',
+    title: 'Predefinição:Lista incompleta',
+    revId: 'rev_wp_tpl_lista_incompleta',
+    summary: 'Aviso discreto de que uma lista temática está incompleta e aberta a adições',
+    extraCategories: ['Predefinições de manutenção'],
+    content: `<includeonly><div class="my-2.5 p-2.5 rounded border border-sky-200 dark:border-sky-800 border-l-4 border-l-sky-500 bg-sky-50/70 dark:bg-sky-950/25 text-xs text-sky-950 dark:text-sky-200 flex items-center gap-2.5"><span class="text-base leading-none shrink-0">📋</span><div>Esta é uma '''lista incompleta'''{{#if:{{{tema|{{{1|}}}}}}| sobre '''{{{tema|{{{1}}}}}}'''|}}. Você pode ajudar ampliando-a com itens referenciados.</div></div>[[Categoria:Seções para expandir]]</includeonly><noinclude>
+Equivalente à \`{{Lista incompleta}}\` / \`{{Incomplete list}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Lista_incompleta|tema=ferramentas compatíveis}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de manutenção]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Desatualizado',
+    title: 'Predefinição:Desatualizado',
+    revId: 'rev_wp_tpl_desatualizado_inline',
+    summary: 'Marcação inline [desatualizado] ao lado de estatísticas ou dados antigos',
+    extraCategories: ['Predefinições de manutenção'],
+    content: `<includeonly><sup class="text-[11px] text-amber-700 dark:text-amber-400 italic select-none" title="Informação possivelmente desatualizada{{#if:{{{desde|{{{1|}}}}}}| (dados de {{{desde|{{{1}}}}}})|}}">[<span class="underline decoration-dotted">desatualizado</span>]</sup>[[Categoria:Artigos desatualizados]]</includeonly><noinclude>
+Marcação inline discreta para dados específicos que mudaram ao longo do tempo.
+
+== Uso ==
+<syntaxhighlight lang="text">
+A população estimada era de 10 milhões de habitantes.{{Desatualizado|desde=2010}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de manutenção]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Futuro',
+    title: 'Predefinição:Futuro',
+    revId: 'rev_wp_tpl_futuro',
+    summary: 'Banner para projetos, obras ou eventos planejados para o futuro sujeitos a alterações',
+    extraCategories: ['Predefinições de manutenção', 'Eventos atuais'],
+    content: `<includeonly><div class="my-3 p-3 rounded border border-sky-300 dark:border-sky-800 border-l-[6px] border-l-sky-600 bg-sky-50/80 dark:bg-sky-950/30 text-xs text-sky-950 dark:text-sky-200 flex items-start gap-3"><span class="text-lg leading-none shrink-0 mt-0.5">🗓️</span><div class="min-w-0 flex-1"><div class="font-bold text-sm">Evento ou lançamento futuro</div><div class="mt-0.5 leading-relaxed">Este artigo aborda {{#if:{{{assunto|{{{1|}}}}}}|'''{{{assunto|{{{1}}}}}}'''|um projeto ou evento previsto para o futuro}}. Datas e especificações podem ser alteradas até sua concretização.</div></div></div>[[Categoria:Eventos atuais]]</includeonly><noinclude>
+Equivalente à \`{{Evento futuro}}\` / \`{{Future}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Futuro|assunto=Missão espacial programada}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de manutenção]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Ficção',
+    title: 'Predefinição:Ficção',
+    revId: 'rev_wp_tpl_ficcao',
+    summary: 'Alerta que o artigo descreve obra de ficção como se fosse realidade (perspectiva intra-universo)',
+    extraCategories: ['Predefinições de manutenção', 'Cultura e Artes'],
+    content: `<includeonly><div class="my-3 p-3 rounded border border-amber-300 dark:border-amber-800 border-l-[6px] border-l-amber-500 bg-amber-50/75 dark:bg-amber-950/30 text-xs text-amber-950 dark:text-amber-200 flex items-start gap-3"><span class="text-lg leading-none shrink-0 mt-0.5">🎭</span><div class="min-w-0 flex-1"><div class="font-bold text-sm">Perspectiva ficcional</div><div class="mt-0.5 leading-relaxed">Este artigo descreve um elemento de ficção como se fosse um fato real. Reescreva a partir da perspectiva do mundo real (autoria, publicação e recepção crítica).</div></div></div>[[Categoria:Artigos que carecem de revisão]]</includeonly><noinclude>
+Equivalente à \`{{Ficção}}\` / \`{{In-universe}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Ficção}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de manutenção]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Prosa',
+    title: 'Predefinição:Prosa',
+    revId: 'rev_wp_tpl_prosa',
+    summary: 'Sugere converter uma seção em tópicos ou lista longa para texto dissertativo em prosa',
+    extraCategories: ['Predefinições de manutenção'],
+    content: `<includeonly><div class="my-3 p-3 rounded border border-amber-300 dark:border-amber-800 border-l-[6px] border-l-amber-500 bg-amber-50/75 dark:bg-amber-950/30 text-xs text-amber-950 dark:text-amber-200 flex items-start gap-3"><span class="text-lg leading-none shrink-0 mt-0.5">📝</span><div class="min-w-0 flex-1"><div class="font-bold text-sm">Converter lista em prosa{{#if:{{{seção|{{{1|}}}}}}| ({{{seção|{{{1}}}}}})|}}</div><div class="mt-0.5 leading-relaxed">Esta seção contém uma lista extensa de tópicos que seria mais bem compreendida como texto enciclopédico contínuo.</div></div></div>[[Categoria:Artigos que carecem de revisão]]</includeonly><noinclude>
+Equivalente à \`{{Prosa}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Prosa|seção=Curiosidades}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de manutenção]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Dividir',
+    title: 'Predefinição:Dividir',
+    revId: 'rev_wp_tpl_dividir',
+    summary: 'Propõe dividir um artigo muito extenso em subartigos especializados',
+    extraCategories: ['Predefinições de manutenção'],
+    content: `<includeonly><div class="my-3 p-3 rounded border border-purple-300 dark:border-purple-800 border-l-[6px] border-l-purple-600 bg-purple-50/75 dark:bg-purple-950/30 text-xs text-purple-950 dark:text-purple-200 flex items-start gap-3"><span class="text-lg leading-none shrink-0 mt-0.5">✂️</span><div class="min-w-0 flex-1"><div class="font-bold text-sm">Proposta de divisão de artigo</div><div class="mt-0.5 leading-relaxed">Sugere-se dividir este artigo{{#if:{{{1|}}}| separando conteúdo para [[{{{1}}}]]| em artigos menores e especializados}}. Participe do consenso na página de discussão.</div></div></div>[[Categoria:Artigos que carecem de revisão]]</includeonly><noinclude>
+Equivalente à \`{{Dividir}}\` / \`{{Split}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Dividir|História_do_Projeto}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de manutenção]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Dicionário',
+    title: 'Predefinição:Dicionário',
+    revId: 'rev_wp_tpl_dicionario',
+    summary: 'Sinaliza que o conteúdo atual se limita a uma definição dicionarizada e precisa de expansão enciclopédica',
+    extraCategories: ['Predefinições de manutenção'],
+    content: `<includeonly><div class="my-3 p-3 rounded border border-amber-300 dark:border-amber-800 border-l-[6px] border-l-amber-500 bg-amber-50/75 dark:bg-amber-950/30 text-xs text-amber-950 dark:text-amber-200 flex items-start gap-3"><span class="text-lg leading-none shrink-0 mt-0.5">📖</span><div class="min-w-0 flex-1"><div class="font-bold text-sm">Conteúdo em formato de dicionário</div><div class="mt-0.5 leading-relaxed">Uma enciclopédia vai além da definição lexical de um termo. Amplie com história, contexto, aplicações e fontes secundárias.</div></div></div>[[Categoria:Artigos que carecem de revisão]]</includeonly><noinclude>
+Equivalente à \`{{Dicionário}}\` / \`{{Mover para o Wikcionário}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Dicionário}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de manutenção]]
+</noinclude>`,
+  },
+
+  // =========================================================================
+  // 9. FORMATAÇÃO, DATAS, MOEDAS E TIPOGRAFIA EXTRA
+  // =========================================================================
+  {
+    slug: 'Predefinição:Pequeno',
+    title: 'Predefinição:Pequeno',
+    revId: 'rev_wp_tpl_pequeno',
+    summary: 'Exibe trecho de texto em tamanho reduzido para notas e legendas',
+    extraCategories: ['Predefinições de formatação'],
+    content: `<includeonly><span class="text-xs">{{{1|Texto em tamanho reduzido}}}</span></includeonly><noinclude>
+Equivalente à \`{{Pequeno}}\` / \`{{Small}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Pequeno|Nota explicativa compacta}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de formatação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Grande',
+    title: 'Predefinição:Grande',
+    revId: 'rev_wp_tpl_grande',
+    summary: 'Exibe trecho de texto em tamanho ligeiramente ampliado',
+    extraCategories: ['Predefinições de formatação'],
+    content: `<includeonly><span class="text-base font-medium">{{{1|Texto ampliado}}}</span></includeonly><noinclude>
+Equivalente à \`{{Grande}}\` / \`{{Large}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Grande|Destaque tipográfico}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de formatação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Sublinhado',
+    title: 'Predefinição:Sublinhado',
+    revId: 'rev_wp_tpl_sublinhado',
+    summary: 'Sublinha um trecho de texto de forma legível',
+    extraCategories: ['Predefinições de formatação'],
+    content: `<includeonly><span class="underline decoration-gray-500 dark:decoration-gray-400 underline-offset-2">{{{1|Texto sublinhado}}}</span></includeonly><noinclude>
+Equivalente à \`{{Sublinhado}}\` / \`{{Underline}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Sublinhado|Termo destacado}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de formatação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Sem_quebra',
+    title: 'Predefinição:Sem quebra',
+    revId: 'rev_wp_tpl_nowrap',
+    summary: 'Impede que palavras, datas ou fórmulas curtas quebrem entre duas linhas (Nowrap)',
+    extraCategories: ['Predefinições de formatação'],
+    content: `<includeonly><span class="whitespace-nowrap">{{{1|texto sem quebra}}}</span></includeonly><noinclude>
+Equivalente à \`{{Nowrap}}\` / \`{{Sem quebra}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Sem_quebra|Art. 15 da Lei nº 12.965/2014}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de formatação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Data',
+    title: 'Predefinição:Data',
+    revId: 'rev_wp_tpl_data',
+    summary: 'Formata datas enciclopédicas no padrão lusófono (dia de mês de ano)',
+    extraCategories: ['Predefinições de formatação'],
+    content: `<includeonly><span class="whitespace-nowrap">{{{1|27}}} de {{#switch:{{{2|11}}}|1|01|jan|janeiro=janeiro|2|02|fev|fevereiro=fevereiro|3|03|mar|março=março|4|04|abr|abril=abril|5|05|mai|maio=maio|6|06|jun|junho=junho|7|07|jul|julho=julho|8|08|ago|agosto=agosto|9|09|set|setembro=setembro|10|out|outubro=outubro|11|nov|novembro=novembro|12|dez|dezembro=dezembro|#default={{{2|novembro}}}}} de {{{3|2026}}}</span></includeonly><noinclude>
+Equivalente à \`{{Data}}\` / \`{{Dt}}\` da Wikipédia lusófona para datas consistentes.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Data|27|11|2026}}
+{{Data|14|agosto|2018}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de formatação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Data_de_nascimento',
+    title: 'Predefinição:Data de nascimento',
+    revId: 'rev_wp_tpl_data_nascimento',
+    summary: 'Exibe data de nascimento formatada acompanhada da idade calculada',
+    extraCategories: ['Predefinições de formatação', 'Biografias'],
+    content: `<includeonly><span class="whitespace-nowrap">{{{3|10}}} de {{#switch:{{{2|12}}}|1|01=janeiro|2|02=fevereiro|3|03=março|4|04=abril|5|05=maio|6|06=junho|7|07=julho|8|08=agosto|9|09=setembro|10=outubro|11=novembro|12=dezembro|#default={{{2|dezembro}}}}} de {{{1|1990}}} ({{#expr:{{CURRENTYEAR}}-{{{1|1990}}}}}&nbsp;anos)</span></includeonly><noinclude>
+Equivalente à \`{{Dni}}\` / \`{{Data de nascimento}}\` da Wikipédia (ordem: ano | mês | dia).
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Data_de_nascimento|1995|05|18}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de formatação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Moeda',
+    title: 'Predefinição:Moeda',
+    revId: 'rev_wp_tpl_moeda',
+    summary: 'Formata valores monetários acompanhados de símbolo ou código ISO (BRL, USD, EUR)',
+    extraCategories: ['Predefinições de formatação'],
+    content: `<includeonly><span class="whitespace-nowrap font-normal">{{#switch:{{{2|BRL}}}|BRL|R$=R$&nbsp;|USD|US$=US$&nbsp;|EUR|€=€&nbsp;|GBP|£=£&nbsp;|JPY|¥=¥&nbsp;|#default={{{2|BRL}}}&nbsp;}}{{{1|1.000,00}}}</span></includeonly><noinclude>
+Equivalente à \`{{Moeda}}\` / \`{{Currency}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Moeda|1.500,00|BRL}}
+{{Moeda|250 milhões|USD}}
+{{Moeda|99,90|EUR}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de formatação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Bandeira',
+    title: 'Predefinição:Bandeira',
+    revId: 'rev_wp_tpl_bandeira',
+    summary: 'Exibe ícone de bandeira acompanhado do nome do país ou região com link wiki',
+    extraCategories: ['Predefinições de formatação', 'Geografia'],
+    content: `<includeonly><span class="inline-flex items-center gap-1 whitespace-nowrap">{{#switch:{{{1|Brasil}}}|BR|BRA|Brasil=🇧🇷 [[Brasil]]|PT|PRT|Portugal=🇵🇹 [[Portugal]]|US|USA|EUA|Estados Unidos=🇺🇸 [[Estados Unidos]]|AR|ARG|Argentina=🇦🇷 [[Argentina]]|DE|DEU|Alemanha=🇩🇪 [[Alemanha]]|FR|FRA|França=🇫🇷 [[França]]|GB|GBR|UK|Reino Unido=🇬🇧 [[Reino Unido]]|JP|JPN|Japão=🇯🇵 [[Japão]]|ES|ESP|Espanha=🇪🇸 [[Espanha]]|IT|ITA|Itália=🇮🇹 [[Itália]]|CA|CAN|Canadá=🇨🇦 [[Canadá]]|AO|AGO|Angola=🇦🇴 [[Angola]]|MZ|MOZ|Moçambique=🇲🇿 [[Moçambique]]|#default=🏳️ [[{{{1|País}}}]]}}</span></includeonly><noinclude>
+Equivalente à \`{{Bandeira}}\` / \`{{BRA}}\` / \`{{Flag}}\` da Wikipédia para tabelas esportivas, geográficas e listas.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Bandeira|Brasil}} · {{Bandeira|Portugal}} · {{Bandeira|Japão}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de formatação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Tooltip',
+    title: 'Predefinição:Tooltip',
+    revId: 'rev_wp_tpl_tooltip',
+    summary: 'Adiciona explicação flutuante ao passar o cursor sobre um termo técnico',
+    extraCategories: ['Predefinições de formatação'],
+    content: `<includeonly><abbr class="underline decoration-dotted cursor-help" title="{{{2|Explicação adicional}}}">{{{1|Termo}}}</abbr></includeonly><noinclude>
+Equivalente à \`{{Tooltip}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Tooltip|LGPD|Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018)}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de formatação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Abreviatura',
+    title: 'Predefinição:Abreviatura',
+    revId: 'rev_wp_tpl_abreviatura',
+    summary: 'Formata siglas e abreviações com significado completo no atributo title (<abbr>)',
+    extraCategories: ['Predefinições de formatação'],
+    content: `<includeonly><abbr class="underline decoration-dotted cursor-help font-medium" title="{{{2|Significado completo}}}">{{{1|SIGLA}}}</abbr></includeonly><noinclude>
+Equivalente à \`{{Abreviatura}}\` / \`{{Abbr}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Abreviatura|API|Application Programming Interface}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de formatação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Âncora',
+    title: 'Predefinição:Âncora',
+    revId: 'rev_wp_tpl_ancora',
+    summary: 'Cria uma âncora HTML invisível para links internos diretos (#identificador)',
+    extraCategories: ['Predefinições de formatação', 'Predefinições de navegação'],
+    content: `<includeonly><span id="{{{1|ancora}}}" class="sr-only"></span></includeonly><noinclude>
+Equivalente à \`{{Âncora}}\` / \`{{Anchor}}\` da Wikipédia para apontar links para parágrafos ou linhas de tabela específicas.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Âncora|tabela-comparativa}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de formatação]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Centrar',
+    title: 'Predefinição:Centrar',
+    revId: 'rev_wp_tpl_centrar',
+    summary: 'Centraliza horizontalmente blocos de texto, fórmulas ou legendas',
+    extraCategories: ['Predefinições de formatação'],
+    content: `<includeonly><div class="my-2 text-center">{{{1|Texto centralizado}}}</div></includeonly><noinclude>
+Equivalente à \`{{Centrar}}\` / \`{{Center}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Centrar|'''Texto centralizado na página'''}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de formatação]]
+</noinclude>`,
+  },
+
+  // =========================================================================
+  // 10. COMUNIDADE, VOTAÇÃO E RECONHECIMENTO
+  // =========================================================================
+  {
+    slug: 'Predefinição:Apoio',
+    title: 'Predefinição:Apoio',
+    revId: 'rev_wp_tpl_apoio',
+    summary: 'Selo verde "Apoio" para votações, consultas comunitárias e pedidos de estatuto',
+    extraCategories: ['Predefinições de comunidade'],
+    content: `<includeonly><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 font-bold text-[11px]">👍 Apoio</span>{{#if:{{{1|}}}| — {{{1}}}|}}</includeonly><noinclude>
+Equivalente à \`{{Apoio}}\` / \`{{Support}}\` das votações da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+* {{Apoio|Proposta bem fundamentada e alinhada às políticas.}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de comunidade]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Contra',
+    title: 'Predefinição:Contra',
+    revId: 'rev_wp_tpl_contra',
+    summary: 'Selo vermelho "Contra" para votações e deliberações comunitárias',
+    extraCategories: ['Predefinições de comunidade'],
+    content: `<includeonly><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800 font-bold text-[11px]">👎 Contra</span>{{#if:{{{1|}}}| — {{{1}}}|}}</includeonly><noinclude>
+Equivalente à \`{{Contra}}\` / \`{{Oppose}}\` das votações da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+* {{Contra|Carece de maior discussão prévia.}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de comunidade]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Abstenção',
+    title: 'Predefinição:Abstenção',
+    revId: 'rev_wp_tpl_abstencao',
+    summary: 'Selo neutro "Abstenção" para votações e decisões colegiadas',
+    extraCategories: ['Predefinições de comunidade'],
+    content: `<includeonly><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 font-bold text-[11px]">➖ Abstenção</span>{{#if:{{{1|}}}| — {{{1}}}|}}</includeonly><noinclude>
+Equivalente à \`{{Abstenção}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+* {{Abstenção|Sem posição formada no momento.}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de comunidade]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Pergunta',
+    title: 'Predefinição:Pergunta',
+    revId: 'rev_wp_tpl_pergunta',
+    summary: 'Destaca uma pergunta direta ao proponente em páginas de discussão e consultas',
+    extraCategories: ['Predefinições de comunidade'],
+    content: `<includeonly><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800 font-bold text-[11px]">❓ Pergunta</span>{{#if:{{{1|}}}|: {{{1}}}|}}</includeonly><noinclude>
+Equivalente à \`{{Pergunta}}\` / \`{{Question}}\` usada em debates da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+* {{Pergunta|Como esta regra interage com páginas semi-protegidas?}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de comunidade]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Sugestão',
+    title: 'Predefinição:Sugestão',
+    revId: 'rev_wp_tpl_sugestao',
+    summary: 'Sinaliza uma sugestão construtiva em páginas de discussão e revisões',
+    extraCategories: ['Predefinições de comunidade'],
+    content: `<includeonly><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800 font-bold text-[11px]">💡 Sugestão</span>{{#if:{{{1|}}}|: {{{1}}}|}}</includeonly><noinclude>
+Destaca propostas alternativas em discussões colaborativas.
+
+== Uso ==
+<syntaxhighlight lang="text">
+* {{Sugestão|Poderíamos unificar as duas tabelas na seção de comparação.}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de comunidade]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Resolvido',
+    title: 'Predefinição:Resolvido',
+    revId: 'rev_wp_tpl_resolvido',
+    summary: 'Banner compacto indicando que uma discussão ou pedido foi concluído com sucesso',
+    extraCategories: ['Predefinições de comunidade'],
+    content: `<includeonly><div class="my-2.5 px-3 py-2 rounded border border-emerald-300 dark:border-emerald-800 bg-emerald-50/80 dark:bg-emerald-950/30 text-xs text-emerald-950 dark:text-emerald-200 flex items-center gap-2"><span class="font-bold">✔ Resolvido:</span><span>{{{1|Esta solicitação foi atendida e encerrada.}}}</span></div></includeonly><noinclude>
+Equivalente à \`{{Resolvido}}\` / \`{{Resolved}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Resolvido|As referências solicitadas foram adicionadas ao artigo.}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de comunidade]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Em_análise',
+    title: 'Predefinição:Em análise',
+    revId: 'rev_wp_tpl_em_analise',
+    summary: 'Selo âmbar "Em análise" para pedidos administrativos ou revisões pendentes',
+    extraCategories: ['Predefinições de comunidade'],
+    content: `<includeonly><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 font-bold text-[11px]">🔎 Em análise</span>{{#if:{{{1|}}}| — {{{1}}}|}}</includeonly><noinclude>
+Indica que um pedido ou denúncia está sendo avaliado pela equipe administrativa ou ArbCom.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Em_análise|Verificação de evidências em curso.}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de comunidade]]
+</noinclude>`,
+  },
+  {
+    slug: 'Predefinição:Estrela',
+    title: 'Predefinição:Estrela',
+    revId: 'rev_wp_tpl_estrela',
+    summary: 'WikiPrêmio / Barnstar concedido a colaboradores em suas páginas de discussão ou usuário',
+    extraCategories: ['Predefinições de comunidade'],
+    content: `<includeonly><div class="my-3 p-3.5 rounded border border-amber-300 dark:border-amber-700 bg-amber-50/80 dark:bg-amber-950/30 text-xs text-amber-950 dark:text-amber-100 flex items-start gap-3"><span class="text-2xl leading-none shrink-0">🏅</span><div class="min-w-0 flex-1"><div class="font-serif font-bold text-sm text-amber-900 dark:text-amber-200">{{{título|WikiPrêmio de Contribuição}}}</div><div class="mt-1 leading-relaxed">{{{mensagem|{{{1|Em reconhecimento às valiosas contribuições e dedicação à qualidade da enciclopédia!}}}}}}</div>{{#if:{{{de|{{{2|}}}}}}|<div class="mt-1.5 text-[11px] opacity-80">— Concedido por '''{{{de|{{{2}}}}}}'''</div>|}}</div></div></includeonly><noinclude>
+Equivalente ao clássico \`{{WikiPrêmio}}\` / \`{{Barnstar}}\` da Wikipédia.
+
+== Uso ==
+<syntaxhighlight lang="text">
+{{Estrela|título=WikiPrêmio de Documentação|mensagem=Obrigado por ampliar os manuais e referências!|de=Equipe Editorial}}
+</syntaxhighlight>
+
+[[Categoria:Predefinições do WikiWazzimaGiygg]]
+[[Categoria:Predefinições de comunidade]]
+</noinclude>`,
+  },
 ];
 
 export const WIKIPEDIA_DEFAULT_TEMPLATES: Record<string, WikiPage> = Object.fromEntries(
