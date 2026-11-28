@@ -13,12 +13,28 @@ import { useWiki } from '../context/WikiContext';
 import { INITIAL_PAGES } from '../core/defaultPages';
 import { DEFAULT_CATEGORY_DEFINITIONS, CategorySeedMeta } from '../core/defaultCategories';
 import { subscribeToAllPages } from '../services/wikiService';
+import { subscribeToTemplates } from '../services/templateService';
 import { WikiPage } from '../types/wiki';
+import {
+  cleanCategoryName,
+  extractCategoryAssociations,
+  getAlphabeticalGroupKey,
+  getCategoryPageOwnKey,
+  isCategoryWikiPage,
+  normalizeCategoryKey,
+} from '../utils/categoryUtils';
 
 export interface CategoryExplorerProps {
   initialCategory?: string;
   embedded?: boolean;
   hideCategoryPageLink?: boolean;
+  categoryPageMode?: boolean;
+}
+
+interface CategoryMemberItem {
+  page: WikiPage;
+  viaTag: boolean;
+  viaLink: boolean;
 }
 
 interface CategoryGroup {
@@ -26,7 +42,7 @@ interface CategoryGroup {
   name: string;
   kind: 'article' | 'page';
   description?: string;
-  pages: WikiPage[];
+  members: CategoryMemberItem[];
 }
 
 const NAMESPACE_LABELS: Record<string, string> = {
@@ -41,64 +57,6 @@ const NAMESPACE_LABELS: Record<string, string> = {
   Special: 'Especial',
 };
 
-function cleanCategoryName(raw: string): string {
-  return raw
-    .split('|')[0]
-    .replace(/_/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function normalizeCategoryKey(name: string): string {
-  return cleanCategoryName(name)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
-
-function extractCategoriesFromPage(page: WikiPage): string[] {
-  const found = new Map<string, string>();
-
-  const addCat = (raw: string) => {
-    const cleaned = cleanCategoryName(raw);
-    if (!cleaned || cleaned.includes('{{{') || cleaned.includes('{{')) return;
-    const key = normalizeCategoryKey(cleaned);
-    if (!key) return;
-    if (!found.has(key)) {
-      found.set(key, cleaned);
-    }
-  };
-
-  if (Array.isArray(page.categories)) {
-    for (const cat of page.categories) {
-      addCat(cat);
-    }
-  }
-
-  if (page.content) {
-    let scannable = page.content
-      .replace(/<nowiki>[\s\S]*?<\/nowiki>/gi, '')
-      .replace(/<pre[^>]*>[\s\S]*?<\/pre>/gi, '')
-      .replace(/<syntaxhighlight[^>]*>[\s\S]*?<\/syntaxhighlight>/gi, '')
-      .replace(/<code[^>]*>[\s\S]*?<\/code>/gi, '');
-
-    if (page.namespace === 'Template' || page.slug.startsWith('Predefinição:')) {
-      // Template pages categorize themselves inside <noinclude>, whereas <includeonly> targets transcluding articles.
-      scannable = scannable.replace(/<includeonly>[\s\S]*?<\/includeonly>/gi, '');
-    } else {
-      scannable = scannable.replace(/<noinclude>[\s\S]*?<\/noinclude>/gi, '');
-    }
-
-    const catRegex = /\[\[\s*(?:Categoria|Category)\s*:\s*([^\]|]+)(?:\|[^\]]*)?\]\]/gi;
-    let match: RegExpExecArray | null;
-    while ((match = catRegex.exec(scannable)) !== null) {
-      addCat(match[1]);
-    }
-  }
-
-  return Array.from(found.values());
-}
-
 function formatShortDate(iso?: string): string {
   if (!iso) return '—';
   const date = new Date(iso);
@@ -110,14 +68,22 @@ function formatShortDate(iso?: string): string {
   });
 }
 
+function formatAssociationSource(viaTag: boolean, viaLink: boolean): string {
+  if (viaTag && viaLink) return 'tag e link no artigo';
+  if (viaLink) return 'link no artigo';
+  return 'tag da categoria';
+}
+
 export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
   initialCategory,
   embedded = false,
   hideCategoryPageLink = false,
+  categoryPageMode = false,
 }) => {
-  const { navigateToPage } = useWiki();
+  const { navigateToPage, existingPageSlugs, disabledExtensionIds } = useWiki();
   const [firestorePages, setFirestorePages] = useState<WikiPage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [templatesVersion, setTemplatesVersion] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState('');
   const [kindFilter, setKindFilter] = useState<'all' | 'article' | 'page'>('all');
   const [articleFilter, setArticleFilter] = useState('');
@@ -152,6 +118,13 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
     };
   }, []);
 
+  useEffect(() => {
+    const unsub = subscribeToTemplates(() => {
+      setTemplatesVersion(v => v + 1);
+    });
+    return () => unsub();
+  }, []);
+
   const allPages = useMemo<WikiPage[]>(() => {
     const bySlug = new Map<string, WikiPage>();
     for (const def of Object.values(INITIAL_PAGES)) {
@@ -164,54 +137,64 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
   }, [firestorePages]);
 
   const categoryGroups = useMemo<CategoryGroup[]>(() => {
-    const map = new Map<string, { name: string; pagesBySlug: Map<string, WikiPage> }>();
+    const map = new Map<string, { name: string; membersBySlug: Map<string, CategoryMemberItem> }>();
 
     // Ensure every seeded default category is always discoverable
     for (const def of DEFAULT_CATEGORY_DEFINITIONS) {
       const key = normalizeCategoryKey(def.name);
       if (!map.has(key)) {
-        map.set(key, { name: def.name, pagesBySlug: new Map() });
+        map.set(key, { name: def.name, membersBySlug: new Map() });
       }
     }
 
     for (const page of allPages) {
+      const pageIsCategory = isCategoryWikiPage(page);
+      const ownCatKey = pageIsCategory ? getCategoryPageOwnKey(page) : '';
+
       // Register Category:* pages themselves as browsable categories even when empty
-      if (page.namespace === 'Category' || /^(?:Categoria|Category):/i.test(page.slug)) {
-        const ownCatName = cleanCategoryName(
-          page.title.replace(/^(?:Categoria|Category):/i, '')
-        );
-        const ownKey = normalizeCategoryKey(ownCatName);
-        if (ownKey && !map.has(ownKey)) {
-          map.set(ownKey, { name: ownCatName, pagesBySlug: new Map() });
-        }
+      if (pageIsCategory && ownCatKey && !map.has(ownCatKey)) {
+        const ownCatName = cleanCategoryName(page.title.replace(/^(?:Categoria|Category):/i, ''));
+        map.set(ownCatKey, { name: ownCatName, membersBySlug: new Map() });
       }
 
-      const cats = extractCategoriesFromPage(page);
-      for (const catName of cats) {
-        const key = normalizeCategoryKey(catName);
+      const associations = extractCategoryAssociations(
+        page,
+        existingPageSlugs,
+        disabledExtensionIds
+      );
+
+      for (const assoc of associations) {
         // Prevent a Categoria:X page from listing itself as a member
-        if (
-          (page.namespace === 'Category' || /^(?:Categoria|Category):/i.test(page.slug)) &&
-          normalizeCategoryKey(page.title.replace(/^(?:Categoria|Category):/i, '')) === key
-        ) {
+        if (pageIsCategory && ownCatKey === assoc.key) {
           continue;
         }
-        if (!map.has(key)) {
-          map.set(key, { name: catName, pagesBySlug: new Map() });
+        if (!map.has(assoc.key)) {
+          map.set(assoc.key, { name: assoc.name, membersBySlug: new Map() });
         }
-        const entry = map.get(key)!;
-        entry.pagesBySlug.set(page.slug.toLowerCase(), page);
+        const entry = map.get(assoc.key)!;
+        const slugKey = page.slug.toLowerCase();
+        const existingMember = entry.membersBySlug.get(slugKey);
+        if (existingMember) {
+          existingMember.viaTag = existingMember.viaTag || assoc.viaTag;
+          existingMember.viaLink = existingMember.viaLink || assoc.viaLink;
+        } else {
+          entry.membersBySlug.set(slugKey, {
+            page,
+            viaTag: assoc.viaTag,
+            viaLink: assoc.viaLink,
+          });
+        }
       }
     }
 
     return Array.from(map.entries()).map(([key, value]) => {
-      const pages = Array.from(value.pagesBySlug.values()).sort((a, b) =>
-        a.title.localeCompare(b.title, 'pt-BR', { sensitivity: 'base' })
+      const members = Array.from(value.membersBySlug.values()).sort((a, b) =>
+        a.page.title.localeCompare(b.page.title, 'pt-BR', { sensitivity: 'base' })
       );
       const seedMeta = defaultCategoryMetaMap.get(key);
       const inferredKind: 'article' | 'page' = seedMeta
         ? seedMeta.kind
-        : pages.length > 0 && pages.every(p => p.namespace !== 'Main')
+        : members.length > 0 && members.every(m => m.page.namespace !== 'Main')
         ? 'page'
         : 'article';
 
@@ -220,10 +203,10 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
         name: seedMeta?.name || value.name,
         kind: inferredKind,
         description: seedMeta?.description,
-        pages,
+        members,
       };
     });
-  }, [allPages, defaultCategoryMetaMap]);
+  }, [allPages, defaultCategoryMetaMap, existingPageSlugs, disabledExtensionIds, templatesVersion]);
 
   const kindCounts = useMemo(() => {
     let article = 0;
@@ -250,7 +233,7 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
 
     return [...filtered].sort((a, b) => {
       if (sortBy === 'count') {
-        const diff = b.pages.length - a.pages.length;
+        const diff = b.members.length - a.members.length;
         if (diff !== 0) return diff;
       }
       return a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' });
@@ -268,7 +251,7 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
         name: seedMeta?.name || cleanCategoryName(initialCategory),
         kind: seedMeta?.kind || 'article',
         description: seedMeta?.description,
-        pages: [],
+        members: [],
       };
     }
     return null;
@@ -277,35 +260,68 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
   const availableNamespaces = useMemo(() => {
     if (!selectedGroup) return [];
     const set = new Set<string>();
-    for (const p of selectedGroup.pages) {
-      set.add(p.namespace || 'Main');
+    for (const m of selectedGroup.members) {
+      set.add(m.page.namespace || 'Main');
     }
     return Array.from(set).sort((a, b) =>
       (NAMESPACE_LABELS[a] || a).localeCompare(NAMESPACE_LABELS[b] || b, 'pt-BR')
     );
   }, [selectedGroup]);
 
-  const filteredArticles = useMemo(() => {
+  const filteredMembers = useMemo(() => {
     if (!selectedGroup) return [];
     const q = articleFilter.trim().toLowerCase();
-    return selectedGroup.pages.filter(page => {
-      if (namespaceFilter !== 'all' && page.namespace !== namespaceFilter) return false;
-      if (q) {
-        return (
-          page.title.toLowerCase().includes(q) ||
-          page.slug.toLowerCase().includes(q) ||
-          (page.summary || '').toLowerCase().includes(q)
-        );
-      }
-      return true;
-    });
+    return selectedGroup.members
+      .filter(member => {
+        const page = member.page;
+        if (namespaceFilter !== 'all' && page.namespace !== namespaceFilter) return false;
+        if (q) {
+          return (
+            page.title.toLowerCase().includes(q) ||
+            page.slug.toLowerCase().includes(q) ||
+            (page.summary || '').toLowerCase().includes(q)
+          );
+        }
+        return true;
+      })
+      .sort((a, b) =>
+        a.page.title.localeCompare(b.page.title, 'pt-BR', { sensitivity: 'base' })
+      );
   }, [selectedGroup, articleFilter, namespaceFilter]);
+
+  const subcategories = useMemo(
+    () => filteredMembers.filter(m => isCategoryWikiPage(m.page)),
+    [filteredMembers]
+  );
+
+  const regularMemberPages = useMemo(
+    () => filteredMembers.filter(m => !isCategoryWikiPage(m.page)),
+    [filteredMembers]
+  );
+
+  const alphabeticalSections = useMemo(() => {
+    const groups = new Map<string, CategoryMemberItem[]>();
+    for (const item of regularMemberPages) {
+      const letter = getAlphabeticalGroupKey(item.page.title);
+      if (!groups.has(letter)) {
+        groups.set(letter, []);
+      }
+      groups.get(letter)!.push(item);
+    }
+    return Array.from(groups.entries()).sort(([a], [b]) => {
+      if (a === '0–9' && b !== '0–9') return -1;
+      if (b === '0–9' && a !== '0–9') return 1;
+      if (a === '#' && b !== '#') return 1;
+      if (b === '#' && a !== '#') return -1;
+      return a.localeCompare(b, 'pt-BR');
+    });
+  }, [regularMemberPages]);
 
   const totalCategorizedPages = useMemo(() => {
     const slugs = new Set<string>();
     for (const group of categoryGroups) {
-      for (const page of group.pages) {
-        slugs.add(page.slug.toLowerCase());
+      for (const member of group.members) {
+        slugs.add(member.page.slug.toLowerCase());
       }
     }
     return slugs.size;
@@ -318,9 +334,33 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
   };
 
   return (
-    <section aria-label="Explorador de Categorias" className={embedded ? 'space-y-4' : 'py-2 space-y-4'}>
+    <section
+      aria-label={categoryPageMode && selectedGroup ? `Páginas na categoria ${selectedGroup.name}` : 'Explorador de Categorias'}
+      className={embedded ? 'space-y-4' : 'py-2 space-y-4'}
+    >
       {/* Header */}
-      {embedded ? (
+      {categoryPageMode && selectedGroup ? (
+        <div className="border-b border-gray-200 dark:border-gray-800 pb-2.5 flex flex-wrap items-baseline justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-serif font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <FolderOpen className="w-4 h-4 text-[#0645ad] dark:text-[#6ba4ff] shrink-0" />
+              <span>Índice automático da categoria &ldquo;{selectedGroup.name}&rdquo;</span>
+            </h2>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 tabular-nums">
+              {selectedGroup.kind === 'article' ? 'Categoria de artigos' : 'Categoria de páginas'} ·{' '}
+              {selectedGroup.members.length}{' '}
+              {selectedGroup.members.length === 1 ? 'página listada' : 'páginas listadas'} · Ordem alfabética automática (tags e links)
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigateToPage('Especial:Categorias')}
+            className="text-xs text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer shrink-0"
+          >
+            Explorar todas as categorias →
+          </button>
+        </div>
+      ) : embedded ? (
         <div className="border-b border-gray-200 dark:border-gray-800 pb-2.5 flex flex-wrap items-baseline justify-between gap-2">
           <div>
             <h2 className="text-lg font-serif font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
@@ -358,147 +398,249 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
           <span>Carregando índice de categorias...</span>
         </div>
       ) : selectedGroup ? (
-        /* Category Detail: Associated Articles List */
-        <div className="space-y-3">
-          {/* Breadcrumb & Back Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => setSelectedCategoryKey(null)}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Todas as categorias</span>
-              </button>
-              <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-              <span className="font-serif font-semibold text-base text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
-                <FolderOpen className="w-4 h-4 text-[#0645ad] dark:text-[#6ba4ff]" />
-                <span>{selectedGroup.name}</span>
-              </span>
-              <span className="font-mono tabular-nums text-[11px] text-gray-500 dark:text-gray-400">
-                · {selectedGroup.kind === 'article' ? 'Categoria de artigos' : 'Categoria de páginas'} ·{' '}
-                {selectedGroup.pages.length}{' '}
-                {selectedGroup.pages.length === 1 ? 'página' : 'páginas'}
-              </span>
-            </div>
+        /* Category Detail: Associated Articles List (Alphabetical) */
+        <div className="space-y-4">
+          {!categoryPageMode && (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategoryKey(null)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Todas as categorias</span>
+                  </button>
+                  <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="font-serif font-semibold text-base text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                    <FolderOpen className="w-4 h-4 text-[#0645ad] dark:text-[#6ba4ff]" />
+                    <span>{selectedGroup.name}</span>
+                  </span>
+                  <span className="font-mono tabular-nums text-[11px] text-gray-500 dark:text-gray-400">
+                    · {selectedGroup.kind === 'article' ? 'Categoria de artigos' : 'Categoria de páginas'} ·{' '}
+                    {selectedGroup.members.length}{' '}
+                    {selectedGroup.members.length === 1 ? 'página' : 'páginas'}
+                  </span>
+                </div>
 
-            {!hideCategoryPageLink && (
-              <button
-                type="button"
-                onClick={() => navigateToPage(`Categoria:${selectedGroup.name.replace(/\s+/g, '_')}`)}
-                className="inline-flex items-center gap-1 text-xs text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer"
-              >
-                <span>Abrir página Categoria:{selectedGroup.name}</span>
-                <ExternalLink className="w-3 h-3" />
-              </button>
-            )}
-          </div>
+                {!hideCategoryPageLink && (
+                  <button
+                    type="button"
+                    onClick={() => navigateToPage(`Categoria:${selectedGroup.name.replace(/\s+/g, '_')}`)}
+                    className="inline-flex items-center gap-1 text-xs text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer"
+                  >
+                    <span>Abrir página Categoria:{selectedGroup.name}</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
 
-          {selectedGroup.description && (
-            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed px-0.5">
-              {selectedGroup.description}
-            </p>
+              {selectedGroup.description && (
+                <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed px-0.5">
+                  {selectedGroup.description}
+                </p>
+              )}
+            </>
           )}
 
           {/* Search & Namespace Filter for Articles inside Category */}
-          <div className="flex flex-wrap items-center gap-2.5 p-2.5 rounded border border-gray-200 dark:border-gray-800 bg-[#f8f9fa] dark:bg-[#131722] text-xs">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={articleFilter}
-                onChange={e => setArticleFilter(e.target.value)}
-                placeholder={`Filtrar artigos em "${selectedGroup.name}"...`}
-                className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3366cc]"
-              />
-            </div>
-
-            {availableNamespaces.length > 1 && (
-              <div className="flex items-center gap-1.5">
-                <label
-                  htmlFor="category-ns-filter"
-                  className="font-medium text-gray-600 dark:text-gray-400"
-                >
-                  Espaço nominal:
-                </label>
-                <select
-                  id="category-ns-filter"
-                  value={namespaceFilter}
-                  onChange={e => setNamespaceFilter(e.target.value)}
-                  className="px-2 py-1.5 bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-gray-100"
-                >
-                  <option value="all">Todos ({selectedGroup.pages.length})</option>
-                  {availableNamespaces.map(ns => (
-                    <option key={ns} value={ns}>
-                      {NAMESPACE_LABELS[ns] || ns}
-                    </option>
-                  ))}
-                </select>
+          {selectedGroup.members.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2.5 p-2.5 rounded border border-gray-200 dark:border-gray-800 bg-[#f8f9fa] dark:bg-[#131722] text-xs">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={articleFilter}
+                  onChange={e => setArticleFilter(e.target.value)}
+                  placeholder={`Filtrar páginas em "${selectedGroup.name}"...`}
+                  className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3366cc]"
+                />
               </div>
-            )}
 
-            <div className="text-[11px] font-mono tabular-nums text-gray-500 dark:text-gray-400 ml-auto">
-              Exibindo {filteredArticles.length} de {selectedGroup.pages.length}
+              {availableNamespaces.length > 1 && (
+                <div className="flex items-center gap-1.5">
+                  <label
+                    htmlFor="category-ns-filter"
+                    className="font-medium text-gray-600 dark:text-gray-400"
+                  >
+                    Espaço nominal:
+                  </label>
+                  <select
+                    id="category-ns-filter"
+                    value={namespaceFilter}
+                    onChange={e => setNamespaceFilter(e.target.value)}
+                    className="px-2 py-1.5 bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-gray-100"
+                  >
+                    <option value="all">Todos ({selectedGroup.members.length})</option>
+                    {availableNamespaces.map(ns => (
+                      <option key={ns} value={ns}>
+                        {NAMESPACE_LABELS[ns] || ns}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="text-[11px] font-mono tabular-nums text-gray-500 dark:text-gray-400 ml-auto">
+                Exibindo {filteredMembers.length} de {selectedGroup.members.length} (A–Z)
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Articles List */}
-          {filteredArticles.length === 0 ? (
-            <div className="p-8 text-center border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-[#1a1f2c] space-y-2">
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {selectedGroup.pages.length === 0
-                  ? `Nenhuma página está associada à categoria "${selectedGroup.name}" no momento.`
-                  : 'Nenhum artigo corresponde aos filtros aplicados nesta categoria.'}
+          {/* Empty state */}
+          {filteredMembers.length === 0 ? (
+            <div className="p-6 text-center border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-[#1a1f2c] space-y-2">
+              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                {selectedGroup.members.length === 0
+                  ? `Nenhuma página cita ainda a categoria "${selectedGroup.name}". Para incluir uma página automaticamente nesta lista em ordem alfabética, adicione [[Categoria:${selectedGroup.name}]] ou o link [[:Categoria:${selectedGroup.name}]] dentro do artigo.`
+                  : 'Nenhuma página corresponde aos filtros aplicados nesta categoria.'}
               </p>
-              <button
-                type="button"
-                onClick={() => {
-                  if (selectedGroup.pages.length === 0) {
-                    setSelectedCategoryKey(null);
-                  } else {
+              {selectedGroup.members.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
                     setArticleFilter('');
                     setNamespaceFilter('all');
-                  }
-                }}
-                className="text-xs text-[#0645ad] dark:text-[#6ba4ff] hover:underline font-medium cursor-pointer"
-              >
-                {selectedGroup.pages.length === 0 ? 'Voltar para todas as categorias' : 'Limpar filtros'}
-              </button>
+                  }}
+                  className="text-xs text-[#0645ad] dark:text-[#6ba4ff] hover:underline font-medium cursor-pointer"
+                >
+                  Limpar filtros
+                </button>
+              ) : !categoryPageMode ? (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategoryKey(null)}
+                  className="text-xs text-[#0645ad] dark:text-[#6ba4ff] hover:underline font-medium cursor-pointer"
+                >
+                  Voltar para todas as categorias
+                </button>
+              ) : null}
             </div>
           ) : (
-            <ul className="divide-y divide-gray-200 dark:divide-gray-800 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-[#1a1f2c]">
-              {filteredArticles.map(page => (
-                <li
-                  key={page.slug}
-                  className="p-3.5 hover:bg-[#f8f9fa] dark:hover:bg-gray-900/60 transition-colors"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
-                    <button
-                      type="button"
-                      onClick={() => navigateToPage(page.slug, 'view')}
-                      className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0645ad] dark:text-[#6ba4ff] hover:underline text-left cursor-pointer"
-                    >
-                      <BookOpen className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span>{page.title}</span>
-                    </button>
-                    <div className="text-[11px] font-mono tabular-nums text-gray-500 dark:text-gray-400 shrink-0">
-                      {NAMESPACE_LABELS[page.namespace] || page.namespace} · {page.revisionCount || 1}{' '}
-                      {(page.revisionCount || 1) === 1 ? 'revisão' : 'revisões'} ·{' '}
-                      {formatShortDate(page.updatedAt)}
+            <div className="space-y-5">
+              {/* Subcategories section (alphabetical A-Z) */}
+              {subcategories.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-baseline justify-between border-b border-gray-200 dark:border-gray-800 pb-1">
+                    <h3 className="text-sm font-serif font-semibold text-gray-900 dark:text-gray-100">
+                      Subcategorias
+                    </h3>
+                    <span className="text-[11px] font-mono tabular-nums text-gray-500 dark:text-gray-400">
+                      {subcategories.length} {subcategories.length === 1 ? 'subcategoria' : 'subcategorias'}
+                    </span>
+                  </div>
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {subcategories.map(({ page, viaTag, viaLink }) => (
+                      <li
+                        key={page.slug}
+                        className="p-2.5 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1f2c] hover:border-[#3366cc] dark:hover:border-blue-500 transition-colors"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => navigateToPage(page.slug, 'view')}
+                          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-[#0645ad] dark:text-[#6ba4ff] hover:underline text-left cursor-pointer"
+                        >
+                          <FolderOpen className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                          <span>{page.title}</span>
+                        </button>
+                        <div className="text-[10px] font-mono tabular-nums text-gray-500 dark:text-gray-400 mt-0.5">
+                          {formatAssociationSource(viaTag, viaLink)} · {formatShortDate(page.updatedAt)}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Regular Pages section (Alphabetical A-Z Index) */}
+              {regularMemberPages.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-baseline justify-between border-b border-gray-200 dark:border-gray-800 pb-1">
+                    <h3 className="text-sm font-serif font-semibold text-gray-900 dark:text-gray-100">
+                      Páginas na categoria &ldquo;{selectedGroup.name}&rdquo;
+                    </h3>
+                    <span className="text-[11px] font-mono tabular-nums text-gray-500 dark:text-gray-400">
+                      {regularMemberPages.length}{' '}
+                      {regularMemberPages.length === 1 ? 'página' : 'páginas'} · ordem alfabética
+                    </span>
+                  </div>
+
+                  {categoryPageMode ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                      {alphabeticalSections.map(([letter, items]) => (
+                        <div key={letter} className="space-y-1.5">
+                          <div className="flex items-baseline justify-between border-b border-gray-200 dark:border-gray-800 pb-0.5">
+                            <span className="font-serif font-semibold text-base text-gray-900 dark:text-gray-100">
+                              {letter}
+                            </span>
+                            <span className="text-[10px] font-mono tabular-nums text-gray-400">
+                              {items.length}
+                            </span>
+                          </div>
+                          <ul className="space-y-1.5 pt-0.5">
+                            {items.map(({ page, viaTag, viaLink }) => (
+                              <li key={page.slug} className="leading-snug">
+                                <button
+                                  type="button"
+                                  onClick={() => navigateToPage(page.slug, 'view')}
+                                  className="inline-flex items-baseline gap-1.5 text-sm font-medium text-[#0645ad] dark:text-[#6ba4ff] hover:underline text-left cursor-pointer"
+                                >
+                                  <BookOpen className="w-3 h-3 text-gray-400 shrink-0 self-center" />
+                                  <span>{page.title}</span>
+                                </button>
+                                <div className="text-[11px] text-gray-500 dark:text-gray-400 pl-4.5 font-mono tabular-nums">
+                                  {NAMESPACE_LABELS[page.namespace] || page.namespace} ·{' '}
+                                  {formatAssociationSource(viaTag, viaLink)} ·{' '}
+                                  {formatShortDate(page.updatedAt)}
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                  {page.summary && (
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2 leading-relaxed">
-                      {page.summary}
-                    </p>
+                  ) : (
+                    <ul className="divide-y divide-gray-200 dark:divide-gray-800 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-[#1a1f2c]">
+                      {regularMemberPages.map(({ page, viaTag, viaLink }) => (
+                        <li
+                          key={page.slug}
+                          className="p-3.5 hover:bg-[#f8f9fa] dark:hover:bg-gray-900/60 transition-colors"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+                            <button
+                              type="button"
+                              onClick={() => navigateToPage(page.slug, 'view')}
+                              className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0645ad] dark:text-[#6ba4ff] hover:underline text-left cursor-pointer"
+                            >
+                              <BookOpen className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                              <span>{page.title}</span>
+                            </button>
+                            <div className="text-[11px] font-mono tabular-nums text-gray-500 dark:text-gray-400 shrink-0">
+                              {NAMESPACE_LABELS[page.namespace] || page.namespace} ·{' '}
+                              {formatAssociationSource(viaTag, viaLink)} · {page.revisionCount || 1}{' '}
+                              {(page.revisionCount || 1) === 1 ? 'revisão' : 'revisões'} ·{' '}
+                              {formatShortDate(page.updatedAt)}
+                            </div>
+                          </div>
+                          {page.summary && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2 leading-relaxed">
+                              {page.summary}
+                            </p>
+                          )}
+                          <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                            Última edição por{' '}
+                            <span className="font-medium text-gray-700 dark:text-gray-300">
+                              {page.author || 'Sistema'}
+                            </span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
                   )}
-                  <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                    Última edição por <span className="font-medium text-gray-700 dark:text-gray-300">{page.author || 'Sistema'}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                </div>
+              )}
+            </div>
           )}
         </div>
       ) : (
@@ -618,7 +760,7 @@ export const CategoryExplorer: React.FC<CategoryExplorerProps> = ({
                     </span>
                   </span>
                   <span className="text-[11px] font-mono tabular-nums text-gray-500 dark:text-gray-400 shrink-0">
-                    {cat.pages.length} {cat.pages.length === 1 ? 'página' : 'páginas'}
+                    {cat.members.length} {cat.members.length === 1 ? 'página' : 'páginas'}
                   </span>
                 </button>
               ))}

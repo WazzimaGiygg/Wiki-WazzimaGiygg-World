@@ -235,6 +235,7 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
             initialCategory={categoryNamespaceName}
             embedded
             hideCategoryPageLink
+            categoryPageMode
           />
         </div>
       );
@@ -659,19 +660,31 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
       )}
 
       {/* Rendered Wikitext Body */}
-      <div
-        id="mw-content-text"
-        className="mw-body-content min-h-[300px] leading-relaxed text-gray-800 dark:text-gray-200"
-        dangerouslySetInnerHTML={{ __html: parseResult.html }}
-      />
+      {isCategoryNamespace && !parseResult.html.trim() ? (
+        <div
+          id="mw-content-text"
+          className="mw-body-content text-xs italic text-gray-500 dark:text-gray-400 py-1"
+        >
+          Esta página de categoria reúne automaticamente todas as páginas associadas por tag ou link direto.
+        </div>
+      ) : (
+        <div
+          id="mw-content-text"
+          className={`mw-body-content leading-relaxed text-gray-800 dark:text-gray-200 ${
+            isCategoryNamespace ? '' : 'min-h-[300px]'
+          }`}
+          dangerouslySetInnerHTML={{ __html: parseResult.html }}
+        />
+      )}
 
-      {/* Embedded Category Member List on Categoria: pages */}
+      {/* Embedded Automatic Alphabetical Category Index on Categoria: pages */}
       {isCategoryNamespace && extCategories && (
-        <div className="my-6 pt-4 border-t border-gray-200 dark:border-gray-800">
+        <div className="my-5 pt-4 border-t border-gray-200 dark:border-gray-800">
           <CategoryExplorer
             initialCategory={categoryNamespaceName}
             embedded
             hideCategoryPageLink
+            categoryPageMode
           />
         </div>
       )}
@@ -680,19 +693,23 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
       {extCategories && parseResult.categories.length > 0 && (
         <div
           id="catlinks"
-          className="my-6 p-2 bg-[#f8f9fa] dark:bg-gray-900 border border-[#a2a9b1] dark:border-gray-700 rounded text-xs flex flex-wrap items-center justify-between gap-2 text-gray-700 dark:text-gray-300"
+          className="my-6 p-2.5 bg-[#f8f9fa] dark:bg-gray-900 border border-[#a2a9b1] dark:border-gray-700 rounded text-xs flex flex-wrap items-center justify-between gap-2 text-gray-700 dark:text-gray-300"
         >
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-semibold text-gray-500 flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-1 tabular-nums">
               <Tag className="w-3 h-3" />
-              <span>Categorias:</span>
+              <span>
+                {parseResult.categories.length === 1
+                  ? 'Categoria:'
+                  : `Categorias (${parseResult.categories.length}):`}
+              </span>
             </span>
             {parseResult.categories.map((cat, idx) => (
               <React.Fragment key={cat}>
-                {idx > 0 && <span className="text-gray-400">|</span>}
+                {idx > 0 && <span className="text-gray-400" aria-hidden="true">|</span>}
                 <button
                   type="button"
-                  onClick={() => navigateToPage(`Categoria:${cat}`)}
+                  onClick={() => navigateToPage(`Categoria:${cat.replace(/\s+/g, '_')}`)}
                   className="text-[#0645ad] dark:text-[#6ba4ff] hover:underline cursor-pointer"
                 >
                   {cat}

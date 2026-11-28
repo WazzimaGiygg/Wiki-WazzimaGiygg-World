@@ -60,7 +60,7 @@ export const SpecialGitHubSync: React.FC = () => {
   const handleSyncToWiki = async () => {
     if (!repoInfo) return;
     if (currentUser.isAnonymous) {
-      alert('Contribuições e sincronizações não são permitidas sem login. Por favor, autentique-se primeiro.');
+      setSyncStatus('Autenticação obrigatória: faça login com sua conta Google para sincronizar com o Firestore.');
       loginWithGoogle();
       return;
     }

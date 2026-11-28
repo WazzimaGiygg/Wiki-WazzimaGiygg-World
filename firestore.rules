@@ -144,10 +144,22 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // Wiki extensions — STRICTLY BUREAUCRAT ONLY
+    // Wiki extensions — Bureaucrats manage all; Administrators can configure extension settings (e.g., Blaze Plan on upload-wizard)
     match /wiki_extensions/{extensionId} {
       allow read: if true;
-      allow create, update: if isBureaucrat() && isValidExtension(request.resource.data);
+      allow create: if isValidExtension(request.resource.data) && (
+        isBureaucrat()
+        || (isAdminOrBureaucrat() && extensionId == 'upload-wizard')
+      );
+      allow update: if isValidExtension(request.resource.data) && (
+        isBureaucrat()
+        || (
+          isAdminOrBureaucrat()
+          && request.resource.data.id == resource.data.id
+          && request.resource.data.installedVia == resource.data.installedVia
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['config', 'updatedAt', 'updatedBy'])
+        )
+      );
       allow delete: if isBureaucrat();
     }
 
@@ -180,11 +192,34 @@ service cloud.firestore {
       allow update, delete: if isAdminOrBureaucrat();
     }
 
+    function isValidWikiFile(data) {
+      return data.keys().hasAll(['id', 'title', 'fileName', 'url', 'mimeType', 'size', 'uploadedBy', 'uploadedByUid', 'description', 'license', 'timestamp'])
+        && data.keys().hasOnly(['id', 'title', 'fileName', 'url', 'mimeType', 'size', 'uploadedBy', 'uploadedByUid', 'description', 'license', 'timestamp', 'width', 'height'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 200
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 250
+        && data.fileName is string && data.fileName.size() > 0 && data.fileName.size() <= 200
+        && data.url is string && data.url.size() > 0 && data.url.size() <= 950000
+        && data.mimeType is string && data.mimeType.size() > 0 && data.mimeType.size() <= 100
+        && data.size is number && data.size > 0 && data.size <= 10485760
+        && data.uploadedBy is string && data.uploadedBy.size() > 0 && data.uploadedBy.size() <= 100
+        && data.uploadedByUid is string && data.uploadedByUid.size() > 0 && data.uploadedByUid.size() <= 128
+        && data.description is string && data.description.size() <= 2000
+        && data.license is string && data.license.size() <= 100
+        && data.timestamp is string && data.timestamp.size() > 0 && data.timestamp.size() <= 64
+        && (!('width' in data) || (data.width is number && data.width > 0))
+        && (!('height' in data) || (data.height is number && data.height > 0));
+    }
+
     // Wiki files and uploaded images (requires authenticated non-blocked user)
     match /wiki_files/{fileId} {
       allow read: if true;
-      allow create: if isNotBlocked();
-      allow update, delete: if isBureaucrat();
+      allow create: if isNotBlocked()
+        && request.resource.data.uploadedByUid == request.auth.uid
+        && isValidWikiFile(request.resource.data);
+      allow update: if isBureaucrat()
+        && request.resource.data.uploadedByUid == resource.data.uploadedByUid
+        && isValidWikiFile(request.resource.data);
+      allow delete: if isBureaucrat();
     }
 
     function isValidPrivacyRequest(data) {

@@ -139,6 +139,14 @@ export function parseWikitext(
       });
     }
 
+    // Protect literal <code>...</code> spans so wikitext/category examples inside code tags are preserved verbatim
+    out = out.replace(/<code([^>]*)>([\s\S]*?)<\/code>/gi, (_, attrs, inner) => {
+      const placeholder = `__INLINE_CODE_${inlineCodeBlocks.length}__`;
+      const safeAttrs = attrs && attrs.trim() ? attrs : ' class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 font-mono text-xs"';
+      inlineCodeBlocks.push(`<code${safeAttrs}>${inner}</code>`);
+      return placeholder;
+    });
+
     return out;
   };
 
@@ -170,13 +178,27 @@ export function parseWikitext(
 
   // 4. Extract Categories [[Categoria:...]] or [[Category:...]] (including ones emitted by templates!)
   if (isExtActive('dynamic-page-list')) {
-    text = text.replace(/\[\[(?:Categoria|Category):([^\]]+)\]\]/gi, (_, catName) => {
-      const trimmed = catName.trim();
-      if (trimmed && !categories.includes(trimmed)) {
-        categories.push(trimmed);
+    const seenCategoryKeys = new Set<string>();
+    text = text.replace(
+      /\[\[\s*(?:Categoria|Category)\s*:\s*([^\]|]+?)(?:\s*\|[^\]]*)?\s*\]\]/gi,
+      (_, rawCatName) => {
+        const cleaned = rawCatName
+          .replace(/_/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (cleaned && !cleaned.includes('{{') && !cleaned.includes('{{{')) {
+          const dedupKey = cleaned
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+          if (!seenCategoryKeys.has(dedupKey)) {
+            seenCategoryKeys.add(dedupKey);
+            categories.push(cleaned);
+          }
+        }
+        return '';
       }
-      return '';
-    });
+    );
   }
 
   // 5. Extract Footnotes / References <ref>...</ref>

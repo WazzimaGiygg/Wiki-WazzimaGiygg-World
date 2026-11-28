@@ -75,15 +75,35 @@ export async function syncCodebaseExtensionsToFirestore(
         await setDoc(docRef, newDoc);
         newlySynced++;
       } else {
-        // If extension already exists in Firestore but has default config defined in codebase and missing remotely, merge config
-        if (ext.config) {
-          const docRef = doc(db, WIKI_EXTENSIONS_COLLECTION, ext.id);
-          const snap = await getDoc(docRef);
-          if (snap.exists()) {
-            const data = snap.data() as WikiExtensionDoc;
-            if (!data.config) {
-              await setDoc(docRef, { config: ext.config }, { merge: true });
-            }
+        // Sync updated codebase metadata (such as version 5.0.0.XL.1) or missing default config keys
+        // while preserving remote isActive and administrator-configured config flags (e.g., blazePlanEnabled)
+        const docRef = doc(db, WIKI_EXTENSIONS_COLLECTION, ext.id);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          const data = snap.data() as WikiExtensionDoc;
+          const mergedConfig = ext.config
+            ? { ...ext.config, ...(data.config || {}) }
+            : data.config;
+          const needsMetadataUpdate =
+            data.version !== ext.version ||
+            data.gitTag !== ext.gitTag ||
+            data.name !== ext.name ||
+            data.description !== ext.description ||
+            (ext.config && !data.config);
+          if (needsMetadataUpdate) {
+            await setDoc(
+              docRef,
+              {
+                name: ext.name,
+                version: ext.version,
+                gitTag: ext.gitTag,
+                description: ext.description,
+                hooks: ext.hooks,
+                ...(mergedConfig ? { config: mergedConfig } : {}),
+                updatedAt: new Date().toISOString(),
+              },
+              { merge: true }
+            );
           }
         }
       }
@@ -243,30 +263,55 @@ export async function deleteBureaucratExtension(
 
 /**
  * Atualiza o objeto de configurações (config) de uma extensão no Firestore.
- * Utilizado por burocratas para configurar opções como o Plano Blaze ($wgUploadWizardConfig).
+ * Utilizado por administradores e burocratas para habilitar o Plano Blaze ($wgUploadWizardConfig).
  */
 export async function updateExtensionConfigInFirestore(
   extensionId: string,
   newConfig: Record<string, any>,
-  isBureaucrat: boolean,
+  canConfigure: boolean,
   username: string
 ): Promise<void> {
-  if (!isBureaucrat) {
-    throw new Error('Apenas burocratas podem alterar as configurações de extensões.');
+  if (!canConfigure) {
+    throw new Error('Apenas administradores ou burocratas podem alterar as configurações de extensões.');
   }
 
   const docPath = `${WIKI_EXTENSIONS_COLLECTION}/${extensionId}`;
   try {
     const docRef = doc(db, WIKI_EXTENSIONS_COLLECTION, extensionId);
-    await setDoc(
-      docRef,
-      {
+    const existingSnap = await getDoc(docRef);
+    const now = new Date().toISOString();
+
+    if (existingSnap.exists()) {
+      await updateDoc(docRef, {
         config: newConfig,
-        updatedAt: new Date().toISOString(),
+        updatedAt: now,
         updatedBy: username,
-      },
-      { merge: true }
-    );
+      });
+    } else {
+      const codebaseDef = CODEBASE_EXTENSIONS.find(e => e.id === extensionId);
+      if (!codebaseDef) {
+        throw new Error(`Extensão "${extensionId}" não encontrada para inicialização.`);
+      }
+      const fullDoc: WikiExtensionDoc = {
+        id: codebaseDef.id,
+        name: codebaseDef.name,
+        category: codebaseDef.category,
+        version: codebaseDef.version,
+        authors: codebaseDef.authors,
+        description: codebaseDef.description,
+        url: codebaseDef.url,
+        gitTag: codebaseDef.gitTag,
+        license: codebaseDef.license,
+        hooks: codebaseDef.hooks,
+        exampleWikitext: codebaseDef.exampleWikitext,
+        isActive: codebaseDef.defaultActive,
+        installedVia: 'code',
+        config: newConfig,
+        updatedAt: now,
+        updatedBy: username,
+      };
+      await setDoc(docRef, fullDoc);
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, docPath);
   }
@@ -320,7 +365,21 @@ export function mergeExtensionsWithCodebase(remoteExtensions: WikiExtensionDoc[]
     });
   }
   for (const remote of remoteExtensions) {
-    map.set(remote.id, remote);
+    const codebase = map.get(remote.id);
+    if (codebase && (remote.installedVia === 'code' || !remote.installedVia)) {
+      map.set(remote.id, {
+        ...codebase,
+        isActive: remote.isActive,
+        updatedAt: remote.updatedAt || codebase.updatedAt,
+        updatedBy: remote.updatedBy || codebase.updatedBy,
+        config: {
+          ...(codebase.config || {}),
+          ...(remote.config || {}),
+        },
+      });
+    } else {
+      map.set(remote.id, remote);
+    }
   }
   return Array.from(map.values()).sort((a, b) => {
     if (a.category !== b.category) return a.category.localeCompare(b.category);
@@ -396,35 +455,58 @@ export async function saveUploadedFile(params: {
   width?: number;
   height?: number;
 }): Promise<WikiFileDoc> {
+  if (!auth.currentUser || auth.currentUser.isAnonymous) {
+    throw new Error('Autenticação obrigatória para enviar arquivos na wiki.');
+  }
+  if (!params.dataUrl || params.dataUrl.length > 940_000) {
+    throw new Error(
+      'O arquivo codificado excede o limite suportado pelo documento no Firestore (1 MB). Use uma imagem menor.'
+    );
+  }
+
   const cleanName = params.fileName.trim().replace(/\s+/g, '_');
-  const fileTitle = cleanName.startsWith('Ficheiro:') || cleanName.startsWith('File:')
-    ? cleanName
-    : `Ficheiro:${cleanName}`;
+  const bareFileName = cleanName.replace(/^(Ficheiro:|File:|Imagem:|Image:)/i, '');
+  const fileTitle = `Ficheiro:${bareFileName}`;
   const fileId = slugify(fileTitle);
+  const now = new Date().toISOString();
 
   const fileDoc: WikiFileDoc = {
     id: fileId,
     title: fileTitle,
-    fileName: cleanName.replace(/^(Ficheiro:|File:)/i, ''),
+    fileName: bareFileName,
     url: params.dataUrl,
     mimeType: params.mimeType,
     size: params.size,
     uploadedBy: params.author,
-    uploadedByUid: params.authorId,
+    uploadedByUid: auth.currentUser.uid,
     description: params.description.trim() || 'Imagem carregada na wiki via UploadWizard',
     license: params.license || 'CC BY-SA 4.0 / Domínio Público',
-    timestamp: new Date().toISOString(),
-    width: params.width,
-    height: params.height,
+    timestamp: now,
+    ...(typeof params.width === 'number' && params.width > 0 ? { width: params.width } : {}),
+    ...(typeof params.height === 'number' && params.height > 0 ? { height: params.height } : {}),
   };
 
-  const docRef = doc(db, WIKI_FILES_COLLECTION, fileId);
-  await setDoc(docRef, fileDoc);
+  const filePath = `${WIKI_FILES_COLLECTION}/${fileId}`;
+  try {
+    const docRef = doc(db, WIKI_FILES_COLLECTION, fileId);
+    const existingSnap = await getDoc(docRef);
+    if (existingSnap.exists()) {
+      throw new Error(
+        `Já existe um ficheiro chamado "${bareFileName}" na wiki. Escolha outro nome de destino.`
+      );
+    }
+    await setDoc(docRef, fileDoc);
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Já existe um ficheiro')) {
+      throw error;
+    }
+    handleFirestoreError(error, OperationType.CREATE, filePath);
+  }
 
   // Também criar a página canônica no namespace File em wiki_pages para que a página da imagem exista e seja visualizável!
   const pageDocRef = doc(db, 'wiki_pages', fileId);
   const pageContent = `== Resumo do Ficheiro ==
-${params.description || "Arquivo de mídia carregado na wiki."}
+${params.description.trim() || 'Arquivo de mídia carregado na wiki.'}
 
 {| class="wikitable" style="width:100%; max-width:540px;"
 ! Detalhe !! Informação
@@ -448,27 +530,32 @@ Para incorporar este ficheiro em qualquer artigo da wiki, utilize a sintaxe:
 [[${fileTitle}|thumb|Legenda da imagem]]
 </syntaxhighlight>
 
-[[Categoria:Ficheiros_da_Wiki]]
-[[Categoria:Mídias_Carregadas]]`;
+[[Categoria:Ficheiros da Wiki]]
+[[Categoria:Mídias Carregadas]]`;
 
-  await setDoc(
-    pageDocRef,
-    {
-      slug: fileId,
-      title: fileTitle,
-      namespace: 'File',
-      content: pageContent,
-      summary: `Carregamento de nova imagem: ${fileDoc.fileName}`,
-      author: params.author,
-      authorId: params.authorId,
-      revisionCount: 1,
-      latestRevisionId: `rev_upload_${Date.now()}`,
-      categories: ['Ficheiros_da_Wiki', 'Mídias_Carregadas'],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    { merge: true }
-  );
+  try {
+    await setDoc(
+      pageDocRef,
+      {
+        slug: fileId,
+        title: fileTitle,
+        titleLower: fileTitle.toLowerCase(),
+        namespace: 'File',
+        content: pageContent,
+        summary: `Carregamento de nova imagem: ${fileDoc.fileName}`,
+        author: params.author,
+        authorId: auth.currentUser.uid,
+        revisionCount: 1,
+        latestRevisionId: `rev_upload_${Date.now()}`,
+        categories: ['Ficheiros da Wiki', 'Mídias Carregadas'],
+        createdAt: now,
+        updatedAt: now,
+      },
+      { merge: true }
+    );
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `wiki_pages/${fileId}`);
+  }
 
   return fileDoc;
 }

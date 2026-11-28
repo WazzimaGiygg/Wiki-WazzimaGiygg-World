@@ -105,7 +105,7 @@
     },
     "WikiExtension": {
       "title": "WikiExtension",
-      "description": "MediaWiki extension registration synchronized with codebase and Firestore, managed by bureaucrats",
+      "description": "MediaWiki extension registration synchronized with codebase and Firestore, managed by bureaucrats and configurable by administrators",
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
@@ -121,6 +121,7 @@
         "exampleWikitext": { "type": "string", "maxLength": 5000 },
         "isActive": { "type": "boolean" },
         "installedVia": { "type": "string", "enum": ["code", "bureaucrat"] },
+        "config": { "type": "object", "description": "Extension settings including blazePlanEnabled" },
         "addedByUid": { "type": "string", "maxLength": 128 },
         "addedByName": { "type": "string", "maxLength": 100 },
         "createdAt": { "type": "string" },

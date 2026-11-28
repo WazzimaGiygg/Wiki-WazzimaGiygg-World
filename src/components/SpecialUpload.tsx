@@ -20,9 +20,10 @@ import {
 import { useWiki } from '../context/WikiContext';
 import { WikiFileDoc } from '../extensions/types';
 import { saveUploadedFile, subscribeToUploadedFiles } from '../services/extensionService';
+import { prepareImageForWikiUpload } from '../utils/imageCompression';
 
 export const SpecialUpload: React.FC = () => {
-  const { currentUser, isBureaucrat, isBlazePlanActive, toggleBlazePlan, navigateToPage, loginWithGoogle } = useWiki();
+  const { currentUser, isAdmin, isBlazePlanActive, toggleBlazePlan, navigateToPage, loginWithGoogle } = useWiki();
 
   const [filesList, setFilesList] = useState<WikiFileDoc[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(true);
@@ -37,6 +38,8 @@ export const SpecialUpload: React.FC = () => {
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [blazeError, setBlazeError] = useState<string | null>(null);
+  const [preparedMeta, setPreparedMeta] = useState<{ mimeType: string; sizeBytes: number; wasCompressed: boolean } | null>(null);
   const [uploadedResult, setUploadedResult] = useState<WikiFileDoc | null>(null);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
   const [activatingBlaze, setActivatingBlaze] = useState(false);
@@ -52,7 +55,7 @@ export const SpecialUpload: React.FC = () => {
     return () => unsub();
   }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -69,23 +72,28 @@ export const SpecialUpload: React.FC = () => {
     setUploadError(null);
     setSelectedFile(file);
 
-    // Auto-generate destination file name
     const rawClean = file.name.replace(/\s+/g, '_');
     setDestFileName(rawClean);
 
-    // Read preview & dimensions
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const dataUrl = ev.target?.result as string;
-      setPreviewUrl(dataUrl);
-
-      const img = new window.Image();
-      img.onload = () => {
-        setFileDimensions({ width: img.naturalWidth, height: img.naturalHeight });
-      };
-      img.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
+    try {
+      const prepared = await prepareImageForWikiUpload(file);
+      setPreviewUrl(prepared.dataUrl);
+      setPreparedMeta({
+        mimeType: prepared.mimeType,
+        sizeBytes: prepared.sizeBytes,
+        wasCompressed: prepared.wasCompressed,
+      });
+      if (prepared.width && prepared.height) {
+        setFileDimensions({ width: prepared.width, height: prepared.height });
+      } else {
+        setFileDimensions(null);
+      }
+    } catch (err: any) {
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      setPreparedMeta(null);
+      setUploadError(err?.message || 'Erro ao preparar a imagem selecionada.');
+    }
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -104,6 +112,10 @@ export const SpecialUpload: React.FC = () => {
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (currentUser.isAnonymous) {
+      setUploadError('É obrigatório entrar com sua conta Google para enviar arquivos na wiki.');
+      return;
+    }
     if (!selectedFile || !previewUrl) {
       setUploadError('Selecione uma imagem para enviar.');
       return;
@@ -114,7 +126,7 @@ export const SpecialUpload: React.FC = () => {
     }
 
     if (!isBlazePlanActive) {
-      setUploadError('O Plano Blaze não está ativado nas configurações da extensão. Ative-o antes de enviar.');
+      setUploadError('O Plano Blaze do Firebase não está ativado na conta pelo administrador. Ative-o antes de enviar.');
       return;
     }
 
@@ -125,8 +137,8 @@ export const SpecialUpload: React.FC = () => {
       const docResult = await saveUploadedFile({
         fileName: destFileName.trim(),
         dataUrl: previewUrl,
-        mimeType: selectedFile.type,
-        size: selectedFile.size,
+        mimeType: preparedMeta?.mimeType || selectedFile.type,
+        size: preparedMeta?.sizeBytes || selectedFile.size,
         description: description.trim(),
         license,
         author: currentUser.username,
@@ -138,6 +150,7 @@ export const SpecialUpload: React.FC = () => {
       setUploadedResult(docResult);
       setSelectedFile(null);
       setPreviewUrl(null);
+      setPreparedMeta(null);
       setDestFileName('');
       setDescription('');
       if (fileInputRef.current) {
@@ -158,12 +171,13 @@ export const SpecialUpload: React.FC = () => {
   };
 
   const handleActivateBlazeFromBanner = async () => {
-    if (!isBureaucrat) return;
+    if (!isAdmin) return;
     setActivatingBlaze(true);
+    setBlazeError(null);
     try {
       await toggleBlazePlan(true);
     } catch (err: any) {
-      alert('Erro ao ativar Plano Blaze: ' + (err.message || String(err)));
+      setBlazeError('Erro ao ativar o Plano Blaze: ' + (err.message || String(err)));
     } finally {
       setActivatingBlaze(false);
     }
@@ -196,7 +210,7 @@ export const SpecialUpload: React.FC = () => {
 
         <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 flex flex-wrap items-center justify-between gap-2">
           <span>
-            Ferramenta canônica do MediaWiki (<code>Special:Upload</code>) para envio de imagens, ilustrações e fotos para a wiki.
+            Extensão oficial <code>UploadWizard</code> (<span className="font-mono font-semibold text-gray-700 dark:text-gray-300">5.0.0.XL.1</span>) para envio de imagens, ilustrações e ficheiros na wiki.
           </span>
           <span className="font-mono text-blue-700 dark:text-blue-300">
             Especial:Carregar_arquivo
@@ -206,35 +220,42 @@ export const SpecialUpload: React.FC = () => {
 
       {/* BLAZE PLAN DISABLED NOTICE (WHEN INACTIVE) */}
       {!isBlazePlanActive && (
-        <div className="p-5 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-lg shadow-xs space-y-4">
+        <div className="p-5 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-300 dark:border-amber-700 rounded-lg shadow-xs space-y-4">
           <div className="flex items-start gap-3">
             <div className="p-2 bg-amber-100 dark:bg-amber-900/60 rounded-full text-orange-600 shrink-0 mt-0.5">
               <Flame className="w-6 h-6 fill-orange-500 text-orange-600" />
             </div>
             <div className="space-y-1.5">
               <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                <span>Upload de Imagem Condicionado ao Plano Blaze</span>
+                <span>Upload de Arquivos Condicionado ao Plano Blaze (Extensão 5.0.0.XL.1)</span>
               </h2>
               <p className="text-gray-700 dark:text-gray-300 text-xs leading-relaxed">
-                A opção de carregamento de arquivos e imagens na <strong>WikiWazzimaGiygg</strong> está desativada porque o <strong>Plano Blaze</strong> não está ativado nas configurações da extensão <strong>UploadWizard</strong>.
+                A extensão de carregamento de arquivos (<code>UploadWizard 5.0.0.XL.1</code>) requer que o <strong>Plano Blaze do Firebase</strong> esteja ativado na conta pelo administrador antes de liberar envios na <strong>WikiWazzimaGiygg</strong>.
               </p>
               <p className="text-[11px] text-gray-600 dark:text-gray-400">
-                O Google Cloud / Firebase exige o plano Blaze para operações de armazenamento de mídias externas. Assim que ativado nas configurações da extensão, o upload é liberado instantaneamente em todo o site.
+                Assim que o administrador habilitar o Plano Blaze na extensão, o carregamento em <code>Especial:Carregar_arquivo</code> e no editor de artigos é liberado instantaneamente em tempo real.
               </p>
             </div>
           </div>
 
+          {blazeError && (
+            <div className="p-2.5 bg-red-50 dark:bg-red-950/50 border border-red-300 dark:border-red-800 text-red-800 dark:text-red-200 rounded text-xs flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+              <span>{blazeError}</span>
+            </div>
+          )}
+
           <div className="pt-3 border-t border-amber-200 dark:border-amber-900/60 flex flex-wrap items-center justify-between gap-3">
-            {isBureaucrat ? (
-              <div className="flex items-center gap-2">
+            {isAdmin ? (
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   disabled={activatingBlaze}
                   onClick={handleActivateBlazeFromBanner}
-                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded font-bold text-xs flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
+                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-white rounded font-bold text-xs flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
                 >
                   <Flame className="w-4 h-4 fill-white" />
-                  <span>{activatingBlaze ? 'Ativando no Firebase...' : 'Ativar Plano Blaze na Extensão Agora'}</span>
+                  <span>{activatingBlaze ? 'Ativando no Firebase...' : 'Ativar Plano Blaze na Conta (Administrador)'}</span>
                 </button>
 
                 <button
@@ -248,15 +269,15 @@ export const SpecialUpload: React.FC = () => {
               </div>
             ) : (
               <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                <Lock className="w-4 h-4 text-gray-400" />
-                <span>Solicite a um burocrata para ativar o Plano Blaze em <strong>Especial:Extensões</strong>.</span>
+                <Lock className="w-4 h-4 text-gray-400 shrink-0" />
+                <span>Solicite a um administrador ou burocrata para ativar o Plano Blaze na conta em <strong>Especial:Extensões</strong>.</span>
               </div>
             )}
 
             <button
               type="button"
               onClick={() => navigateToPage('Especial:Extensões')}
-              className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium text-xs"
+              className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium text-xs cursor-pointer"
             >
               <span>Gerenciar Extensões da Wiki</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -378,8 +399,9 @@ export const SpecialUpload: React.FC = () => {
                     <div className="text-xs text-gray-700 dark:text-gray-300 font-medium">
                       <span>{selectedFile?.name}</span>
                       {fileDimensions && (
-                        <span className="text-gray-500 ml-2">
-                          ({fileDimensions.width} × {fileDimensions.height} px, {((selectedFile?.size || 0) / 1024).toFixed(1)} KB)
+                        <span className="text-gray-500 ml-2 tabular-nums">
+                          ({fileDimensions.width} × {fileDimensions.height} px, {((preparedMeta?.sizeBytes || selectedFile?.size || 0) / 1024).toFixed(1)} KB
+                          {preparedMeta?.wasCompressed ? ' · otimizada para Firestore' : ''})
                         </span>
                       )}
                     </div>
@@ -454,32 +476,42 @@ export const SpecialUpload: React.FC = () => {
               </div>
 
               {/* Submit Button */}
-              <div className="pt-2 flex items-center justify-between border-t border-gray-200 dark:border-gray-800">
+              <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 dark:border-gray-800">
                 <div className="text-[11px] text-gray-500">
                   Enviando como: <strong>{currentUser.username}</strong>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isUploading || !selectedFile}
-                  className={`px-4 py-2 rounded font-medium text-xs flex items-center gap-2 shadow-2xs ${
-                    isUploading || !selectedFile
-                      ? 'bg-gray-300 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
-                      : 'bg-[#3366cc] hover:bg-[#254b99] text-white cursor-pointer'
-                  }`}
-                >
-                  {isUploading ? (
-                    <>
-                      <Clock className="w-4 h-4 animate-spin" />
-                      <span>Gravando no Firestore...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4" />
-                      <span>Carregar ficheiro na wiki</span>
-                    </>
-                  )}
-                </button>
+                {currentUser.isAnonymous ? (
+                  <button
+                    type="button"
+                    onClick={loginWithGoogle}
+                    className="px-4 py-2 rounded font-medium text-xs bg-[#3366cc] hover:bg-[#254b99] text-white cursor-pointer"
+                  >
+                    Entrar com Google para enviar
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={isUploading || !selectedFile}
+                    className={`px-4 py-2 rounded font-medium text-xs flex items-center gap-2 shadow-2xs ${
+                      isUploading || !selectedFile
+                        ? 'bg-gray-300 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
+                        : 'bg-[#3366cc] hover:bg-[#254b99] text-white cursor-pointer'
+                    }`}
+                  >
+                    {isUploading ? (
+                      <>
+                        <Clock className="w-4 h-4 animate-spin" />
+                        <span>Gravando no Firestore...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        <span>Carregar ficheiro na wiki</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </form>
           </div>
@@ -512,7 +544,7 @@ export const SpecialUpload: React.FC = () => {
                   <div className="font-bold text-gray-900 dark:text-gray-100">Status do Sistema:</div>
                   <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-medium">
                     <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span>UploadWizard ativo via Plano Blaze no Firebase</span>
+                    <span>UploadWizard (v5.0.0.XL.1) ativo via Plano Blaze no Firebase</span>
                   </div>
                 </div>
               </div>

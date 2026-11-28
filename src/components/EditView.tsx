@@ -64,6 +64,8 @@ import {
 import { WikiFileDoc } from '../extensions/types';
 import { computeRevisionDiff } from '../core/diff';
 import { DEFAULT_CATEGORY_DEFINITIONS } from '../core/defaultCategories';
+import { prepareImageForWikiUpload } from '../utils/imageCompression';
+import { cleanCategoryName } from '../utils/categoryUtils';
 
 interface EditViewProps {
   page: WikiPage | null;
@@ -84,6 +86,7 @@ export const EditView: React.FC<EditViewProps> = ({
     existingPageSlugs,
     loginWithGoogle,
     isBlazePlanActive,
+    isAdmin,
     isBureaucrat,
     toggleBlazePlan,
     navigateToPage,
@@ -116,11 +119,19 @@ export const EditView: React.FC<EditViewProps> = ({
   // Quick upload state inside modal
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+  const [uploadPreparedMeta, setUploadPreparedMeta] = useState<{
+    mimeType: string;
+    sizeBytes: number;
+    width?: number;
+    height?: number;
+    wasCompressed: boolean;
+  } | null>(null);
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadDesc, setUploadDesc] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [enablingBlaze, setEnablingBlaze] = useState(false);
+  const [blazeError, setBlazeError] = useState<string | null>(null);
   const modalFileInputRef = useRef<HTMLInputElement>(null);
 
   // Infobox builder modal state (Software, Usuário, and Tutorial)
@@ -215,20 +226,33 @@ export const EditView: React.FC<EditViewProps> = ({
     return () => unsub();
   }, [showImageModal, selectedFileName]);
 
-  const handleSelectModalFile = (file: File) => {
+  const handleSelectModalFile = async (file: File) => {
     setUploadFile(file);
     setUploadError(null);
+    setUploadPreparedMeta(null);
     const clean = file.name.replace(/\s+/g, '_');
     setUploadTitle(clean);
-    const reader = new FileReader();
-    reader.onload = e => {
-      setUploadPreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const prepared = await prepareImageForWikiUpload(file);
+      setUploadPreview(prepared.dataUrl);
+      setUploadPreparedMeta({
+        mimeType: prepared.mimeType,
+        sizeBytes: prepared.sizeBytes,
+        width: prepared.width,
+        height: prepared.height,
+        wasCompressed: prepared.wasCompressed,
+      });
+    } catch (err: any) {
+      setUploadFile(null);
+      setUploadPreview(null);
+      setUploadPreparedMeta(null);
+      setUploadError(err?.message || 'Não foi possível preparar a imagem selecionada.');
+    }
   };
 
   const insertRawText = (textToInsert: string) => {
     const textarea = textareaRef.current;
+    syncSourceRef.current = 'code';
     if (!textarea) {
       setContent(prev => prev + '\n' + textToInsert);
       return;
@@ -255,7 +279,7 @@ export const EditView: React.FC<EditViewProps> = ({
 
   const handleQuickUploadAndInsert = async () => {
     if (!isBlazePlanActive) {
-      setUploadError('O upload de imagens está bloqueado porque o Plano Blaze não está ativado na extensão.');
+      setUploadError('O upload de imagens está bloqueado porque o Plano Blaze não está ativado na extensão UploadWizard 5.0.0.XL.1.');
       return;
     }
     if (!uploadFile || !uploadPreview) {
@@ -273,8 +297,10 @@ export const EditView: React.FC<EditViewProps> = ({
       const savedDoc = await saveUploadedFile({
         fileName: uploadTitle || uploadFile.name,
         dataUrl: uploadPreview,
-        mimeType: uploadFile.type || 'image/png',
-        size: uploadFile.size,
+        mimeType: uploadPreparedMeta?.mimeType || uploadFile.type || 'image/png',
+        size: uploadPreparedMeta?.sizeBytes ?? uploadFile.size,
+        width: uploadPreparedMeta?.width,
+        height: uploadPreparedMeta?.height,
         author: currentUser.username,
         authorId: currentUser.uid,
         description: uploadDesc || imageCaption,
@@ -285,6 +311,7 @@ export const EditView: React.FC<EditViewProps> = ({
       setShowImageModal(false);
       setUploadFile(null);
       setUploadPreview(null);
+      setUploadPreparedMeta(null);
       setUploadTitle('');
       setUploadDesc('');
     } catch (err: any) {
@@ -438,7 +465,12 @@ export const EditView: React.FC<EditViewProps> = ({
   const [copiedSource, setCopiedSource] = useState<boolean>(false);
 
   const [content, setContent] = useState<string>(() => {
-    return page?.content || `== Introdução ==\nEscreva o conteúdo do seu artigo aqui em wikitexto.\n\n== Detalhes ==\n* Item 1\n* Item 2\n\n[[Categoria:Geral]]`;
+    if (page?.content) return page.content;
+    if (/^(?:Categoria|Category):/i.test(slug)) {
+      const catLabel = slug.replace(/^(?:Categoria|Category):/i, '').replace(/_/g, ' ').trim();
+      return `Esta categoria reúne páginas e artigos relacionados a '''${catLabel}'''.\n\nTodas as páginas que utilizam a tag <code><nowiki>[[Categoria:${catLabel}]]</nowiki></code> ou o link <code><nowiki>[[:Categoria:${catLabel}]]</nowiki></code> são listadas automaticamente abaixo em ordem alfabética.`;
+    }
+    return `== Introdução ==\nEscreva o conteúdo do seu artigo aqui em wikitexto.\n\n== Detalhes ==\n* Item 1\n* Item 2\n\n[[Categoria:Geral]]`;
   });
 
   const [summary, setSummary] = useState<string>('');
@@ -1771,9 +1803,17 @@ export const EditView: React.FC<EditViewProps> = ({
                   type="button"
                   disabled={!categoryDrawerCustom.trim()}
                   onClick={() => {
-                    const clean = categoryDrawerCustom.trim().replace(/^Categoria:/i, '');
+                    const clean = cleanCategoryName(categoryDrawerCustom);
                     if (!clean) return;
-                    insertRawText(`\n[[Categoria:${clean}]]`);
+                    const escaped = clean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '[\\s_]+');
+                    const catRegex = new RegExp(`\\[\\[\\s*(?:Categoria|Category)\\s*:\\s*${escaped}\\s*(?:\\|[^\\]]*)?\\]\\]`, 'i');
+                    if (!catRegex.test(content)) {
+                      syncSourceRef.current = 'code';
+                      setContent(prev => {
+                        const prefix = prev.endsWith('\n') || prev.length === 0 ? '' : '\n';
+                        return `${prev}${prefix}[[Categoria:${clean}]]`;
+                      });
+                    }
                     setCategoryDrawerCustom('');
                   }}
                   className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-40 text-white rounded text-[11px] font-medium cursor-pointer shrink-0"
@@ -1786,16 +1826,23 @@ export const EditView: React.FC<EditViewProps> = ({
             <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pt-0.5">
               {availableCategoriesForDrawer.map(cat => {
                 const escaped = cat.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '[\\s_]+');
-                const alreadyInContent = new RegExp(`\\[\\[\\s*(?:Categoria|Category)\\s*:\\s*${escaped}\\s*(?:\\|[^\\]]*)?\\]\\]`, 'i').test(content);
+                const catRegex = new RegExp(`\\[\\[\\s*(?:Categoria|Category)\\s*:\\s*${escaped}\\s*(?:\\|[^\\]]*)?\\]\\]`, 'i');
+                const alreadyInContent = catRegex.test(content);
                 return (
                   <button
                     key={cat.name}
                     type="button"
-                    title={cat.summary}
+                    title={alreadyInContent ? `${cat.summary} (clique para remover)` : cat.summary}
                     onClick={() => {
+                      syncSourceRef.current = 'code';
                       if (!alreadyInContent) {
-                        const prefix = content.endsWith('\n') || content.length === 0 ? '' : '\n';
-                        setContent(prev => `${prev}${prefix}[[Categoria:${cat.name}]]`);
+                        setContent(prev => {
+                          const prefix = prev.endsWith('\n') || prev.length === 0 ? '' : '\n';
+                          return `${prev}${prefix}[[Categoria:${cat.name}]]`;
+                        });
+                      } else {
+                        const removeRegex = new RegExp(`\\n?\\[\\[\\s*(?:Categoria|Category)\\s*:\\s*${escaped}\\s*(?:\\|[^\\]]*)?\\]\\]`, 'gi');
+                        setContent(prev => prev.replace(removeRegex, '').replace(/\n{3,}/g, '\n\n').trimEnd());
                       }
                     }}
                     className={`px-2 py-1 rounded border text-[11px] inline-flex items-center gap-1 cursor-pointer transition-colors ${
@@ -2045,10 +2092,30 @@ export const EditView: React.FC<EditViewProps> = ({
                 }`}
               />
             ) : (
-              <div
-                className="mw-body-content flex-1 p-4 overflow-y-auto max-h-[580px] leading-relaxed text-gray-800 dark:text-gray-200"
-                dangerouslySetInnerHTML={{ __html: formattedPreviewResult?.html || '' }}
-              />
+              <div className="flex-1 p-4 overflow-y-auto max-h-[580px] space-y-4">
+                <div
+                  className="mw-body-content leading-relaxed text-gray-800 dark:text-gray-200"
+                  dangerouslySetInnerHTML={{ __html: formattedPreviewResult?.html || '' }}
+                />
+                {formattedPreviewResult && formattedPreviewResult.categories.length > 0 && (
+                  <div className="p-2.5 bg-[#f8f9fa] dark:bg-gray-900 border border-[#a2a9b1] dark:border-gray-700 rounded text-xs flex flex-wrap items-center gap-x-2 gap-y-1 text-gray-700 dark:text-gray-300">
+                    <span className="font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-1 tabular-nums">
+                      <Tag className="w-3 h-3" />
+                      <span>
+                        {formattedPreviewResult.categories.length === 1
+                          ? 'Categoria:'
+                          : `Categorias (${formattedPreviewResult.categories.length}):`}
+                      </span>
+                    </span>
+                    {formattedPreviewResult.categories.map((cat, idx) => (
+                      <React.Fragment key={cat}>
+                        {idx > 0 && <span className="text-gray-400" aria-hidden="true">|</span>}
+                        <span className="text-[#0645ad] dark:text-[#6ba4ff]">{cat}</span>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -2218,6 +2285,24 @@ export const EditView: React.FC<EditViewProps> = ({
             className="mw-body-content min-h-[150px] leading-relaxed text-gray-800 dark:text-gray-200"
             dangerouslySetInnerHTML={{ __html: livePreview.html }}
           />
+          {livePreview.categories.length > 0 && (
+            <div className="mt-4 p-2.5 bg-[#f8f9fa] dark:bg-gray-950 border border-[#a2a9b1] dark:border-gray-700 rounded text-xs flex flex-wrap items-center gap-x-2 gap-y-1 text-gray-700 dark:text-gray-300">
+              <span className="font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-1 tabular-nums">
+                <Tag className="w-3 h-3" />
+                <span>
+                  {livePreview.categories.length === 1
+                    ? 'Categoria:'
+                    : `Categorias (${livePreview.categories.length}):`}
+                </span>
+              </span>
+              {livePreview.categories.map((cat, idx) => (
+                <React.Fragment key={cat}>
+                  {idx > 0 && <span className="text-gray-400" aria-hidden="true">|</span>}
+                  <span className="text-[#0645ad] dark:text-[#6ba4ff]">{cat}</span>
+                </React.Fragment>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -2344,7 +2429,7 @@ export const EditView: React.FC<EditViewProps> = ({
               </button>
             </div>
 
-            {/* If Blaze Plan is NOT enabled: prominent alert and 1-click activation for bureaucrats */}
+            {/* If Blaze Plan is NOT enabled: prominent alert and 1-click activation for administrators */}
             {!isBlazePlanActive && (
               <div className="p-5 bg-amber-50/80 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-900/60 text-xs text-amber-900 dark:text-amber-200 space-y-3">
                 <div className="flex items-start gap-3">
@@ -2352,29 +2437,41 @@ export const EditView: React.FC<EditViewProps> = ({
                     <Flame className="w-5 h-5" />
                   </div>
                   <div className="flex-1 space-y-1">
-                    <h4 className="font-bold text-sm text-amber-950 dark:text-amber-100">
-                      Upload de Imagens Desativado via Extensão
-                    </h4>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="font-bold text-sm text-amber-950 dark:text-amber-100">
+                        Upload de Imagens Desativado via Extensão
+                      </h4>
+                      <span className="px-1.5 py-0.5 rounded bg-amber-200/80 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 font-mono text-[10px]">
+                        5.0.0.XL.1
+                      </span>
+                    </div>
                     <p className="leading-relaxed">
-                      Conforme a arquitetura do Wiki, o envio e armazenamento de ficheiros de mídia requer que a opção{' '}
-                      <strong>Plano Blaze do Firebase</strong> esteja ativada nas configurações da extensão{' '}
-                      <code>UploadWizard</code> (<code>upload-wizard</code>).
+                      Conforme a arquitetura do Wiki, a extensão{' '}
+                      <code>UploadWizard</code> (<code>5.0.0.XL.1</code>) requer que o{' '}
+                      <strong>Plano Blaze do Firebase</strong> esteja habilitado na conta pelo administrador antes do envio de ficheiros.
                     </p>
                   </div>
                 </div>
 
+                {blazeError && (
+                  <div className="p-2 rounded bg-red-50 dark:bg-red-950/60 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 text-[11px]">
+                    {blazeError}
+                  </div>
+                )}
+
                 <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-amber-200/60 dark:border-amber-900/40">
-                  {isBureaucrat ? (
+                  {isAdmin ? (
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         disabled={enablingBlaze}
                         onClick={async () => {
                           setEnablingBlaze(true);
+                          setBlazeError(null);
                           try {
                             await toggleBlazePlan(true);
-                          } catch (err) {
-                            console.error(err);
+                          } catch (err: any) {
+                            setBlazeError(err?.message || 'Erro ao habilitar o Plano Blaze na extensão.');
                           } finally {
                             setEnablingBlaze(false);
                           }
@@ -2389,12 +2486,12 @@ export const EditView: React.FC<EditViewProps> = ({
                         <span>Ativar Plano Blaze na Extensão Agora</span>
                       </button>
                       <span className="text-[11px] text-amber-800 dark:text-amber-300">
-                        (Ação exclusiva de Burocrata)
+                        (Ação exclusiva de Administrador / Burocrata)
                       </span>
                     </div>
                   ) : (
                     <p className="text-[11px] text-amber-800 dark:text-amber-300">
-                      Apenas burocratas podem alterar as configurações da extensão para habilitar o upload.
+                      Apenas administradores ou burocratas podem habilitar o Plano Blaze na extensão para liberar o upload.
                     </p>
                   )}
 
@@ -2511,13 +2608,19 @@ export const EditView: React.FC<EditViewProps> = ({
                               {uploadFile.name}
                             </div>
                             <div className="text-[11px] text-gray-500">
-                              {(uploadFile.size / 1024).toFixed(1)} KB • {uploadFile.type || 'Imagem'}
+                              {((uploadPreparedMeta?.sizeBytes ?? uploadFile.size) / 1024).toFixed(1)} KB •{' '}
+                              {uploadPreparedMeta?.mimeType || uploadFile.type || 'Imagem'}
+                              {uploadPreparedMeta?.width && uploadPreparedMeta?.height
+                                ? ` • ${uploadPreparedMeta.width}×${uploadPreparedMeta.height}px`
+                                : ''}
+                              {uploadPreparedMeta?.wasCompressed ? ' • Otimizada para Firestore' : ''}
                             </div>
                             <button
                               type="button"
                               onClick={() => {
                                 setUploadFile(null);
                                 setUploadPreview(null);
+                                setUploadPreparedMeta(null);
                               }}
                               className="text-red-600 dark:text-red-400 hover:underline cursor-pointer text-[11px]"
                             >

@@ -133,6 +133,13 @@ export function wikitextToFormattedHtml(
       `<span class="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 font-mono text-[11px] text-gray-700 dark:text-gray-300">${escapeHtmlText(raw)}</span>`
     )
   );
+  text = text.replace(/<code[^>]*>[\s\S]*?<\/code>/gi, raw =>
+    pushToken(
+      raw,
+      false,
+      `<code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 font-mono text-[11px] text-pink-600 dark:text-pink-400">${escapeHtmlText(raw.replace(/^<code[^>]*>|<\/code>$/gi, ''))}</code>`
+    )
+  );
   text = text.replace(/<math>[\s\S]*?<\/math>/gi, raw => pushToken(raw, false));
 
   // 2. Transclusion control tags (<includeonly>, <noinclude>, <onlyinclude>)
@@ -180,12 +187,16 @@ export function wikitextToFormattedHtml(
   );
 
   // 6. Categories [[Categoria:...]] and Media [[Ficheiro:...]]
-  text = text.replace(/\[\[(?:Categoria|Category):([^\]]+)\]\]/gi, (raw, cat) =>
-    pushToken(
-      raw,
-      false,
-      `<span class="px-1.5 py-0.5 mx-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[11px] text-slate-700 dark:text-slate-300">🏷️ Categoria: ${escapeHtmlText(cat.trim())}</span>`
-    )
+  text = text.replace(
+    /\[\[\s*(?:Categoria|Category)\s*:\s*([^\]|]+?)(?:\s*\|[^\]]*)?\s*\]\]/gi,
+    (raw, cat) => {
+      const cleanCat = cat.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+      return pushToken(
+        raw,
+        false,
+        `<span class="px-1.5 py-0.5 mx-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[11px] text-slate-700 dark:text-slate-300">Categoria: ${escapeHtmlText(cleanCat)}</span>`
+      );
+    }
   );
   text = text.replace(/\[\[(?:Ficheiro|File|Imagem|Image):[^\]]+\]\]/gi, raw => pushToken(raw, true));
 
@@ -229,9 +240,10 @@ export function wikitextToFormattedHtml(
     // Internal wiki links [[Target]] or [[Target|Label]]
     out = out.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, target, label) => {
       const cleanTarget = target.trim();
-      const displayLabel = (label || cleanTarget).trim();
-      const slug = cleanTarget.replace(/\s+/g, '_');
-      const exists = existingPages.has(slug) || existingPages.has(cleanTarget);
+      const normalizedTarget = cleanTarget.replace(/^:/, '').trim();
+      const displayLabel = (label || normalizedTarget).trim();
+      const slug = normalizedTarget.replace(/\s+/g, '_');
+      const exists = existingPages.has(slug) || existingPages.has(normalizedTarget);
       return `<a href="#/wiki/${encodeURIComponent(slug)}" data-mw-link="${escapeHtmlAttr(cleanTarget)}" class="${
         exists
           ? 'text-[#0645ad] dark:text-[#6ba4ff] underline'

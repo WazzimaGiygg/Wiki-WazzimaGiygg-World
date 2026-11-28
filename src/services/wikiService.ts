@@ -431,11 +431,28 @@ export async function savePage(params: {
   else if (/^(?:Ficheiro|File|Imagem|Image):/i.test(params.title) || /^(?:Ficheiro|File|Imagem|Image):/i.test(slug)) namespace = 'File';
   else if (/^Wiki:/i.test(params.title) || /^Wiki:/i.test(slug) || nsCheck.includes('Wiki:')) namespace = 'Wiki';
 
-  const categoryMatches = params.content.matchAll(/\[\[(?:Categoria|Category):([^\]]+)\]\]/gi);
-  const categories: string[] = [];
+  const strippedForCats = params.content
+    .replace(/<nowiki>[\s\S]*?<\/nowiki>/gi, '')
+    .replace(/<pre[^>]*>[\s\S]*?<\/pre>/gi, '')
+    .replace(/<syntaxhighlight[^>]*>[\s\S]*?<\/syntaxhighlight>/gi, '')
+    .replace(/<code[^>]*>[\s\S]*?<\/code>/gi, '')
+    .replace(/`[^`\n]+`/g, '');
+  const scannableForCats =
+    namespace === 'Template'
+      ? strippedForCats.replace(/<includeonly>[\s\S]*?<\/includeonly>/gi, '')
+      : strippedForCats.replace(/<noinclude>[\s\S]*?<\/noinclude>/gi, '');
+
+  const categoryMatches = scannableForCats.matchAll(
+    /\[\[\s*(?:Categoria|Category)\s*:\s*([^\]|]+)(?:\|[^\]]*)?\]\]/gi
+  );
+  const categoriesSet = new Set<string>();
   for (const match of categoryMatches) {
-    categories.push(match[1].trim());
+    const cleanCat = match[1].replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+    if (cleanCat && !cleanCat.includes('{{')) {
+      categoriesSet.add(cleanCat);
+    }
   }
+  const categories = Array.from(categoriesSet);
 
   let existingPage: WikiPage | null = null;
   let oldLen = 0;

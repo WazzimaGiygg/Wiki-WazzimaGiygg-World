@@ -88,6 +88,10 @@ O WikiWazzimaGiygg substitui o paradigma tradicional por tecnologias modernas:
 | Artigo prático demonstrando {{Nome|params}} em ação
 | [[Exemplo_de_Uso_de_Predefinições]]
 |-
+| '''CPTM'''
+| História, linhas, frota e concessões da Companhia Paulista de Trens Metropolitanos
+| [[CPTM]]
+|-
 | '''Índice Geral'''
 | Explore todas as páginas armazenadas no Firestore
 | [[Especial:Todas_as_páginas]]
@@ -1707,6 +1711,121 @@ Exibe links para até 3 portais temáticos ao final do artigo.
 
 [[Categoria:Predefinições do WikiWazzimaGiygg]]
 </noinclude>`
+  },
+
+  'CPTM': {
+    slug: 'CPTM',
+    title: 'Companhia Paulista de Trens Metropolitanos',
+    namespace: 'Main',
+    author: 'Equipe Editorial WikiWazzimaGiygg',
+    authorId: 'system_admin',
+    revisionCount: 1,
+    latestRevisionId: 'rev_initial_cptm_article',
+    categories: ['Transportes', 'Transporte ferroviário', 'São Paulo (estado)', 'Empresas estatais de São Paulo'],
+    createdAt: '2026-11-28T09:54:00.000Z',
+    updatedAt: '2026-11-28T09:54:00.000Z',
+    summary: 'Criação do artigo enciclopédico sobre a Companhia Paulista de Trens Metropolitanos (CPTM)',
+    content: `{{Info/Empresa
+| nome = Companhia Paulista de Trens Metropolitanos
+| subtítulo = CPTM · Sociedade de Economia Mista
+| tipo = Empresa pública ([[:Categoria:Empresas estatais de São Paulo|sociedade de economia mista]])
+| indústria = [[:Categoria:Transporte ferroviário|Transporte ferroviário metropolitano]]
+| fundação = 28 de maio de 1992 (Lei Estadual nº 7.861/1992)
+| fundadores = Governo do Estado de São Paulo
+| sede = São Paulo, SP, Brasil
+| produtos = Operação ferroviária de passageiros e gestão de ativos na Região Metropolitana de São Paulo
+| site = https://www.cptm.sp.gov.br
+}}
+
+A '''Companhia Paulista de Trens Metropolitanos''' ('''CPTM''') é uma sociedade de economia mista vinculada à Secretaria dos Transportes Metropolitanos do Governo do Estado de São Paulo, responsável pela operação e gestão de serviços de transporte ferroviário de passageiros na Região Metropolitana de São Paulo.<ref>{{Citar_lei|jurisdição=São Paulo (estado)|lei=Lei nº 7.861|data=28 de maio de 1992|ementa=Autoriza o Poder Executivo a constituir a Companhia Paulista de Trens Metropolitanos — CPTM|url=https://www.al.sp.gov.br/repositorio/legislacao/lei/1992/lei-7861-28.05.1992.html}}</ref>
+
+Criada em 1992 para unificar as antigas malhas suburbanas operadas pela Companhia Brasileira de Trens Urbanos (CBTU) e pela Ferrovia Paulista S.A. (FEPASA), a CPTM passou por um amplo ciclo de modernização de estações, sinalização e material rodante entre as décadas de 2000 e 2010. A partir da década de 2020, com o programa estadual de concessões e parcerias público-privadas, parte expressiva de suas linhas foi gradualmente transferida a operadoras privadas, mantendo a estatal como administradora direta da Linha 10–Turquesa e gestora patrimonial de trens e infraestrutura.<ref>{{Citar_web|url=https://www.cptm.sp.gov.br|título=Portal Institucional da CPTM|autor=Companhia Paulista de Trens Metropolitanos|obra=Governo do Estado de São Paulo|língua=pt}}</ref>
+
+== História ==
+=== Antecedentes e Fundação (1992–1996) ===
+As origens da rede ferroviária metropolitana paulista remontam ao século XIX e à primeira metade do século XX, com a implantação de ferrovias como a ''São Paulo Railway'' (posteriormente Estrada de Ferro Santos-Jundiaí), a Estrada de Ferro Central do Brasil e a Estrada de Ferro Sorocabana. Ao longo do crescimento urbano da Grande São Paulo, esses corredores ferroviários foram incorporados ao transporte suburbano estatal federal (RFFSA/CBTU) e estadual (FEPASA).
+
+Em 28 de maio de 1992, o governador Luiz Antônio Fleury Filho sancionou a '''Lei Estadual nº 7.861''', autorizando a constituição da CPTM com o objetivo de estadualizar, integrar operacionalmente e recuperar os serviços ferroviários de passageiros da região metropolitana. Entre 1994 e 1996, a companhia assumiu progressivamente os trechos antes administrados pela CBTU (atuais linhas 7, 10, 11 e 12) e pela FEPASA (linhas 8 e 9).
+
+=== Reestruturação e Modernização (2000–2019) ===
+Durante a década de 1990, a rede herdada apresentava trens antigos, baixa regularidade de intervalos e estações deterioradas. A partir dos anos 2000, a empresa executou projetos estruturantes como a integração tarifária gratuita com o Metrô de São Paulo em estações estratégicas (como Brás, Barra Funda, Luz e Pinheiros), a padronização de identidade visual e a implantação gradual de sistemas de controle de tráfego baseados em comunicação digital (CBTC).
+
+Em março de 2018, a CPTM inaugurou a '''Linha 13–Jade''', conectando a estação Engenheiro Goulart ao Aeroporto Internacional de São Paulo-Guarulhos — a primeira linha inteiramente construída pela companhia desde sua fundação, incluindo posteriormente o serviço expresso até a estação Palmeiras–Barra Funda e Luz (''Expresso Aeroporto'').
+
+=== Programa de Concessões (2021–2026) ===
+Na década de 2020, o Governo do Estado de São Paulo implementou um amplo modelo de desestatização da malha metropolitana:
+* '''Linhas 8–Diamante e 9–Esmeralda:''' Concedidas em 2021 e assumidas pela concessionária privada ''ViaMobilidade'' em janeiro de 2022.
+* '''Linha 7–Rubi:''' Licitação integrada ao projeto do Trem Intercidades (TIC Eixo Norte, ligando São Paulo a Campinas), adjudicada ao consórcio ''TIC Trens'' com transição operacional entre 2024 e 2025.
+* '''Linhas 11–Coral, 12–Safira e 13–Jade (Lote Alto Tietê):''' Leiloadas e assumidas pelo consórcio ''Trivia Trens'' no ciclo 2025–2026, abrangendo modernização de estações e extensão operacional no Alto Tietê e Zona Leste.<ref>{{Citar_web|url=https://www.saopaulo.sp.gov.br|título=Programa de Concessões Ferroviárias do Estado de São Paulo|obra=Portal do Governo de São Paulo|língua=pt}}</ref>
+
+Com a transferência desses lotes à iniciativa privada, a '''Linha 10–Turquesa''' permaneceu sob operação direta da CPTM, ao mesmo tempo em que a companhia passou a atuar na gestão de ativos, suporte técnico e planejamento de novas expansões ferroviárias estaduais.
+
+== Rede Ferroviária e Linhas ==
+A tabela abaixo resume as sete linhas historicamente estruturadas pela CPTM na Região Metropolitana de São Paulo e sua respectiva situação operacional:
+
+{| class="wikitable" style="width:100%; text-align:left;"
+! Linha !! Trajeto Principal !! Municípios Atendidos (Principais) !! Operação / Situação
+|-
+| '''Linha 7–Rubi''' || Palmeiras–Barra Funda ↔ Francisco Morato ↔ Jundiaí || São Paulo, Caieiras, Franco da Rocha, Francisco Morato, Campo Limpo Paulista, Várzea Paulista, Jundiaí || Concedida (''TIC Trens'')
+|-
+| '''Linha 8–Diamante''' || Júlio Prestes ↔ Itapevi ↔ Amador Bueno || São Paulo, Osasco, Carapicuíba, Barueri, Jandira, Itapevi || Concedida (''ViaMobilidade'')
+|-
+| '''Linha 9–Esmeralda''' || Osasco ↔ Bruno Covas/Mendes–Vila Natal ↔ Varginha || Osasco, São Paulo (Marginal Pinheiros e Zona Sul) || Concedida (''ViaMobilidade'')
+|-
+| '''Linha 10–Turquesa''' || Palmeiras–Barra Funda / Luz ↔ Rio Grande da Serra || São Paulo, São Caetano do Sul, Santo André, Mauá, Ribeirão Pires, Rio Grande da Serra || '''CPTM (Operação direta)'''
+|-
+| '''Linha 11–Coral''' || Luz ↔ Guaianases ↔ Estudantes || São Paulo, Ferraz de Vasconcelos, Poá, Suzano, Mogi das Cruzes || Concedida (''Trivia Trens'')
+|-
+| '''Linha 12–Safira''' || Brás ↔ Calmon Viana || São Paulo, Itaquaquecetuba, Poá || Concedida (''Trivia Trens'')
+|-
+| '''Linha 13–Jade''' || Engenheiro Goulart ↔ Aeroporto–Guarulhos || São Paulo, Guarulhos (com serviço Expresso Aeroporto) || Concedida (''Trivia Trens'')
+|}
+
+== Material Rodante (Frota) ==
+Historicamente, a CPTM classificou seus Trens Unidades Elétricos (TUEs) por séries numéricas de acordo com o contrato de aquisição, fabricante e características técnicas. Após o processo de renovação iniciado nos anos 2000, destacaram-se as composições com salão contínuo (passagem livre entre carros — ''open gangway''), ar-condicionado e monitoramento interno por câmeras:
+
+{| class="wikitable" style="width:100%; text-align:left;"
+! Série !! Fabricante / Consórcio !! Período de Entrada !! Características Principais
+|-
+| '''Série 2500''' || CRRC Sifang / Temoinsa || 2019–2020 || 8 trens de 8 carros adquiridos especificamente para a Linha 13–Jade, equipados com bagageiros internos para passageiros do aeroporto.
+|-
+| '''Série 7000 / 7500''' || CAF || 2010–2011 || Primeiras séries modernas com passagem contínua entre carros (parcial/integral), ar-condicionado e sistemas de informação ao passageiro.
+|-
+| '''Série 8000''' || CAF || 2012–2016 || 36 composições com salão contínuo integral e alto desempenho de aceleração, originalmente alocadas à Linha 8–Diamante.
+|-
+| '''Série 8500''' || CAF || 2016–2019 || 35 trens equipados com salão contínuo, câmeras externas substituindo retrovisores e controle biométrico na cabine.
+|-
+| '''Série 9000''' || Alstom || 2014–2017 || 9 composições com tecnologia embarcada de diagnóstico e monitoramento em tempo real.
+|-
+| '''Série 9500''' || Hyundai-Rotem || 2017–2020 || 30 trens de 8 carros incorporados para renovação da Linha 7–Rubi e reforço da frota metropolitana.
+|}
+
+Composições antigas herdadas da RFFSA e FEPASA — como as séries 1100, 1400, 1600, 1700, 2000, 2100, 4400 e 5500 — foram progressivamente desmobilizadas ao longo da modernização ou substituídas pelas frotas mais recentes.
+
+== Integração e Bilhetagem ==
+A rede metropolitana opera integrada ao sistema do Metrô de São Paulo e aos corredores municipais e intermunicipais por meio do '''Bilhete Único''' (na capital) e do cartão '''TOP''' (na Região Metropolitana), além do suporte a bilhetes digitais por QR Code. A interoperabilidade tarifária em estações como Brás, Luz, Tamanduateí, Santo Amaro, Pinheiros e Barra Funda permite transferências diretas dentro da área paga sem cobrança de nova tarifa entre os sistemas metroferroviários estaduais.
+
+== Ver também ==
+* [[:Categoria:Transporte ferroviário|Transporte ferroviário no Brasil]]
+* [[:Categoria:São Paulo (estado)|Estado de São Paulo]]
+* [[:Categoria:Empresas estatais de São Paulo|Empresas estatais de São Paulo]]
+
+== Referências ==
+<references />
+
+{{Navbox
+| título = Sistema Ferroviário Metropolitano de São Paulo (CPTM)
+| grupo1 = Linhas Históricas
+| lista1 = {{Lista_horizontal|Linha 7–Rubi|Linha 8–Diamante|Linha 9–Esmeralda|'''Linha 10–Turquesa'''|Linha 11–Coral|Linha 12–Safira|Linha 13–Jade}}
+| grupo2 = Frota Moderna
+| lista2 = {{Lista_horizontal|Série 2500|Série 7000|Série 7500|Série 8000|Série 8500|Série 9000|Série 9500}}
+| rodapé = [[:Categoria:Transportes|Portal dos Transportes]] · [[:Categoria:Transporte ferroviário|Transporte Ferroviário]] · [[Especial:Categorias|Explorar Categorias]]
+}}
+
+[[Categoria:Transportes]]
+[[Categoria:Transporte ferroviário]]
+[[Categoria:São Paulo (estado)]]
+[[Categoria:Empresas estatais de São Paulo]]`
   }
 };
 

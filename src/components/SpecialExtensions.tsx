@@ -44,7 +44,7 @@ import {
 import { WikiExtensionDoc, ExtensionCategory } from '../extensions/types';
 
 export const SpecialExtensions: React.FC = () => {
-  const { navigateToPage, existingPageSlugs, isBureaucrat, currentUser, disabledExtensionIds } = useWiki();
+  const { navigateToPage, existingPageSlugs, isBureaucrat, isAdmin, currentUser, disabledExtensionIds } = useWiki();
 
   const [extensions, setExtensions] = useState<WikiExtensionDoc[]>(() =>
     mergeExtensionsWithCodebase([])
@@ -53,6 +53,8 @@ export const SpecialExtensions: React.FC = () => {
   const [isSyncingDirs, setIsSyncingDirs] = useState(false);
   const [isActivatingAll, setIsActivatingAll] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [confirmDeleteExtId, setConfirmDeleteExtId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   // Filters & selection
@@ -184,8 +186,9 @@ export const SpecialExtensions: React.FC = () => {
   // Toggle extension Active/Inactive in Firestore (BUREAUCRAT ONLY)
   const handleToggleActive = async (ext: WikiExtensionDoc, e: React.MouseEvent) => {
     e.stopPropagation();
+    setActionError(null);
     if (!isBureaucrat) {
-      alert('Ação bloqueada: Apenas burocratas têm permissão para ativar ou desativar extensões.');
+      setActionError('Ação bloqueada: apenas burocratas têm permissão para ativar ou desativar extensões.');
       return;
     }
 
@@ -198,7 +201,7 @@ export const SpecialExtensions: React.FC = () => {
         currentUser.username
       );
     } catch (err: any) {
-      alert(err.message || 'Erro ao alterar estado da extensão no Firebase.');
+      setActionError(err.message || 'Erro ao alterar estado da extensão no Firebase.');
     } finally {
       setTogglingId(null);
     }
@@ -206,10 +209,11 @@ export const SpecialExtensions: React.FC = () => {
 
   const [isUpdatingConfig, setIsUpdatingConfig] = useState(false);
 
-  // Toggle Blaze plan in extension configuration
+  // Toggle Blaze plan in extension configuration (ADMIN & BUREAUCRAT)
   const handleToggleBlazePlan = async (ext: WikiExtensionDoc, currentVal: boolean) => {
-    if (!isBureaucrat) {
-      alert('Ação restrita a Burocratas: Apenas burocratas podem alterar as configurações do Plano Blaze das extensões.');
+    setActionError(null);
+    if (!isAdmin) {
+      setActionError('Ação restrita: apenas administradores ou burocratas podem alterar o Plano Blaze desta extensão.');
       return;
     }
 
@@ -224,7 +228,7 @@ export const SpecialExtensions: React.FC = () => {
       await updateExtensionConfigInFirestore(
         ext.id,
         newConfig,
-        isBureaucrat,
+        isAdmin,
         currentUser.username
       );
 
@@ -234,7 +238,7 @@ export const SpecialExtensions: React.FC = () => {
       );
       setTimeout(() => setSyncMessage(null), 5000);
     } catch (err: any) {
-      alert('Erro ao atualizar configurações da extensão: ' + (err.message || String(err)));
+      setActionError('Erro ao atualizar configurações da extensão: ' + (err.message || String(err)));
     } finally {
       setIsUpdatingConfig(false);
     }
@@ -243,24 +247,27 @@ export const SpecialExtensions: React.FC = () => {
   // Delete bureaucrat-created extension (BUREAUCRAT ONLY)
   const handleDeleteExtension = async (ext: WikiExtensionDoc, e: React.MouseEvent) => {
     e.stopPropagation();
+    setActionError(null);
     if (!isBureaucrat) return;
 
     if (ext.installedVia === 'code') {
-      alert('Extensões do código base não podem ser excluídas, apenas desativadas.');
+      setActionError('Extensões do código base não podem ser excluídas, apenas desativadas.');
       return;
     }
 
-    if (!confirm(`Deseja realmente remover a extensão "${ext.name}" do Firebase?`)) {
+    if (confirmDeleteExtId !== ext.id) {
+      setConfirmDeleteExtId(ext.id);
       return;
     }
 
     try {
       await deleteBureaucratExtension(ext.id, isBureaucrat);
+      setConfirmDeleteExtId(null);
       if (selectedExtension?.id === ext.id) {
         setSelectedExtension(extensions.find(e => e.id !== ext.id) || null);
       }
     } catch (err: any) {
-      alert(err.message || 'Erro ao excluir extensão.');
+      setActionError(err.message || 'Erro ao excluir extensão.');
     }
   };
 
@@ -681,16 +688,38 @@ export const SpecialExtensions: React.FC = () => {
                         <span>{ext.isActive ? 'Ativada' : 'Desativada'}</span>
                       </button>
 
-                      {/* Delete button (Bureaucrat extensions only) */}
+                      {/* Delete button (Bureaucrat extensions only, inline confirmation) */}
                       {isBureaucrat && ext.installedVia === 'bureaucrat' && (
-                        <button
-                          type="button"
-                          onClick={e => handleDeleteExtension(ext, e)}
-                          className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 dark:hover:bg-red-950 rounded transition-colors"
-                          title="Excluir extensão do Firebase"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        confirmDeleteExtId === ext.id ? (
+                          <div className="inline-flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={e => handleDeleteExtension(ext, e)}
+                              className="px-2 py-0.5 rounded bg-red-600 hover:bg-red-700 text-white text-[10px] font-semibold cursor-pointer"
+                            >
+                              Confirmar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={e => {
+                                e.stopPropagation();
+                                setConfirmDeleteExtId(null);
+                              }}
+                              className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-[10px] text-gray-600 dark:text-gray-300 cursor-pointer"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={e => handleDeleteExtension(ext, e)}
+                            className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 dark:hover:bg-red-950 rounded transition-colors cursor-pointer"
+                            title="Excluir extensão do Firebase"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )
                       )}
 
                       <a
@@ -922,12 +951,25 @@ export const SpecialExtensions: React.FC = () => {
                       </div>
 
                       <p className="text-[11px] text-gray-700 dark:text-gray-300 leading-relaxed">
-                        A opção de <strong>upload de imagem</strong> no WikiWazzimaGiygg requer o <strong>Plano Blaze</strong> ativado nas configurações desta extensão. Quando ativado, os colaboradores podem carregar fotos e ilustrações através de <code>Especial:Carregar_arquivo</code> e pelo editor de artigos.
+                        A extensão de upload de arquivos (<code>UploadWizard {selectedExtension.version}</code>) requer o <strong>Plano Blaze do Firebase</strong> ativado na conta pelo administrador. Quando ativado, os colaboradores autenticados podem carregar imagens em <code>Especial:Carregar_arquivo</code> e no editor de artigos.
                       </p>
 
+                      {actionError && (
+                        <div className="p-2 rounded bg-red-50 dark:bg-red-950/50 border border-red-300 dark:border-red-800 text-[11px] text-red-800 dark:text-red-200 flex items-center justify-between gap-2">
+                          <span>{actionError}</span>
+                          <button
+                            type="button"
+                            onClick={() => setActionError(null)}
+                            className="text-red-600 hover:underline shrink-0 cursor-pointer"
+                          >
+                            Fechar
+                          </button>
+                        </div>
+                      )}
+
                       <div className="pt-2 border-t border-amber-200 dark:border-amber-900/60 flex flex-wrap items-center justify-between gap-2">
-                        {isBureaucrat ? (
-                          <div className="flex items-center gap-2">
+                        {isAdmin ? (
+                          <div className="flex flex-wrap items-center gap-2">
                             <button
                               type="button"
                               disabled={isUpdatingConfig}
@@ -942,7 +984,7 @@ export const SpecialExtensions: React.FC = () => {
                               <span>
                                 {Boolean(selectedExtension.config?.blazePlanEnabled)
                                   ? 'Desativar Plano Blaze nesta Extensão'
-                                  : 'Ativar Plano Blaze nesta Extensão'}
+                                  : 'Ativar Plano Blaze na Conta (Administrador)'}
                               </span>
                             </button>
 
@@ -960,7 +1002,7 @@ export const SpecialExtensions: React.FC = () => {
                         ) : (
                           <div className="text-[10px] text-gray-500 italic flex items-center gap-1">
                             <Lock className="w-3 h-3 text-gray-400" />
-                            <span>Apenas burocratas podem alterar o status do Plano Blaze.</span>
+                            <span>Apenas administradores ou burocratas podem habilitar o Plano Blaze.</span>
                           </div>
                         )}
 

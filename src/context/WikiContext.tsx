@@ -305,7 +305,7 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
     await updateExtensionConfigInFirestore(
       'upload-wizard',
       { ...currentConfig, blazePlanEnabled: active },
-      isBureaucrat,
+      isAdmin,
       currentUser.username
     );
   };
